@@ -110,9 +110,9 @@ export function SchedulePageClient({ byDay, userId, dayNames }: Props) {
         </button>
       </div>
 
-      {/* Day tabs */}
-      <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1 scrollbar-none">
-        {[0, 1, 2, 3, 4, 5, 6].map((d) => (
+      {/* Day tabs — RTL: ראשון בימין, שבת בשמאל */}
+      <div className="flex flex-row-reverse gap-1.5 mb-5 overflow-x-auto pb-1 scrollbar-none">
+        {[6, 5, 4, 3, 2, 1, 0].map((d) => (
           <button
             key={d}
             onClick={() => setActiveDay(d)}
