@@ -9,11 +9,12 @@ import {
 } from '@/lib/schedule'
 
 const TYPE_COLORS = {
-  torah: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-  shiur: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+  torah:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
+  shiur:  'text-blue-400 bg-blue-500/10 border-blue-500/20',
   prayer: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-  break: 'text-white/40 bg-white/5 border-white/10',
-  other: 'text-white/60 bg-white/5 border-white/10',
+  break:  'text-white/40 bg-white/5 border-white/10',
+  other:  'text-white/60 bg-white/5 border-white/10',
+  sports: 'text-red-400 bg-red-500/10 border-red-500/20',
 }
 
 export function ScheduleToday() {
