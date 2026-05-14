@@ -7,8 +7,17 @@ import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { HabitRow } from '@/components/habit-row'
 import { ProgressRing } from '@/components/progress-ring'
+import { QuickLinks } from '@/components/integrations/quick-links'
+import { SefariaWidget } from '@/components/integrations/sefaria-widget'
+import { TradingViewWidget } from '@/components/integrations/tradingview-widget'
+import { ConnectPlaceholder } from '@/components/integrations/connect-placeholder'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PomodoroTimer } from '@/components/pomodoro-timer'
+import { DomainJournal } from '@/components/domain-journal'
+import { PortfolioTracker } from '@/components/portfolio-tracker'
+import { MesillatQuote } from '@/components/mesillat-quote'
+import { DOMAIN_INTEGRATIONS } from '@/lib/domain-integrations'
 import type { Domain, Habit } from '@/types'
 
 interface Props {
@@ -18,7 +27,40 @@ interface Props {
   userId: string
 }
 
-export function DomainDetailClient({ domain, habits: initialHabits, completedIds, userId }: Props) {
+function DomainWidget({ slug }: { slug: string }) {
+  if (slug === 'torah') return <SefariaWidget />
+  if (slug === 'trading') return <TradingViewWidget />
+  if (slug === 'sports') {
+    return (
+      <ConnectPlaceholder
+        service="Garmin Connect"
+        icon="⌚"
+        description="חבר את הגארמין כדי לראות פעילות, צעדים וישנה"
+        url="https://connect.garmin.com"
+        color="#007CC3"
+      />
+    )
+  }
+  if (slug === 'music') {
+    return (
+      <ConnectPlaceholder
+        service="Spotify"
+        icon="🎵"
+        description="חבר את Spotify כדי לראות מה שאתה מאזין ולנהל פלייליסטים"
+        url="https://open.spotify.com"
+        color="#1DB954"
+      />
+    )
+  }
+  return null
+}
+
+export function DomainDetailClient({
+  domain,
+  habits: initialHabits,
+  completedIds,
+  userId,
+}: Props) {
   const router = useRouter()
   const { t, isRTL } = useLang()
   const [habits, setHabits] = useState(initialHabits)
@@ -29,6 +71,7 @@ export function DomainDetailClient({ domain, habits: initialHabits, completedIds
 
   const completedCount = habits.filter((h) => completedSet.has(h.id)).length
   const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0
+  const integration = DOMAIN_INTEGRATIONS[domain.slug]
 
   const addHabit = async () => {
     if (!newHabitName.trim() || saving) return
@@ -55,7 +98,7 @@ export function DomainDetailClient({ domain, habits: initialHabits, completedIds
   }
 
   return (
-    <div className="px-4 pt-12 space-y-6">
+    <div className="px-4 pt-12 space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -69,36 +112,65 @@ export function DomainDetailClient({ domain, habits: initialHabits, completedIds
             <span>{domain.icon}</span>
             <span>{isRTL ? domain.nameHe : domain.nameEn}</span>
           </h1>
+          <p className="text-white/40 text-xs mt-0.5">
+            {completedCount}/{habits.length} {t('habits')}
+          </p>
         </div>
         <ProgressRing percentage={pct} color={domain.color} size={48} strokeWidth={4}>
           <span className="text-[10px] font-bold text-white">{pct}%</span>
         </ProgressRing>
       </div>
 
-      {/* Stats bar */}
-      <div className="flex items-center gap-4 text-sm text-white/60">
-        <span>
-          {completedCount}/{habits.length} {t('habits')}
-        </span>
-      </div>
+      {/* Quick links */}
+      {integration?.links && integration.links.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-white/40 text-xs font-semibold uppercase tracking-wider">כלים</h2>
+          <QuickLinks links={integration.links} />
+        </div>
+      )}
 
-      {/* Habits list */}
+      {/* Domain widget */}
+      {integration?.widgetType && (
+        <div className="space-y-2">
+          <h2 className="text-white/40 text-xs font-semibold uppercase tracking-wider">
+            {integration.widgetType === 'sefaria' && 'לימוד יומי'}
+            {integration.widgetType === 'tradingview' && 'שוק ההון'}
+            {integration.widgetType === 'spotify' && 'מוזיקה'}
+            {integration.widgetType === 'garmin' && 'פעילות גופנית'}
+          </h2>
+          <DomainWidget slug={domain.slug} />
+        </div>
+      )}
+
+      {/* Mesillat quote — Torah domain only */}
+      {domain.slug === 'torah' && <MesillatQuote />}
+
+      {/* Portfolio tracker — trading domain only */}
+      {domain.slug === 'trading' && <PortfolioTracker />}
+
+      {/* Pomodoro timer */}
+      <PomodoroTimer />
+
+      {/* Daily Journal */}
+      <DomainJournal domainSlug={domain.slug} userId={userId} />
+
+      {/* Divider */}
+      <div className="border-t border-white/10" />
+
+      {/* Habits */}
       <div className="space-y-2">
+        <h2 className="text-white/40 text-xs font-semibold uppercase tracking-wider">
+          {t('habits')}
+        </h2>
         {habits.length === 0 && !adding && (
-          <div className="text-center py-10 text-white/30 text-sm">
-            {t('noHabitsYet')}
-          </div>
+          <div className="text-center py-8 text-white/30 text-sm">{t('noHabitsYet')}</div>
         )}
         {habits.map((habit) => (
-          <HabitRow
-            key={habit.id}
-            habit={habit}
-            isCompleted={completedSet.has(habit.id)}
-          />
+          <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
         ))}
       </div>
 
-      {/* Add habit form */}
+      {/* Add habit */}
       {adding ? (
         <div className="flex gap-2">
           <Input
@@ -117,7 +189,10 @@ export function DomainDetailClient({ domain, habits: initialHabits, completedIds
             {t('save')}
           </Button>
           <button
-            onClick={() => { setAdding(false); setNewHabitName('') }}
+            onClick={() => {
+              setAdding(false)
+              setNewHabitName('')
+            }}
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60"
           >
             <X size={18} />

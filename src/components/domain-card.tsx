@@ -19,7 +19,8 @@ export function DomainCard({ data }: DomainCardProps) {
   return (
     <button
       onClick={() => router.push(`/domain/${domain.slug}`)}
-      className={`w-full p-4 rounded-2xl bg-gradient-to-br ${domain.gradient} border border-white/10 text-start active:scale-95 transition-transform`}
+      className={`w-full p-4 rounded-2xl bg-gradient-to-br ${domain.gradient} border border-white/10 text-start active:scale-95 transition-all duration-200 hover:scale-[1.02]`}
+      style={{ boxShadow: `0 0 22px ${domain.glowColor}, 0 4px 16px rgba(0,0,0,0.4)` }}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">

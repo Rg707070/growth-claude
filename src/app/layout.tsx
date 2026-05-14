@@ -8,13 +8,19 @@ const geist = Geist({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'GROWTH',
   description: 'Personal optimization · הצמיחה האישית שלך',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'GROWTH',
+  },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#000000',
+  themeColor: '#0a1628',
 }
 
 export default function RootLayout({

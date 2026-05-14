@@ -98,3 +98,48 @@ create policy "Users can create logs"
   on public.habit_logs for insert with check (auth.uid() = user_id);
 create policy "Users can delete own logs"
   on public.habit_logs for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- JOURNAL ENTRIES
+-- ============================================================
+create table if not exists public.journal_entries (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  domain_slug text not null,
+  date date default current_date not null,
+  text text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, domain_slug, date)
+);
+
+alter table public.journal_entries enable row level security;
+create policy "Users can view own journal"
+  on public.journal_entries for select using (auth.uid() = user_id);
+create policy "Users can create journal entries"
+  on public.journal_entries for insert with check (auth.uid() = user_id);
+create policy "Users can update own journal"
+  on public.journal_entries for update using (auth.uid() = user_id);
+create policy "Users can delete own journal"
+  on public.journal_entries for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- NIGHT CHECK-INS
+-- ============================================================
+create table if not exists public.night_checkins (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  date date default current_date not null,
+  mood text,
+  productive text,
+  gratitude text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, date)
+);
+
+alter table public.night_checkins enable row level security;
+create policy "Users can view own checkins"
+  on public.night_checkins for select using (auth.uid() = user_id);
+create policy "Users can create checkins"
+  on public.night_checkins for insert with check (auth.uid() = user_id);
+create policy "Users can update own checkins"
+  on public.night_checkins for update using (auth.uid() = user_id);

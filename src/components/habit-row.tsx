@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(isCompleted)
+  const [swiped, setSwiped] = useState(false)
+  const touchStartX = useRef<number | null>(null)
   const domain = getDomainBySlug(habit.domain_slug)
 
   const toggle = async () => {
@@ -24,6 +26,9 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     setLoading(true)
     const nextDone = !done
     setDone(nextDone)
+
+    // Haptic feedback
+    navigator.vibrate?.(50)
 
     const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
@@ -54,11 +59,30 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     router.refresh()
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const diff = e.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(diff) > 80) {
+      setSwiped(true)
+      setTimeout(() => setSwiped(false), 400)
+      toggle()
+    }
+  }
+
   return (
     <button
       onClick={toggle}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       disabled={loading}
-      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-start disabled:opacity-50"
+      className={`w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-start disabled:opacity-50 ${
+        swiped ? 'animate-swipe-done' : ''
+      }`}
     >
       <div
         className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
@@ -78,9 +102,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           {habit.name}
         </p>
       </div>
-      <span className="text-xs text-white/40 flex-shrink-0">
-        +{habit.xp_reward} XP
-      </span>
+      <span className="text-xs text-white/40 flex-shrink-0">+{habit.xp_reward} XP</span>
     </button>
   )
 }

@@ -1,0 +1,25 @@
+{
+  "name": "GROWTH – הצמיחה האישית",
+  "short_name": "GROWTH",
+  "description": "Personal optimization app – Atomic Habits + Mesillat Yesharim",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle", "education"]
+}

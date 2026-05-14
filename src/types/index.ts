@@ -7,6 +7,7 @@ export interface Domain {
   icon: string
   color: string
   gradient: string
+  glowColor: string
 }
 
 export interface Habit {
