@@ -143,3 +143,27 @@ create policy "Users can create checkins"
   on public.night_checkins for insert with check (auth.uid() = user_id);
 create policy "Users can update own checkins"
   on public.night_checkins for update using (auth.uid() = user_id);
+
+-- ============================================================
+-- USER SCHEDULE (editable weekly timetable)
+-- ============================================================
+create table if not exists public.user_schedule (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  day_of_week integer not null check (day_of_week between 0 and 6),
+  time text not null,
+  label text not null,
+  type text not null default 'other',
+  sort_order integer not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.user_schedule enable row level security;
+create policy "Users can view own schedule"
+  on public.user_schedule for select using (auth.uid() = user_id);
+create policy "Users can create schedule items"
+  on public.user_schedule for insert with check (auth.uid() = user_id);
+create policy "Users can update own schedule"
+  on public.user_schedule for update using (auth.uid() = user_id);
+create policy "Users can delete own schedule"
+  on public.user_schedule for delete using (auth.uid() = user_id);
