@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { LangProvider } from '@/lib/lang'
+import { ThemeProvider } from '@/lib/theme'
 
 const geist = Geist({ subsets: ['latin'] })
 
@@ -31,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className="dark">
       <body className={`${geist.className} antialiased min-h-screen bg-background`}>
-        <LangProvider>{children}</LangProvider>
+        <ThemeProvider><LangProvider>{children}</LangProvider></ThemeProvider>
       </body>
     </html>
   )

@@ -119,6 +119,52 @@
   --sidebar-ring: oklch(0.65 0.15 210);
 }
 
+/* ── LIGHT OCEAN THEME ── */
+html.light {
+  --background: oklch(0.94 0.018 210);
+  --foreground: oklch(0.12 0.04 240);
+  --card: oklch(0.98 0.008 210);
+  --card-foreground: oklch(0.12 0.04 240);
+  --primary: oklch(0.50 0.18 205);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.88 0.025 220);
+  --secondary-foreground: oklch(0.2 0.04 230);
+  --muted: oklch(0.90 0.02 220);
+  --muted-foreground: oklch(0.45 0.06 225);
+  --border: oklch(0.80 0.03 220);
+  --input: oklch(0.85 0.025 220);
+  --ring: oklch(0.50 0.18 205);
+}
+
+/* Light mode — override hardcoded Tailwind white/dark utilities */
+html.light body { background: var(--background); color: var(--foreground); }
+
+html.light .text-white        { color: oklch(0.10 0.04 240) !important; }
+html.light .text-white\/85    { color: oklch(0.15 0.04 240 / 0.9) !important; }
+html.light .text-white\/80    { color: oklch(0.15 0.04 240 / 0.85) !important; }
+html.light .text-white\/70    { color: oklch(0.15 0.04 240 / 0.75) !important; }
+html.light .text-white\/60    { color: oklch(0.15 0.04 240 / 0.65) !important; }
+html.light .text-white\/50    { color: oklch(0.15 0.04 240 / 0.55) !important; }
+html.light .text-white\/40    { color: oklch(0.15 0.04 240 / 0.45) !important; }
+html.light .text-white\/30    { color: oklch(0.15 0.04 240 / 0.35) !important; }
+html.light .text-white\/25    { color: oklch(0.15 0.04 240 / 0.28) !important; }
+html.light .text-white\/20    { color: oklch(0.15 0.04 240 / 0.22) !important; }
+
+html.light .bg-white\/5       { background-color: oklch(0.15 0.04 240 / 0.06) !important; }
+html.light .bg-white\/8       { background-color: oklch(0.15 0.04 240 / 0.09) !important; }
+html.light .bg-white\/10      { background-color: oklch(0.15 0.04 240 / 0.10) !important; }
+html.light .bg-white\/15      { background-color: oklch(0.15 0.04 240 / 0.14) !important; }
+html.light .bg-white\/3       { background-color: oklch(0.15 0.04 240 / 0.04) !important; }
+
+html.light .border-white\/10  { border-color: oklch(0.15 0.04 240 / 0.15) !important; }
+html.light .border-white\/8   { border-color: oklch(0.15 0.04 240 / 0.12) !important; }
+html.light .border-white\/5   { border-color: oklch(0.15 0.04 240 / 0.08) !important; }
+html.light .border-white\/20  { border-color: oklch(0.15 0.04 240 / 0.22) !important; }
+
+html.light nav                { background: oklch(0.97 0.012 210 / 0.92) !important; border-color: oklch(0.80 0.03 220) !important; }
+html.light .bg-background     { background: var(--background) !important; }
+html.light \[oklch\(0\.08.*\)\] { background: var(--card) !important; }
+
 /* Time-of-day background classes */
 .bg-dawn    { background: radial-gradient(ellipse at top, oklch(0.12 0.06 270) 0%, oklch(0.08 0.035 240) 70%) !important; }
 .bg-morning { background: oklch(0.08 0.035 240) !important; }
