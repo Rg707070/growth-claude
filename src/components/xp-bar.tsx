@@ -13,29 +13,49 @@ export function XPBar({ xp }: XPBarProps) {
   const progress = getXpProgress(xp)
   const xpToNext = level.maxXp === Infinity ? null : level.maxXp - xp
 
+  const levelEmojis = ['', '👁️', '⚡', '✨', '🌿', '💧', '❤️', '🕊️', '🌟', '👑']
+  const emoji = levelEmojis[level.level] ?? '✨'
+
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-sm">
+    <div className="space-y-2">
+      {/* Level header */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-yellow-400 font-bold">
-            {t('level')} {level.level}
-          </span>
-          <span className="text-white/60">
-            {isRTL ? level.nameHe : level.nameEn}
-          </span>
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-base"
+            style={{ background: 'oklch(0.75 0.17 205 / 18%)', border: '1px solid oklch(0.75 0.17 205 / 25%)' }}
+          >
+            {emoji}
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm leading-tight">
+              {isRTL ? level.nameHe : level.nameEn}
+            </p>
+            <p className="text-white/40 text-[10px]">
+              {t('level')} {level.level}
+            </p>
+          </div>
         </div>
-        <span className="text-white/50 text-xs">
-          {xp} {t('xp')}
-        </span>
+        <div className="text-end">
+          <p className="text-white font-bold text-sm">{xp.toLocaleString()}</p>
+          <p className="text-white/40 text-[10px]">{t('xp')}</p>
+        </div>
       </div>
-      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+
+      {/* Progress bar */}
+      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: 'oklch(0.75 0.17 205 / 12%)' }}>
         <div
-          className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-700"
-          style={{ width: `${progress}%` }}
+          className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${progress}%`,
+            background: 'linear-gradient(90deg, oklch(0.65 0.15 210), oklch(0.75 0.17 205))',
+            boxShadow: '0 0 8px oklch(0.75 0.17 205 / 60%)',
+          }}
         />
       </div>
+
       {xpToNext !== null && (
-        <p className="text-xs text-white/40">
+        <p className="text-[10px] text-white/35">
           {xpToNext} {t('xp')} {t('nextLevel')}
         </p>
       )}

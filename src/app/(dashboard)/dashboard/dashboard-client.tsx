@@ -73,39 +73,53 @@ export function DashboardClient({
   return (
     <TimeBackground>
       <div className="px-4 pt-12 pb-32 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-white/50 text-sm mb-1">
-              {new Date().toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
-            </p>
-            <h1 className="text-xl font-bold text-white">{greeting}</h1>
-          </div>
-          <LangToggle />
-        </div>
+        {/* Header hero card */}
+        <div
+          className="rounded-3xl p-5 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, oklch(0.16 0.07 228), oklch(0.11 0.05 240))',
+            border: '1px solid oklch(0.75 0.17 205 / 18%)',
+            boxShadow: '0 0 40px oklch(0.75 0.17 205 / 12%), 0 8px 32px rgba(0,0,0,0.4)',
+          }}
+        >
+          {/* Glow blob */}
+          <div
+            className="absolute -top-8 -right-8 w-32 h-32 rounded-full blur-3xl pointer-events-none"
+            style={{ background: 'oklch(0.75 0.17 205 / 18%)' }}
+          />
 
-        {/* Streak Badge */}
-        {profile.current_streak > 0 && (
-          <div>
-            <StreakBadge streak={profile.current_streak} />
+          <div className="flex items-start justify-between mb-4 relative">
+            <div>
+              <p className="text-white/45 text-xs font-medium mb-1">
+                {new Date().toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+              </p>
+              <h1 className="text-xl font-black text-white leading-tight">{greeting}</h1>
+            </div>
+            <LangToggle />
           </div>
-        )}
 
-        {/* XP Bar */}
-        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
           <XPBar xp={profile.xp} />
-          {totalXpToday > 0 && (
-            <p className="text-xs text-emerald-400 mt-2">
-              +{totalXpToday} {t('xp')} {isRTL ? 'היום' : 'today'}
-            </p>
-          )}
+
+          <div className="flex items-center justify-between mt-3">
+            {totalXpToday > 0 && (
+              <span
+                className="text-xs font-bold px-2 py-0.5 rounded-full"
+                style={{ background: 'oklch(0.55 0.18 155 / 20%)', color: 'oklch(0.70 0.16 155)' }}
+              >
+                +{totalXpToday} {t('xp')} {isRTL ? 'היום' : 'today'}
+              </span>
+            )}
+            {profile.current_streak > 0 && (
+              <StreakBadge streak={profile.current_streak} />
+            )}
+          </div>
         </div>
 
-        {/* Weekly XP Chart */}
+        {/* Weekly XP chart */}
         <WeeklyChart days={weeklyXP} />
 
         {/* Weekly Challenge */}
