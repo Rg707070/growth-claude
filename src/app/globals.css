@@ -219,6 +219,15 @@ html.light .border-white\/5   { border-color: oklch(0.15 0.04 145 / 0.08) !impor
 html.light .border-white\/20  { border-color: oklch(0.15 0.04 145 / 0.22) !important; }
 
 html.light nav                { background: oklch(0.99 0.005 145 / 0.92) !important; border-color: oklch(0.83 0.028 145) !important; }
+
+/* Light mode — emerald-300/400 are too light on white, darken them */
+html.light .text-emerald-300  { color: oklch(0.40 0.18 145) !important; }
+html.light .text-emerald-400  { color: oklch(0.42 0.18 145) !important; }
+html.light .text-emerald-300\/70 { color: oklch(0.40 0.18 145 / 0.75) !important; }
+html.light .text-white\/85    { color: oklch(0.12 0.04 145 / 0.9) !important; }
+html.light .text-white\/90    { color: oklch(0.10 0.04 145 / 0.95) !important; }
+html.light .text-white\/45    { color: oklch(0.15 0.04 145 / 0.50) !important; }
+html.light .text-white\/35    { color: oklch(0.15 0.04 145 / 0.40) !important; }
 html.light .bg-background     { background: var(--background) !important; }
 
 /* In light mode, page backgrounds become clean white/light-green */

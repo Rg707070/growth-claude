@@ -20,6 +20,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
+    const version = localStorage.getItem('growth-theme-v')
+    if (version !== '2') {
+      localStorage.setItem('growth-theme', 'light')
+      localStorage.setItem('growth-theme-v', '2')
+    }
     const saved = localStorage.getItem('growth-theme') as Theme | null
     const initial = saved ?? 'light'
     setTheme(initial)
