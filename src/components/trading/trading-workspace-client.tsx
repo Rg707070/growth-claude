@@ -11,9 +11,10 @@ import { TradeEntryForm } from './trade-entry-form'
 import { JournalTab } from './journal-tab'
 import { WatchlistTab } from './watchlist-tab'
 import { CapitalModal } from './capital-modal'
+import { PortfolioTracker } from '@/components/portfolio-tracker'
 import type { Trade, TradingAccount, WatchlistItem } from '@/types/trading'
 
-type Tab = 'dashboard' | 'journal' | 'watchlist'
+type Tab = 'dashboard' | 'journal' | 'watchlist' | 'portfolio'
 
 interface Props {
   userId: string
@@ -42,9 +43,10 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
   }
 
   const tabs: { key: Tab; icon: typeof LayoutDashboard; labelHe: string; labelEn: string }[] = [
-    { key: 'dashboard', icon: LayoutDashboard, labelHe: 'מסחר', labelEn: 'Trade' },
-    { key: 'journal', icon: BookText, labelHe: 'יומן', labelEn: 'Journal' },
-    { key: 'watchlist', icon: Eye, labelHe: 'מעקב', labelEn: 'Watch' },
+    { key: 'dashboard',  icon: LayoutDashboard, labelHe: 'מסחר',       labelEn: 'Trade'     },
+    { key: 'journal',    icon: BookText,         labelHe: 'יומן',       labelEn: 'Journal'   },
+    { key: 'watchlist',  icon: Eye,              labelHe: 'מעקב',       labelEn: 'Watch'     },
+    { key: 'portfolio',  icon: SettingsIcon,     labelHe: 'תיק',        labelEn: 'Portfolio' },
   ]
 
   const hasEquity = stats.equity > 0
@@ -136,6 +138,7 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
             {tab === 'watchlist' && (
               <WatchlistTab userId={userId} items={watchlist} onPickSymbol={pickSymbol} />
             )}
+            {tab === 'portfolio' && <PortfolioTracker />}
           </div>
         </div>
       </div>
@@ -174,6 +177,7 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
         {tab === 'watchlist' && (
           <WatchlistTab userId={userId} items={watchlist} onPickSymbol={pickSymbol} />
         )}
+        {tab === 'portfolio' && <PortfolioTracker />}
       </div>
 
       {showCapital && (

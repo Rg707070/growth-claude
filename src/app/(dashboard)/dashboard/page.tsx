@@ -68,6 +68,50 @@ export default async function DashboardPage() {
     }
   })
 
+  // Weekly XP — sum xp_reward for each completed habit this week
+  const habitXpMap = new Map(habits.map((h) => [h.id, h.xp_reward]))
+  const weekXP = weekLogs.reduce((sum, log) => sum + (habitXpMap.get(log.habit_id) ?? 0), 0)
+
+  // Weekly challenge progress — computed per challenge type
+  const CHALLENGE_TARGETS = [5, 7, 7, 8, 5]
+  const weekNum = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000))
+  const challengeIndex = weekNum % CHALLENGE_TARGETS.length
+
+  // Build per-day habit sets for this week
+  const logsByDay: Record<string, Set<string>> = {}
+  for (const log of weekLogs) {
+    if (!logsByDay[log.completed_at]) logsByDay[log.completed_at] = new Set()
+    logsByDay[log.completed_at].add(log.habit_id)
+  }
+
+  let challengeProgress = 0
+  if (challengeIndex === 0) {
+    // Days with ≥3 habits completed
+    challengeProgress = Object.values(logsByDay).filter((s) => s.size >= 3).length
+  } else if (challengeIndex === 1) {
+    // Days where ALL sports habits were completed
+    const sportsIds = habits.filter((h) => h.domain_slug === 'sports').map((h) => h.id)
+    if (sportsIds.length === 0) {
+      challengeProgress = 0
+    } else {
+      challengeProgress = Object.values(logsByDay).filter((s) =>
+        sportsIds.every((id) => s.has(id))
+      ).length
+    }
+  } else if (challengeIndex === 2) {
+    // Days with at least one torah habit
+    const torahIds = new Set(habits.filter((h) => h.domain_slug === 'torah').map((h) => h.id))
+    challengeProgress = Object.values(logsByDay).filter((s) =>
+      [...s].some((id) => torahIds.has(id))
+    ).length
+  } else if (challengeIndex === 3) {
+    // Number of domains with at least 1 habit
+    challengeProgress = new Set(habits.map((h) => h.domain_slug)).size
+  } else {
+    // Current streak (capped at target)
+    challengeProgress = Math.min(profile.current_streak, CHALLENGE_TARGETS[4])
+  }
+
   return (
     <DashboardClient
       profile={profile}
@@ -75,6 +119,8 @@ export default async function DashboardPage() {
       completedIds={[...completedIds]}
       domainProgress={domainProgress}
       weeklyActivity={weeklyActivity}
+      weekXP={weekXP}
+      challengeProgress={challengeProgress}
     />
   )
 }

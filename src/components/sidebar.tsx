@@ -54,6 +54,7 @@ export function Sidebar({ profile }: SidebarProps) {
   const [selectedSlug, setSelectedSlug] = useState('')
   const [habitName, setHabitName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const level = getLevel(profile.xp)
   const displayName = profile.full_name?.split(' ')[0] ?? (isRTL ? 'משתמש' : 'User')
@@ -63,15 +64,22 @@ export function Sidebar({ profile }: SidebarProps) {
     setStep('domain')
     setSelectedSlug('')
     setHabitName('')
+    setSaveError(null)
   }
 
   const saveHabit = async () => {
     if (!habitName.trim() || !selectedSlug) return
     setSaving(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('habits').insert({
+    setSaveError(null)
+    try {
+      const supabase = createClient()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        setSaveError(isRTL ? 'שגיאת אימות — התחבר מחדש' : 'Auth error — please log in again')
+        setSaving(false)
+        return
+      }
+      const { error } = await supabase.from('habits').insert({
         user_id: user.id,
         domain_slug: selectedSlug,
         name: habitName.trim(),
@@ -79,10 +87,18 @@ export function Sidebar({ profile }: SidebarProps) {
         xp_reward: 10,
         is_active: true,
       })
+      if (error) {
+        setSaveError(isRTL ? 'שגיאה בשמירה — נסה שוב' : 'Save failed — try again')
+        setSaving(false)
+        return
+      }
+      setSaving(false)
+      resetAdd()
+      router.refresh()
+    } catch {
+      setSaveError(isRTL ? 'שגיאה — נסה שוב' : 'Error — try again')
+      setSaving(false)
     }
-    setSaving(false)
-    resetAdd()
-    router.refresh()
   }
 
   const selectedDomain = DOMAINS.find((d) => d.slug === selectedSlug)
@@ -247,6 +263,9 @@ export function Sidebar({ profile }: SidebarProps) {
                   className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
+                {saveError && (
+                  <p className="text-red-400 text-xs text-center">{saveError}</p>
+                )}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setStep('domain')}

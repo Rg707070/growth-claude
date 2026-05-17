@@ -66,6 +66,7 @@ export function DomainDetailClient({
   const [adding, setAdding] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const completedSet = new Set(completedIds)
 
   const completedCount = habits.filter((h) => completedSet.has(h.id)).length
@@ -75,25 +76,35 @@ export function DomainDetailClient({
   const addHabit = async () => {
     if (!newHabitName.trim() || saving) return
     setSaving(true)
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('habits')
-      .insert({
-        user_id: userId,
-        domain_slug: domain.slug,
-        name: newHabitName.trim(),
-        xp_reward: 10,
-        frequency: 'daily',
-      })
-      .select()
-      .single()
+    setSaveError(null)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('habits')
+        .insert({
+          user_id: userId,
+          domain_slug: domain.slug,
+          name: newHabitName.trim(),
+          xp_reward: 10,
+          frequency: 'daily',
+        })
+        .select()
+        .single()
 
-    if (!error && data) {
+      if (error || !data) {
+        setSaveError(isRTL ? 'שגיאה בשמירה — נסה שוב' : 'Save failed — try again')
+        setSaving(false)
+        return
+      }
       setHabits((prev) => [...prev, data as Habit])
       setNewHabitName('')
       setAdding(false)
+      setSaving(false)
+      router.refresh()
+    } catch {
+      setSaveError(isRTL ? 'שגיאה — נסה שוב' : 'Error — try again')
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   return (
@@ -168,31 +179,37 @@ export function DomainDetailClient({
 
       {/* Add habit */}
       {adding ? (
-        <div className="flex gap-2">
-          <Input
-            autoFocus
-            value={newHabitName}
-            onChange={(e) => setNewHabitName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addHabit()}
-            placeholder={t('habitName')}
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl"
-          />
-          <Button
-            onClick={addHabit}
-            disabled={saving || !newHabitName.trim()}
-            className="rounded-xl bg-white text-black px-4 flex-shrink-0"
-          >
-            {t('save')}
-          </Button>
-          <button
-            onClick={() => {
-              setAdding(false)
-              setNewHabitName('')
-            }}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60"
-          >
-            <X size={18} />
-          </button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              autoFocus
+              value={newHabitName}
+              onChange={(e) => setNewHabitName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addHabit()}
+              placeholder={t('habitName')}
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl"
+            />
+            <Button
+              onClick={addHabit}
+              disabled={saving || !newHabitName.trim()}
+              className="rounded-xl bg-white text-black px-4 flex-shrink-0"
+            >
+              {t('save')}
+            </Button>
+            <button
+              onClick={() => {
+                setAdding(false)
+                setNewHabitName('')
+                setSaveError(null)
+              }}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          {saveError && (
+            <p className="text-red-400 text-xs text-center">{saveError}</p>
+          )}
         </div>
       ) : (
         <button

@@ -21,6 +21,8 @@ interface DashboardClientProps {
   completedIds: string[]
   domainProgress: DomainProgress[]
   weeklyActivity: { date: string; count: number }[]
+  weekXP: number
+  challengeProgress: number
 }
 
 function getGreeting(nameHe: string, nameEn: string, name: string | null, isRTL: boolean) {
@@ -43,6 +45,7 @@ export function DashboardClient({
   completedIds,
   domainProgress,
   weeklyActivity,
+  challengeProgress,
 }: DashboardClientProps) {
   const { t, isRTL } = useLang()
   const completedSet = new Set(completedIds)
@@ -52,7 +55,6 @@ export function DashboardClient({
 
   const totalToday = todayHabits.length
   const completedToday = todayHabits.filter((h) => completedSet.has(h.id)).length
-  const challengeProgress = completedToday
 
   const greeting = getGreeting('בוקר טוב', 'Good morning', profile.full_name, isRTL)
 
@@ -107,7 +109,7 @@ export function DashboardClient({
         {/* Mobile: single column flow */}
         <div className="md:hidden space-y-6">
           <WeeklyChart days={weeklyActivity} />
-          <WeeklyChallenge currentProgress={challengeProgress} />
+          <WeeklyChallenge challengeProgress={challengeProgress} />
 
           <div>
             <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -192,7 +194,7 @@ export function DashboardClient({
           {/* Side column (1/3) */}
           <div className="md:col-span-1 space-y-6">
             <WeeklyChart days={weeklyActivity} />
-            <WeeklyChallenge currentProgress={challengeProgress} />
+            <WeeklyChallenge challengeProgress={challengeProgress} />
             <ScheduleToday />
             <DailyPlan
               habits={habits}

@@ -24,6 +24,7 @@ interface ProgressClientProps {
   profile: Profile
   heatMapDays: { date: string; pct: number }[]
   weeklyActivity: { date: string; count: number }[]
+  weekXP: number
   achievementData: AchievementData
   weekSummary: WeekSummary
 }
@@ -32,6 +33,7 @@ export function ProgressClient({
   profile,
   heatMapDays,
   weeklyActivity,
+  weekXP,
   achievementData,
   weekSummary,
 }: ProgressClientProps) {
@@ -78,7 +80,7 @@ export function ProgressClient({
 
       {/* AI Insights */}
       <AIInsights
-        weekXP={0}
+        weekXP={weekXP}
         streak={weekSummary.streak}
         topDomain={weekSummary.bestDomain}
         completionPct={weekSummary.completionPct}

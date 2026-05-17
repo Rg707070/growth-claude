@@ -24,39 +24,39 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const toggle = async () => {
     if (loading) return
     setLoading(true)
-    const nextDone = !done
-    setDone(nextDone)
-
-    // Haptic feedback
+    const prevDone = done
+    setDone(!done)
     navigator.vibrate?.(50)
 
-    const supabase = createClient()
-    const today = new Date().toISOString().split('T')[0]
+    try {
+      const supabase = createClient()
+      const today = new Date().toISOString().split('T')[0]
 
-    if (done) {
-      await supabase
-        .from('habit_logs')
-        .delete()
-        .match({ habit_id: habit.id, completed_at: today })
-      await supabase.rpc('update_profile_xp', {
-        uid: habit.user_id,
-        xp_delta: -habit.xp_reward,
-      })
-    } else {
-      await supabase.from('habit_logs').upsert({
-        habit_id: habit.id,
-        completed_at: today,
-        user_id: habit.user_id,
-      })
-      await supabase.rpc('update_profile_xp', {
-        uid: habit.user_id,
-        xp_delta: habit.xp_reward,
-      })
+      if (prevDone) {
+        const { error } = await supabase
+          .from('habit_logs')
+          .delete()
+          .match({ habit_id: habit.id, completed_at: today })
+        if (error) throw error
+        await supabase.rpc('update_profile_xp', { uid: habit.user_id, xp_delta: -habit.xp_reward })
+      } else {
+        const { error } = await supabase.from('habit_logs').upsert({
+          habit_id: habit.id,
+          completed_at: today,
+          user_id: habit.user_id,
+        })
+        if (error) throw error
+        await supabase.rpc('update_profile_xp', { uid: habit.user_id, xp_delta: habit.xp_reward })
+      }
+
+      supabase.rpc('compute_and_update_streak', { uid: habit.user_id })
+      onToggle?.()
+      router.refresh()
+    } catch {
+      setDone(prevDone)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
-    onToggle?.()
-    router.refresh()
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {

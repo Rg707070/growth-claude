@@ -85,11 +85,16 @@ export default async function ProgressPage() {
   const completionPct = Math.round((uniqueDaysWithLogs / 7) * 100)
   const habitsCompletedThisWeek = weekLogs.length
 
+  // Weekly XP — sum xp_reward for each completed habit this week
+  const habitXpMap = new Map(habits.map((h) => [h.id, h.xp_reward]))
+  const weekXP = weekLogs.reduce((sum, log) => sum + (habitXpMap.get(log.habit_id) ?? 0), 0)
+
   return (
     <ProgressClient
       profile={profile}
       heatMapDays={heatMapDays}
       weeklyActivity={weeklyActivity}
+      weekXP={weekXP}
       achievementData={{
         streak: profile.current_streak,
         habitCount: habits.length,
