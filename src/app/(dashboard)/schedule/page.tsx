@@ -7,7 +7,9 @@ export default async function SchedulePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: reflections }, { data: scheduleRows }] = await Promise.all([
+  const todayDate = new Date().toISOString().split('T')[0]
+
+  const [{ data: reflections }, { data: scheduleRows }, { data: checkRows }] = await Promise.all([
     supabase
       .from('schedule_reflections')
       .select('date, notes')
@@ -19,9 +21,13 @@ export default async function SchedulePage() {
       .select('day_of_week, time, label, type')
       .eq('user_id', user.id)
       .order('time'),
+    supabase
+      .from('activity_checks')
+      .select('time, note')
+      .eq('user_id', user.id)
+      .eq('date', todayDate),
   ])
 
-  // Group user-added items by day
   const userItems: Record<number, { time: string; label: string; type: string }[]> = {}
   for (const row of scheduleRows ?? []) {
     const d = row.day_of_week as number
@@ -34,6 +40,7 @@ export default async function SchedulePage() {
       userId={user.id}
       reflections={reflections ?? []}
       userItems={userItems}
+      todayChecks={(checkRows ?? []).map((r) => ({ time: r.time, note: r.note }))}
     />
   )
 }

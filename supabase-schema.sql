@@ -185,3 +185,22 @@ create policy "Users manage own reflections"
   on public.schedule_reflections for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ============================================================
+-- ACTIVITY CHECKS (per-item ✓ + note per day)
+-- ============================================================
+create table if not exists public.activity_checks (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  date date not null,
+  time text not null,
+  note text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, date, time)
+);
+
+alter table public.activity_checks enable row level security;
+create policy "Users manage own activity checks"
+  on public.activity_checks for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
