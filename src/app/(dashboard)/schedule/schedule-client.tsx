@@ -3,15 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { WEEKLY_SCHEDULE, DAY_NAMES_HE } from '@/lib/schedule'
-import type { ScheduleItem } from '@/lib/schedule'
-import { Check, MessageSquare } from 'lucide-react'
+import { DAY_NAMES_HE } from '@/lib/schedule'
+import { Check, MessageSquare, Pencil, Trash2, X } from 'lucide-react'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const MORNING_TIMES = new Set(['05:45', '06:00', '06:45', '07:25', '07:35', '07:40', '08:00'])
-const MORNING_ITEMS = (WEEKLY_SCHEDULE[0] ?? []).filter((i) => MORNING_TIMES.has(i.time))
-const RECURRING     = new Set(['08:30', '11:50', '12:00', '13:00', '15:30', '18:45'])
-
+// ─── Design ───────────────────────────────────────────────────────────────────
 const COL: Record<string, { bg: string; border: string; text: string }> = {
   torah:  { bg: 'rgba(251,191,36,0.08)',  border: 'rgba(251,191,36,0.25)',  text: '#fde68a' },
   shiur:  { bg: 'rgba(56,189,248,0.08)',  border: 'rgba(56,189,248,0.25)',  text: '#bae6fd' },
@@ -22,9 +17,30 @@ const COL: Record<string, { bg: string; border: string; text: string }> = {
 }
 const col = (type: string) => COL[type] ?? COL.other
 
+const TYPE_OPTIONS = [
+  { value: 'torah',  label: 'תורה'  },
+  { value: 'shiur',  label: 'שיעור' },
+  { value: 'prayer', label: 'תפילה' },
+  { value: 'sports', label: 'ספורט' },
+  { value: 'break',  label: 'הפסקה' },
+  { value: 'other',  label: 'אחר'   },
+]
+
 function toMin(t: string) {
   const [h, m] = t.split(':').map(Number)
   return h * 60 + m
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface ScheduleItem { id: string; time: string; label: string; type: string }
+interface Reflection   { date: string; notes: string }
+interface CheckRow     { time: string; note: string | null }
+
+interface Props {
+  userId:      string
+  reflections: Reflection[]
+  userItems:   Record<number, ScheduleItem[]>
+  todayChecks: CheckRow[]
 }
 
 // ─── ActivityCard ─────────────────────────────────────────────────────────────
@@ -34,57 +50,123 @@ interface CardProps {
   note:       string
   isCurrent:  boolean
   isPast:     boolean
-  isRecurr:   boolean
-  isMorning:  boolean
   showCheck:  boolean
   onToggle:   () => void
   onNote:     (text: string) => void
+  onSave:     (id: string, time: string, label: string, type: string) => Promise<void>
+  onDelete:   (id: string) => Promise<void>
 }
 
-function ActivityCard({ item, checked, note, isCurrent, isPast, isRecurr, isMorning, showCheck, onToggle, onNote }: CardProps) {
-  const [noteOpen, setNoteOpen] = useState(!!note)
-  const [noteText, setNoteText] = useState(note)
-  const c = col(item.type)
+function ActivityCard({ item, checked, note, isCurrent, isPast, showCheck, onToggle, onNote, onSave, onDelete }: CardProps) {
+  const [noteOpen, setNoteOpen]   = useState(!!note)
+  const [noteText, setNoteText]   = useState(note)
+  const [editMode, setEditMode]   = useState(false)
+  const [editTime, setEditTime]   = useState(item.time)
+  const [editLabel, setEditLabel] = useState(item.label)
+  const [editType, setEditType]   = useState(item.type)
+  const [busy, setBusy]           = useState(false)
 
-  const opacity = checked
-    ? 0.45
-    : isMorning || isRecurr
-    ? 0.45
-    : isPast
-    ? 0.55
-    : 1
+  const c       = col(item.type)
+  const opacity = checked ? 0.45 : isPast ? 0.55 : 1
 
+  async function handleSave() {
+    if (!editLabel.trim() || !editTime) return
+    setBusy(true)
+    await onSave(item.id, editTime, editLabel.trim(), editType)
+    setBusy(false)
+    setEditMode(false)
+  }
+
+  async function handleDelete() {
+    setBusy(true)
+    await onDelete(item.id)
+  }
+
+  // ── Edit mode ──
+  if (editMode) {
+    return (
+      <div className="rounded-2xl border border-white/12 bg-white/[0.04] overflow-hidden animate-fade-in" dir="rtl">
+        <div className="p-3 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="time"
+              value={editTime}
+              onChange={(e) => setEditTime(e.target.value)}
+              className="w-24 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-2 py-1.5 focus:outline-none focus:border-cyan-400/30"
+            />
+            <input
+              value={editLabel}
+              onChange={(e) => setEditLabel(e.target.value)}
+              className="flex-1 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-1.5 focus:outline-none focus:border-cyan-400/30"
+            />
+          </div>
+          <select
+            value={editType}
+            onChange={(e) => setEditType(e.target.value)}
+            className="rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
+          >
+            {TYPE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={handleSave}
+              disabled={busy || !editLabel.trim()}
+              className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
+            >
+              {busy ? '...' : 'שמור'}
+            </button>
+            <button
+              onClick={() => { setEditMode(false); setEditLabel(item.label); setEditTime(item.time); setEditType(item.type) }}
+              className="px-3 py-1.5 text-white/25 text-sm"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={busy}
+              className="mr-auto p-1.5 text-red-400/50 hover:text-red-400/80 transition-colors disabled:opacity-30"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Normal mode ──
   return (
     <div
       className="rounded-2xl border overflow-hidden transition-all duration-200 animate-fade-in"
       style={{
-        background:   checked ? 'rgba(52,211,153,0.05)' : isCurrent ? c.bg.replace('0.08','0.16') : c.bg,
-        borderColor:  checked ? 'rgba(52,211,153,0.25)' : isCurrent ? c.border : c.border.replace('0.25','0.10'),
+        background:  checked ? 'rgba(52,211,153,0.05)' : isCurrent ? c.bg.replace('0.08', '0.16') : c.bg,
+        borderColor: checked ? 'rgba(52,211,153,0.25)'  : isCurrent ? c.border : c.border.replace('0.25', '0.10'),
         opacity,
-        boxShadow:    isCurrent ? `0 0 20px ${c.border.replace('0.25','0.15')}` : 'none',
+        boxShadow:   isCurrent ? `0 0 20px ${c.border.replace('0.25', '0.12')}` : 'none',
       }}
     >
-      {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-3" dir="rtl">
-        {/* Label + time */}
         <div className="flex-1 min-w-0">
           <p
             className="text-sm font-medium leading-snug"
-            style={{
-              color:          checked ? 'rgba(255,255,255,0.35)' : c.text,
-              textDecoration: checked ? 'line-through' : 'none',
-            }}
+            style={{ color: checked ? 'rgba(255,255,255,0.35)' : c.text, textDecoration: checked ? 'line-through' : 'none' }}
           >
             {item.label}
           </p>
           <p className="text-[10px] text-white/20 mt-0.5 font-mono">{item.time}</p>
         </div>
-
-        {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setEditMode(true)}
+            className="text-white/15 hover:text-white/40 transition-colors"
+          >
+            <Pencil size={12} />
+          </button>
           {showCheck && (
             <button
-              onClick={() => { setNoteOpen((v) => !v) }}
+              onClick={() => setNoteOpen((v) => !v)}
               className={`transition-colors ${noteOpen || note ? 'text-white/40' : 'text-white/15 hover:text-white/30'}`}
             >
               <MessageSquare size={13} />
@@ -94,9 +176,7 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, isRecurr, isMorn
             <button
               onClick={onToggle}
               className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                checked
-                  ? 'bg-emerald-400/20 border-emerald-400/50'
-                  : 'border-white/15 hover:border-white/30'
+                checked ? 'bg-emerald-400/20 border-emerald-400/50' : 'border-white/15 hover:border-white/30'
               }`}
             >
               {checked && <Check size={10} className="text-emerald-400" />}
@@ -105,7 +185,6 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, isRecurr, isMorn
         </div>
       </div>
 
-      {/* Note input */}
       {noteOpen && showCheck && (
         <div className="px-4 pb-3" dir="rtl">
           <input
@@ -121,39 +200,25 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, isRecurr, isMorn
   )
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Reflection  { date: string; notes: string }
-interface CheckRow    { time: string; note: string | null }
-interface UserItem    { time: string; label: string; type: string }
-
-interface Props {
-  userId:      string
-  reflections: Reflection[]
-  userItems:   Record<number, UserItem[]>
-  todayChecks: CheckRow[]
-}
-
+// ─── Main Component ───────────────────────────────────────────────────────────
 const DAYS = [0, 1, 2, 3, 4, 5]
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export function SchedulePageClient({ userId, reflections, userItems, todayChecks }: Props) {
   const todayDay  = new Date().getDay()
   const todayDate = new Date().toISOString().split('T')[0]
   const nowMin    = new Date().getHours() * 60 + new Date().getMinutes()
 
-  const [day, setDay]               = useState(todayDay < 6 ? todayDay : 0)
-  const [morningOpen, setMorningOpen] = useState(false)
-  const [reflOpen, setReflOpen]     = useState(false)
-  const [reflText, setReflText]     = useState(
-    reflections.find((r) => r.date === todayDate)?.notes ?? ''
-  )
-  const [saving, setSaving]         = useState(false)
+  const [day, setDay]           = useState(todayDay < 6 ? todayDay : 0)
+  const [reflOpen, setReflOpen] = useState(false)
+  const [reflText, setReflText] = useState(reflections.find((r) => r.date === todayDate)?.notes ?? '')
+  const [addOpen, setAddOpen]   = useState(false)
+  const [newTime, setNewTime]   = useState('')
+  const [newLabel, setNewLabel] = useState('')
+  const [newType, setNewType]   = useState('other')
+  const [saving, setSaving]     = useState(false)
 
-  // Optimistic checks state (only matters when viewing today)
-  const [checked, setChecked] = useState<Set<string>>(
-    new Set(todayChecks.map((c) => c.time))
-  )
-  const [notes, setNotes] = useState<Record<string, string>>(
+  const [checked, setChecked] = useState<Set<string>>(new Set(todayChecks.map((c) => c.time)))
+  const [notes, setNotes]     = useState<Record<string, string>>(
     Object.fromEntries(todayChecks.filter((c) => c.note).map((c) => [c.time, c.note!]))
   )
   const router = useRouter()
@@ -161,22 +226,44 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
   async function toggleCheck(time: string) {
     const sb = createClient()
     if (checked.has(time)) {
-      setChecked((prev) => { const n = new Set(prev); n.delete(time); return n })
-      await sb.from('activity_checks').delete()
-        .eq('user_id', userId).eq('date', todayDate).eq('time', time)
+      setChecked((p) => { const n = new Set(p); n.delete(time); return n })
+      await sb.from('activity_checks').delete().eq('user_id', userId).eq('date', todayDate).eq('time', time)
     } else {
-      setChecked((prev) => new Set([...prev, time]))
+      setChecked((p) => new Set([...p, time]))
       await sb.from('activity_checks').upsert({ user_id: userId, date: todayDate, time })
     }
   }
 
   async function saveNote(time: string, text: string) {
-    setNotes((prev) => ({ ...prev, [time]: text }))
+    setNotes((p) => ({ ...p, [time]: text }))
     const sb = createClient()
     await sb.from('activity_checks').upsert({ user_id: userId, date: todayDate, time, note: text || null })
-    if (!checked.has(time)) {
-      setChecked((prev) => new Set([...prev, time]))
-    }
+    if (!checked.has(time)) setChecked((p) => new Set([...p, time]))
+  }
+
+  async function saveEdit(id: string, time: string, label: string, type: string) {
+    const sb = createClient()
+    await sb.from('user_schedule').update({ time, label, type }).eq('id', id)
+    router.refresh()
+  }
+
+  async function deleteItem(id: string) {
+    const sb = createClient()
+    await sb.from('user_schedule').delete().eq('id', id)
+    router.refresh()
+  }
+
+  async function addItem() {
+    if (!newTime || !newLabel.trim()) return
+    setSaving(true)
+    const sb = createClient()
+    await sb.from('user_schedule').insert({ user_id: userId, day_of_week: day, time: newTime, label: newLabel.trim(), type: newType, sort_order: 0 })
+    setSaving(false)
+    setAddOpen(false)
+    setNewTime('')
+    setNewLabel('')
+    setNewType('other')
+    router.refresh()
   }
 
   async function saveRefl() {
@@ -189,17 +276,11 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
     router.refresh()
   }
 
-  const isToday   = day === todayDay
-  const baseItems = WEEKLY_SCHEDULE[day] ?? []
-  const extras    = (userItems[day] ?? []) as ScheduleItem[]
-  const dayItems  = [...baseItems, ...extras]
-    .filter((i) => !MORNING_TIMES.has(i.time))
-    .sort((a, b) => toMin(a.time) - toMin(b.time))
-
+  const isToday  = day === todayDay
+  const items    = (userItems[day] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
   const currentItem = isToday
-    ? [...dayItems].reverse().find((i) => toMin(i.time) <= nowMin) ?? null
+    ? [...items].reverse().find((i) => toMin(i.time) <= nowMin) ?? null
     : null
-
   const todaySaved = reflections.some((r) => r.date === todayDate)
 
   return (
@@ -209,15 +290,11 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
       <div className="px-4 mb-3" dir="rtl">
         <div className="flex gap-1">
           {DAYS.map((d) => (
-            <button
-              key={d}
-              onClick={() => setDay(d)}
+            <button key={d} onClick={() => setDay(d)}
               className={`flex-1 py-1.5 text-[11px] font-semibold rounded-xl transition-all ${
-                d === day
-                  ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/25'
-                  : d === todayDay
-                  ? 'bg-white/5 text-white/45 border border-white/10'
-                  : 'text-white/20'
+                d === day        ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/25' :
+                d === todayDay   ? 'bg-white/5 text-white/45 border border-white/10' :
+                                   'text-white/20'
               }`}
             >
               {DAY_NAMES_HE[d]}
@@ -229,61 +306,82 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
       {/* Current activity card */}
       {isToday && currentItem && (
         <div className="px-4 mb-3 animate-fade-in" dir="rtl">
-          <div
-            className="rounded-2xl p-4 border"
-            style={{
-              background:  col(currentItem.type).bg.replace('0.08', '0.16'),
-              borderColor: col(currentItem.type).border,
-              boxShadow:   `0 0 24px ${col(currentItem.type).border.replace('0.25', '0.10')}`,
-            }}
-          >
+          <div className="rounded-2xl p-4 border" style={{
+            background:  col(currentItem.type).bg.replace('0.08', '0.16'),
+            borderColor: col(currentItem.type).border,
+            boxShadow:   `0 0 24px ${col(currentItem.type).border.replace('0.25', '0.10')}`,
+          }}>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: col(currentItem.type).border }} />
               <span className="text-[10px] text-white/30 tracking-widest uppercase">עכשיו</span>
             </div>
-            <p className="text-[17px] font-semibold" style={{ color: col(currentItem.type).text }}>
-              {currentItem.label}
-            </p>
+            <p className="text-[17px] font-semibold" style={{ color: col(currentItem.type).text }}>{currentItem.label}</p>
             {(() => {
-              const idx  = dayItems.findIndex((i) => i.time === currentItem.time)
-              const next = dayItems[idx + 1]
-              return next ? (
-                <p className="text-[11px] text-white/30 mt-2">הבא · {next.label} · {next.time}</p>
-              ) : null
+              const idx  = items.findIndex((i) => i.time === currentItem.time)
+              const next = items[idx + 1]
+              return next ? <p className="text-[11px] text-white/30 mt-2">הבא · {next.label} · {next.time}</p> : null
             })()}
           </div>
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Top actions */}
       <div className="px-4 mb-4 flex justify-between items-center" dir="rtl">
-        <button
-          onClick={() => setReflOpen((v) => !v)}
+        <button onClick={() => setAddOpen((v) => !v)}
           className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
-            todaySaved
-              ? 'bg-cyan-400/10 text-cyan-300 border-cyan-400/20'
-              : 'bg-white/4 text-white/30 border-white/8 hover:text-white/50'
+            addOpen ? 'bg-cyan-400/10 text-cyan-300 border-cyan-400/20' : 'bg-white/4 text-white/30 border-white/8 hover:text-white/50'
+          }`}
+        >
+          {addOpen ? <X size={12} className="inline ml-1" /> : '+'} הוסף ללוז
+        </button>
+        <button onClick={() => setReflOpen((v) => !v)}
+          className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
+            todaySaved ? 'bg-cyan-400/10 text-cyan-300 border-cyan-400/20' : 'bg-white/4 text-white/30 border-white/8 hover:text-white/50'
           }`}
         >
           {todaySaved ? '✓ נרשם היום' : '+ מה היה היום'}
         </button>
       </div>
 
+      {/* Add item panel */}
+      {addOpen && (
+        <div className="px-4 mb-4 animate-fade-in" dir="rtl">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)}
+                className="w-24 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-2 py-1.5 focus:outline-none focus:border-cyan-400/30"
+              />
+              <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="שם הפעילות"
+                className="flex-1 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-1.5 focus:outline-none focus:border-cyan-400/30 placeholder:text-white/20"
+              />
+            </div>
+            <select value={newType} onChange={(e) => setNewType(e.target.value)}
+              className="rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
+            >
+              {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <div className="flex gap-2 mt-1">
+              <button onClick={addItem} disabled={saving || !newTime || !newLabel.trim()}
+                className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
+              >
+                {saving ? '...' : 'הוסף'}
+              </button>
+              <button onClick={() => setAddOpen(false)} className="px-3 py-1.5 text-white/25 text-sm">ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reflection panel */}
       {reflOpen && (
         <div className="px-4 mb-4 animate-fade-in" dir="rtl">
-          <textarea
-            value={reflText}
-            onChange={(e) => setReflText(e.target.value)}
+          <textarea value={reflText} onChange={(e) => setReflText(e.target.value)}
             placeholder="מה קרה בפועל? מה השתנה מהלוז?"
             className="w-full rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm p-3 resize-none focus:outline-none focus:border-cyan-400/30 placeholder:text-white/20 leading-relaxed"
-            rows={2}
-            autoFocus
+            rows={2} autoFocus
           />
           <div className="flex gap-2 mt-2">
-            <button
-              onClick={saveRefl}
-              disabled={saving || !reflText.trim()}
+            <button onClick={saveRefl} disabled={saving || !reflText.trim()}
               className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
             >
               {saving ? 'שומר...' : 'שמור'}
@@ -295,56 +393,29 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
 
       {/* Activity list */}
       <div className="px-4 flex flex-col gap-2">
-
-        {/* Morning routine — collapsed */}
-        <button
-          onClick={() => setMorningOpen((v) => !v)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-white/6 bg-white/[0.02] text-white/25 text-[11px] transition-colors hover:text-white/40"
-          dir="rtl"
-        >
-          <span>{morningOpen ? '▾' : '▸'}</span>
-          <span>שגרת בוקר</span>
-          <span className="text-white/15">05:45 – 08:00</span>
-        </button>
-
-        {morningOpen && MORNING_ITEMS.map((item) => (
-          <ActivityCard
-            key={item.time}
-            item={item}
-            checked={isToday && checked.has(item.time)}
-            note={notes[item.time] ?? ''}
-            isCurrent={false}
-            isPast={isToday && toMin(item.time) < nowMin}
-            isRecurr={false}
-            isMorning={true}
-            showCheck={isToday}
-            onToggle={() => toggleCheck(item.time)}
-            onNote={(t) => saveNote(item.time, t)}
-          />
-        ))}
-
-        {/* Day items */}
-        {dayItems.map((item) => {
-          const isCurrentItem = isToday && item === currentItem
-          const isPast        = isToday && toMin(item.time) < nowMin && !isCurrentItem
-
+        {items.map((item) => {
+          const isCurrent = isToday && item === currentItem
+          const isPast    = isToday && toMin(item.time) < nowMin && !isCurrent
           return (
             <ActivityCard
-              key={item.time + item.label}
+              key={item.id}
               item={item}
               checked={isToday && checked.has(item.time)}
               note={notes[item.time] ?? ''}
-              isCurrent={isCurrentItem}
+              isCurrent={isCurrent}
               isPast={isPast}
-              isRecurr={RECURRING.has(item.time)}
-              isMorning={false}
               showCheck={isToday}
               onToggle={() => toggleCheck(item.time)}
               onNote={(t) => saveNote(item.time, t)}
+              onSave={saveEdit}
+              onDelete={deleteItem}
             />
           )
         })}
 
+        {items.length === 0 && (
+          <p className="text-center text-white/20 text-sm py-8">אין פעילויות ביום זה</p>
+        )}
       </div>
     </div>
   )
