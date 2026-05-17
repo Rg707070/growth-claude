@@ -41,11 +41,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#ffffff' }}>
 
       {/* Green top banner */}
       <div className="relative flex flex-col items-center justify-end pb-10 pt-16 px-6 overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, var(--c-hero-start) 0%, var(--c-hero-end) 100%)', minHeight: '200px' }}>
+        style={{ background: 'linear-gradient(160deg, #166534 0%, #15803d 100%)', minHeight: '200px' }}>
         <div className="absolute top-[-40px] right-[-40px] w-48 h-48 rounded-full opacity-20" style={{ background: 'white' }} />
         <div className="absolute bottom-[-30px] left-[-20px] w-32 h-32 rounded-full opacity-10" style={{ background: 'white' }} />
 
@@ -66,12 +66,12 @@ export default function SignupPage() {
         <div className="w-full max-w-sm space-y-5">
           {/* Form card */}
           <div className="rounded-3xl p-6 space-y-4"
-            style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)', boxShadow: '0 4px 24px var(--c-shadow-lg)' }}>
-            <h2 className="font-bold text-lg text-center mb-1" style={{ color: 'var(--foreground)' }}>{t('signup')}</h2>
+            style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+            <h2 className="font-bold text-lg text-center mb-1" style={{ color: '#111827' }}>{t('signup')}</h2>
 
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>{t('fullName')}</label>
+                <label className="text-xs font-medium block" style={{ color: '#6b7280' }}>{t('fullName')}</label>
                 <input
                   type="text"
                   autoComplete="name"
@@ -80,14 +80,14 @@ export default function SignupPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="רותם"
                   className="w-full h-12 rounded-xl px-4 text-sm focus:outline-none transition-all"
-                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
-                  onFocus={(e) => (e.target.style.borderColor = 'oklch(0.55 0.20 145)')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--c-input-border)')}
+                  style={{ background: '#f9fafb', border: '1px solid #d1d5db', color: '#111827' }}
+                  onFocus={(e) => (e.target.style.borderColor = '#16a34a')}
+                  onBlur={(e) => (e.target.style.borderColor = '#d1d5db')}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>{t('email')}</label>
+                <label className="text-xs font-medium block" style={{ color: '#6b7280' }}>{t('email')}</label>
                 <input
                   type="email"
                   autoComplete="email"
@@ -96,14 +96,14 @@ export default function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   className="w-full h-12 rounded-xl px-4 text-sm focus:outline-none transition-all"
-                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
-                  onFocus={(e) => (e.target.style.borderColor = 'oklch(0.55 0.20 145)')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--c-input-border)')}
+                  style={{ background: '#f9fafb', border: '1px solid #d1d5db', color: '#111827' }}
+                  onFocus={(e) => (e.target.style.borderColor = '#16a34a')}
+                  onBlur={(e) => (e.target.style.borderColor = '#d1d5db')}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>{t('password')}</label>
+                <label className="text-xs font-medium block" style={{ color: '#6b7280' }}>{t('password')}</label>
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -113,14 +113,14 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full h-12 rounded-xl px-4 text-sm focus:outline-none transition-all"
-                  style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
-                  onFocus={(e) => (e.target.style.borderColor = 'oklch(0.55 0.20 145)')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--c-input-border)')}
+                  style={{ background: '#f9fafb', border: '1px solid #d1d5db', color: '#111827' }}
+                  onFocus={(e) => (e.target.style.borderColor = '#16a34a')}
+                  onBlur={(e) => (e.target.style.borderColor = '#d1d5db')}
                 />
               </div>
 
               {error && (
-                <div className="rounded-xl px-4 py-3 text-sm text-red-600 text-center dark:text-red-300" style={{ background: 'oklch(0.65 0.22 25 / 12%)', border: '1px solid oklch(0.65 0.22 25 / 25%)' }}>
+                <div className="rounded-xl px-4 py-3 text-sm text-red-600 text-center" style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)' }}>
                   {error}
                 </div>
               )}
@@ -129,16 +129,16 @@ export default function SignupPage() {
                 type="submit"
                 disabled={loading}
                 className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-60 active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, var(--c-hero-start), var(--c-hero-end))', boxShadow: '0 4px 20px var(--c-primary-glow)' }}
+                style={{ background: 'linear-gradient(135deg, #166534, #15803d)', boxShadow: '0 4px 20px rgba(22,101,52,0.25)' }}
               >
                 {loading ? '...' : t('signup')}
               </button>
             </form>
           </div>
 
-          <p className="text-center text-sm pb-8" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-center text-sm pb-8" style={{ color: '#6b7280' }}>
             {t('hasAccount')}{' '}
-            <Link href="/login" className="text-emerald-600 font-semibold hover:text-emerald-500 transition-colors dark:text-emerald-400 dark:hover:text-emerald-300">
+            <Link href="/login" className="font-semibold transition-colors" style={{ color: '#16a34a' }}>
               {t('login')}
             </Link>
           </p>
