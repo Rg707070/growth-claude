@@ -1,14 +1,39 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { SchedulePageClient } from './schedule-client'
 
-export interface ScheduleRow {
-  id: string
-  day_of_week: number
-  time: string
-  label: string
-  type: string
-  sort_order: number
-}
+export default async function SchedulePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-export default function SchedulePage() {
-  return <SchedulePageClient />
+  const [{ data: reflections }, { data: scheduleRows }] = await Promise.all([
+    supabase
+      .from('schedule_reflections')
+      .select('date, notes')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(60),
+    supabase
+      .from('user_schedule')
+      .select('day_of_week, time, label, type')
+      .eq('user_id', user.id)
+      .order('time'),
+  ])
+
+  // Group user-added items by day
+  const userItems: Record<number, { time: string; label: string; type: string }[]> = {}
+  for (const row of scheduleRows ?? []) {
+    const d = row.day_of_week as number
+    if (!userItems[d]) userItems[d] = []
+    userItems[d].push({ time: row.time, label: row.label, type: row.type })
+  }
+
+  return (
+    <SchedulePageClient
+      userId={user.id}
+      reflections={reflections ?? []}
+      userItems={userItems}
+    />
+  )
 }

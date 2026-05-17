@@ -167,3 +167,21 @@ create policy "Users can update own schedule"
   on public.user_schedule for update using (auth.uid() = user_id);
 create policy "Users can delete own schedule"
   on public.user_schedule for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- SCHEDULE REFLECTIONS (what actually happened vs the plan)
+-- ============================================================
+create table if not exists public.schedule_reflections (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  date date not null,
+  notes text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, date)
+);
+
+alter table public.schedule_reflections enable row level security;
+create policy "Users manage own reflections"
+  on public.schedule_reflections for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
