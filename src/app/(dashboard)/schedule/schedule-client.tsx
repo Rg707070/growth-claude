@@ -31,21 +31,86 @@ function toMin(t: string) {
   return h * 60 + m
 }
 
+// Returns calendar date for a given day-of-week in the current week
+function getWeekDate(dayOfWeek: number): string {
+  const today = new Date()
+  const d     = new Date(today)
+  d.setDate(today.getDate() + (dayOfWeek - today.getDay()))
+  return d.toISOString().split('T')[0]
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface ScheduleItem { id: string; time: string; label: string; type: string }
-interface Reflection   { date: string; notes: string }
-interface CheckRow     { time: string; note: string | null }
+interface ScheduleItem {
+  id:           string
+  time:         string
+  label:        string
+  type:         string
+  specificDate: string | null
+}
+interface AllItem { id: string; day_of_week: number; label: string; time: string; specific_date: string | null }
+interface Reflection { date: string; notes: string }
+interface CheckRow   { time: string; note: string | null }
 
 interface Props {
   userId:      string
   reflections: Reflection[]
   userItems:   Record<number, ScheduleItem[]>
+  allItems:    AllItem[]
   todayChecks: CheckRow[]
+}
+
+// ─── Save scope modal ─────────────────────────────────────────────────────────
+interface ScopeModalProps {
+  label:       string
+  matchCount:  number
+  onSelect:    (scope: 'single' | 'all' | 'once') => void
+  onCancel:    () => void
+}
+
+function ScopeModal({ label, matchCount, onSelect, onCancel }: ScopeModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 px-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-[oklch(0.12_0.04_238)] p-5 animate-fade-in">
+        <p className="text-sm font-semibold text-white mb-1">שינוי "{label}"</p>
+        <p className="text-[11px] text-white/35 mb-4">
+          נמצא ב-{matchCount} ימים נוספים. לשנות איפה?
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => onSelect('single')}
+            className="w-full text-right px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+          >
+            <p className="text-sm font-medium text-white">רק ביום זה</p>
+            <p className="text-[10px] text-white/35 mt-0.5">שינוי קבוע ליום הזה בלבד בלוז</p>
+          </button>
+          <button
+            onClick={() => onSelect('all')}
+            className="w-full text-right px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+          >
+            <p className="text-sm font-medium text-white">בכל הימים ({matchCount + 1})</p>
+            <p className="text-[10px] text-white/35 mt-0.5">שינוי קבוע בכל הימים שיש את הפעילות</p>
+          </button>
+          <button
+            onClick={() => onSelect('once')}
+            className="w-full text-right px-4 py-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06] hover:bg-cyan-400/[0.10] transition-colors"
+          >
+            <p className="text-sm font-medium text-cyan-300">חד פעמי</p>
+            <p className="text-[10px] text-cyan-300/50 mt-0.5">רק השבוע, הלוז הקבוע לא ישתנה</p>
+          </button>
+        </div>
+        <button onClick={onCancel} className="absolute top-4 left-4 text-white/20 hover:text-white/50">
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  )
 }
 
 // ─── ActivityCard ─────────────────────────────────────────────────────────────
 interface CardProps {
   item:       ScheduleItem
+  dayOfWeek:  number
   checked:    boolean
   note:       string
   isCurrent:  boolean
@@ -53,26 +118,38 @@ interface CardProps {
   showCheck:  boolean
   onToggle:   () => void
   onNote:     (text: string) => void
-  onSave:     (id: string, time: string, label: string, type: string) => Promise<void>
+  onSave:     (id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, dayOfWeek: number) => Promise<void>
   onDelete:   (id: string) => Promise<void>
+  getDuplicateCount: (label: string, currentDayOfWeek: number) => number
 }
 
-function ActivityCard({ item, checked, note, isCurrent, isPast, showCheck, onToggle, onNote, onSave, onDelete }: CardProps) {
+function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showCheck, onToggle, onNote, onSave, onDelete, getDuplicateCount }: CardProps) {
   const [noteOpen, setNoteOpen]   = useState(!!note)
   const [noteText, setNoteText]   = useState(note)
   const [editMode, setEditMode]   = useState(false)
   const [editTime, setEditTime]   = useState(item.time)
   const [editLabel, setEditLabel] = useState(item.label)
   const [editType, setEditType]   = useState(item.type)
+  const [showScope, setShowScope] = useState(false)
   const [busy, setBusy]           = useState(false)
 
-  const c       = col(item.type)
+  const c = col(item.type)
   const opacity = checked ? 0.45 : isPast ? 0.55 : 1
 
-  async function handleSave() {
+  function handleSaveClick() {
     if (!editLabel.trim() || !editTime) return
+    const dupes = getDuplicateCount(item.label, dayOfWeek)
+    if (dupes > 0) {
+      setShowScope(true)
+    } else {
+      confirmSave('single')
+    }
+  }
+
+  async function confirmSave(scope: 'single' | 'all' | 'once') {
+    setShowScope(false)
     setBusy(true)
-    await onSave(item.id, editTime, editLabel.trim(), editType)
+    await onSave(item.id, scope, editTime, editLabel.trim(), editType, dayOfWeek)
     setBusy(false)
     setEditMode(false)
   }
@@ -85,54 +162,51 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, showCheck, onTog
   // ── Edit mode ──
   if (editMode) {
     return (
-      <div className="rounded-2xl border border-white/12 bg-white/[0.04] overflow-hidden animate-fade-in" dir="rtl">
-        <div className="p-3 flex flex-col gap-2">
-          <div className="flex gap-2">
-            <input
-              type="time"
-              value={editTime}
-              onChange={(e) => setEditTime(e.target.value)}
-              className="w-24 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-2 py-1.5 focus:outline-none focus:border-cyan-400/30"
-            />
-            <input
-              value={editLabel}
-              onChange={(e) => setEditLabel(e.target.value)}
-              className="flex-1 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-1.5 focus:outline-none focus:border-cyan-400/30"
-            />
-          </div>
-          <select
-            value={editType}
-            onChange={(e) => setEditType(e.target.value)}
-            className="rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
-          >
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={handleSave}
-              disabled={busy || !editLabel.trim()}
-              className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
+      <>
+        {showScope && (
+          <ScopeModal
+            label={item.label}
+            matchCount={getDuplicateCount(item.label, dayOfWeek)}
+            onSelect={confirmSave}
+            onCancel={() => setShowScope(false)}
+          />
+        )}
+        <div className="rounded-2xl border border-white/12 bg-white/[0.04] overflow-hidden animate-fade-in" dir="rtl">
+          <div className="p-3 flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)}
+                className="w-24 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-2 py-1.5 focus:outline-none focus:border-cyan-400/30"
+              />
+              <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)}
+                className="flex-1 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-1.5 focus:outline-none focus:border-cyan-400/30"
+              />
+            </div>
+            <select value={editType} onChange={(e) => setEditType(e.target.value)}
+              className="rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
             >
-              {busy ? '...' : 'שמור'}
-            </button>
-            <button
-              onClick={() => { setEditMode(false); setEditLabel(item.label); setEditTime(item.time); setEditType(item.type) }}
-              className="px-3 py-1.5 text-white/25 text-sm"
-            >
-              ביטול
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={busy}
-              className="mr-auto p-1.5 text-red-400/50 hover:text-red-400/80 transition-colors disabled:opacity-30"
-            >
-              <Trash2 size={14} />
-            </button>
+              {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <div className="flex gap-2 items-center">
+              <button onClick={handleSaveClick} disabled={busy || !editLabel.trim()}
+                className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
+              >
+                {busy ? '...' : 'שמור'}
+              </button>
+              <button
+                onClick={() => { setEditMode(false); setEditLabel(item.label); setEditTime(item.time); setEditType(item.type) }}
+                className="px-3 py-1.5 text-white/25 text-sm"
+              >
+                ביטול
+              </button>
+              <button onClick={handleDelete} disabled={busy}
+                className="mr-auto p-1.5 text-red-400/50 hover:text-red-400/80 transition-colors disabled:opacity-30"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
@@ -149,32 +223,31 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, showCheck, onTog
     >
       <div className="flex items-center gap-3 px-4 py-3" dir="rtl">
         <div className="flex-1 min-w-0">
-          <p
-            className="text-sm font-medium leading-snug"
-            style={{ color: checked ? 'rgba(255,255,255,0.35)' : c.text, textDecoration: checked ? 'line-through' : 'none' }}
-          >
-            {item.label}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium leading-snug"
+              style={{ color: checked ? 'rgba(255,255,255,0.35)' : c.text, textDecoration: checked ? 'line-through' : 'none' }}
+            >
+              {item.label}
+            </p>
+            {item.specificDate && (
+              <span className="text-[9px] text-cyan-400/60 border border-cyan-400/20 rounded px-1">חד פעמי</span>
+            )}
+          </div>
           <p className="text-[10px] text-white/20 mt-0.5 font-mono">{item.time}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setEditMode(true)}
-            className="text-white/15 hover:text-white/40 transition-colors"
-          >
+          <button onClick={() => setEditMode(true)} className="text-white/15 hover:text-white/40 transition-colors">
             <Pencil size={12} />
           </button>
           {showCheck && (
-            <button
-              onClick={() => setNoteOpen((v) => !v)}
+            <button onClick={() => setNoteOpen((v) => !v)}
               className={`transition-colors ${noteOpen || note ? 'text-white/40' : 'text-white/15 hover:text-white/30'}`}
             >
               <MessageSquare size={13} />
             </button>
           )}
           {showCheck && (
-            <button
-              onClick={onToggle}
+            <button onClick={onToggle}
               className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                 checked ? 'bg-emerald-400/20 border-emerald-400/50' : 'border-white/15 hover:border-white/30'
               }`}
@@ -184,12 +257,9 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, showCheck, onTog
           )}
         </div>
       </div>
-
       {noteOpen && showCheck && (
         <div className="px-4 pb-3" dir="rtl">
-          <input
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
+          <input value={noteText} onChange={(e) => setNoteText(e.target.value)}
             onBlur={() => { if (noteText !== note) onNote(noteText) }}
             placeholder="הוסף הערה..."
             className="w-full text-[12px] text-white/60 bg-white/5 border border-white/8 rounded-lg px-3 py-1.5 focus:outline-none focus:border-white/20 placeholder:text-white/20"
@@ -203,7 +273,7 @@ function ActivityCard({ item, checked, note, isCurrent, isPast, showCheck, onTog
 // ─── Main Component ───────────────────────────────────────────────────────────
 const DAYS = [0, 1, 2, 3, 4, 5]
 
-export function SchedulePageClient({ userId, reflections, userItems, todayChecks }: Props) {
+export function SchedulePageClient({ userId, reflections, userItems, allItems, todayChecks }: Props) {
   const todayDay  = new Date().getDay()
   const todayDate = new Date().toISOString().split('T')[0]
   const nowMin    = new Date().getHours() * 60 + new Date().getMinutes()
@@ -223,6 +293,52 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
   )
   const router = useRouter()
 
+  // How many OTHER days have the same label (excluding current day and one-time items)
+  function getDuplicateCount(label: string, currentDay: number): number {
+    return allItems.filter(
+      (i) => i.label === label && i.day_of_week !== currentDay && i.specific_date === null
+    ).length
+  }
+
+  async function saveEdit(id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, dayOfWeek: number) {
+    const sb = createClient()
+
+    if (scope === 'single') {
+      await sb.from('user_schedule').update({ time, label, type }).eq('id', id)
+
+    } else if (scope === 'all') {
+      // Find original label to match all instances
+      const original = allItems.find((i) => i.id === id)
+      if (!original) return
+      const matchIds = allItems
+        .filter((i) => i.label === original.label && i.specific_date === null)
+        .map((i) => i.id)
+      for (const mid of matchIds) {
+        await sb.from('user_schedule').update({ time, label, type }).eq('id', mid)
+      }
+
+    } else {
+      // One-time: insert a new row for this specific week's date, don't touch the original
+      const specificDate = getWeekDate(dayOfWeek)
+      await sb.from('user_schedule').insert({
+        user_id:       userId,
+        day_of_week:   dayOfWeek,
+        time,
+        label,
+        type,
+        sort_order:    0,
+        specific_date: specificDate,
+      })
+    }
+    router.refresh()
+  }
+
+  async function deleteItem(id: string) {
+    const sb = createClient()
+    await sb.from('user_schedule').delete().eq('id', id)
+    router.refresh()
+  }
+
   async function toggleCheck(time: string) {
     const sb = createClient()
     if (checked.has(time)) {
@@ -239,18 +355,6 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
     const sb = createClient()
     await sb.from('activity_checks').upsert({ user_id: userId, date: todayDate, time, note: text || null })
     if (!checked.has(time)) setChecked((p) => new Set([...p, time]))
-  }
-
-  async function saveEdit(id: string, time: string, label: string, type: string) {
-    const sb = createClient()
-    await sb.from('user_schedule').update({ time, label, type }).eq('id', id)
-    router.refresh()
-  }
-
-  async function deleteItem(id: string) {
-    const sb = createClient()
-    await sb.from('user_schedule').delete().eq('id', id)
-    router.refresh()
   }
 
   async function addItem() {
@@ -276,8 +380,8 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
     router.refresh()
   }
 
-  const isToday  = day === todayDay
-  const items    = (userItems[day] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
+  const isToday = day === todayDay
+  const items   = (userItems[day] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
   const currentItem = isToday
     ? [...items].reverse().find((i) => toMin(i.time) <= nowMin) ?? null
     : null
@@ -292,9 +396,9 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
           {DAYS.map((d) => (
             <button key={d} onClick={() => setDay(d)}
               className={`flex-1 py-1.5 text-[11px] font-semibold rounded-xl transition-all ${
-                d === day        ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/25' :
-                d === todayDay   ? 'bg-white/5 text-white/45 border border-white/10' :
-                                   'text-white/20'
+                d === day      ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/25' :
+                d === todayDay ? 'bg-white/5 text-white/45 border border-white/10' :
+                                 'text-white/20'
               }`}
             >
               {DAY_NAMES_HE[d]}
@@ -400,6 +504,7 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
             <ActivityCard
               key={item.id}
               item={item}
+              dayOfWeek={day}
               checked={isToday && checked.has(item.time)}
               note={notes[item.time] ?? ''}
               isCurrent={isCurrent}
@@ -409,10 +514,10 @@ export function SchedulePageClient({ userId, reflections, userItems, todayChecks
               onNote={(t) => saveNote(item.time, t)}
               onSave={saveEdit}
               onDelete={deleteItem}
+              getDuplicateCount={getDuplicateCount}
             />
           )
         })}
-
         {items.length === 0 && (
           <p className="text-center text-white/20 text-sm py-8">אין פעילויות ביום זה</p>
         )}

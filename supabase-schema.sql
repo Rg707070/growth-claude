@@ -168,6 +168,9 @@ create policy "Users can update own schedule"
 create policy "Users can delete own schedule"
   on public.user_schedule for delete using (auth.uid() = user_id);
 
+-- Add specific_date for one-time overrides (NULL = recurring weekly)
+alter table public.user_schedule add column if not exists specific_date date;
+
 -- ============================================================
 -- SCHEDULE REFLECTIONS (what actually happened vs the plan)
 -- ============================================================
