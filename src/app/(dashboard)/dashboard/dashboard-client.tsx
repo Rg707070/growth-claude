@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react'
 import { useLang } from '@/lib/lang'
 import { LangToggle } from '@/components/lang-toggle'
-import { XPBar } from '@/components/xp-bar'
 import { DomainCard } from '@/components/domain-card'
 import { HabitRow } from '@/components/habit-row'
 import { ScheduleToday } from '@/components/schedule-today'
@@ -16,18 +15,12 @@ import { triggerConfetti } from '@/components/confetti'
 import { DailyPlan } from '@/components/daily-plan'
 import type { Profile, Habit, DomainProgress } from '@/types'
 
-interface DayXP {
-  date: string
-  xp: number
-}
-
 interface DashboardClientProps {
   profile: Profile
   habits: Habit[]
   completedIds: string[]
   domainProgress: DomainProgress[]
-  totalXpToday: number
-  weeklyXP: DayXP[]
+  weeklyActivity: { date: string; count: number }[]
 }
 
 function getGreeting(nameHe: string, nameEn: string, name: string | null, isRTL: boolean) {
@@ -49,8 +42,7 @@ export function DashboardClient({
   habits,
   completedIds,
   domainProgress,
-  totalXpToday,
-  weeklyXP,
+  weeklyActivity,
 }: DashboardClientProps) {
   const { t, isRTL } = useLang()
   const completedSet = new Set(completedIds)
@@ -103,25 +95,15 @@ export function DashboardClient({
             <LangToggle />
           </div>
 
-          <XPBar xp={profile.xp} />
-
-          <div className="flex items-center justify-between mt-3">
-            {totalXpToday > 0 && (
-              <span
-                className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{ background: 'oklch(0.55 0.18 155 / 20%)', color: 'oklch(0.70 0.16 155)' }}
-              >
-                +{totalXpToday} {t('xp')} {isRTL ? 'היום' : 'today'}
-              </span>
-            )}
+          <div className="flex items-center justify-end mt-1">
             {profile.current_streak > 0 && (
               <StreakBadge streak={profile.current_streak} />
             )}
           </div>
         </div>
 
-        {/* Weekly XP chart */}
-        <WeeklyChart days={weeklyXP} />
+        {/* Weekly Activity chart */}
+        <WeeklyChart days={weeklyActivity} />
 
         {/* Weekly Challenge */}
         <WeeklyChallenge currentProgress={challengeProgress} />

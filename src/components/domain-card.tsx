@@ -12,7 +12,7 @@ interface DomainCardProps {
 export function DomainCard({ data }: DomainCardProps) {
   const router = useRouter()
   const { t, isRTL } = useLang()
-  const { domain, totalHabits, completedToday, streak, xpToday } = data
+  const { domain, totalHabits, completedToday, streak } = data
   const pct =
     totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
 
@@ -62,7 +62,6 @@ export function DomainCard({ data }: DomainCardProps) {
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
           {streak > 0 && <span>🔥 {streak}</span>}
-          {xpToday > 0 && <span style={{ color: `${domain.color}cc` }}>+{xpToday} XP</span>}
         </div>
         {allDone ? (
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${domain.color}20`, color: domain.color }}>

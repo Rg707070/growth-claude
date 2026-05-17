@@ -40,18 +40,9 @@ export interface Profile {
   created_at: string
 }
 
-export interface MesillatLevel {
-  level: number
-  nameHe: string
-  nameEn: string
-  minXp: number
-  maxXp: number
-}
-
 export interface DomainProgress {
   domain: Domain
   totalHabits: number
   completedToday: number
   streak: number
-  xpToday: number
 }

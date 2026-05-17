@@ -33,7 +33,6 @@ export default async function ProgressPage() {
   const weekLogs = (weekLogsRes.data as { completed_at: string; habit_id: string }[]) ?? []
 
   // Build heat map: 84 days
-  const habitXpMap = Object.fromEntries(habits.map((h) => [h.id, h.xp_reward]))
   const logsByDay: Record<string, Set<string>> = {}
   for (const log of allLogs) {
     if (!logsByDay[log.completed_at]) logsByDay[log.completed_at] = new Set()
@@ -48,22 +47,21 @@ export default async function ProgressPage() {
     return { date, pct: Math.round((done / totalHabits) * 100) }
   })
 
-  // Weekly XP (last 7 days)
-  const xpByDay: Record<string, number> = {}
+  // Weekly activity (last 7 days)
+  const countByDay: Record<string, number> = {}
   for (const log of weekLogs) {
-    xpByDay[log.completed_at] = (xpByDay[log.completed_at] ?? 0) + (habitXpMap[log.habit_id] ?? 10)
+    countByDay[log.completed_at] = (countByDay[log.completed_at] ?? 0) + 1
   }
-  const weeklyXP = Array.from({ length: 7 }, (_, i) => {
+  const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
     const date = d.toISOString().split('T')[0]
-    return { date, xp: xpByDay[date] ?? 0 }
+    return { date, count: countByDay[date] ?? 0 }
   })
 
   // Achievements data
   const domainSlugsWithHabits = [...new Set(habits.map((h) => h.domain_slug))]
   const torahHabits = habits.filter((h) => h.domain_slug === 'torah').map((h) => h.id)
-  // torah streak: consecutive days all torah habits completed — simplified: check recent days
   let torahStreak = 0
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i)
@@ -74,40 +72,31 @@ export default async function ProgressPage() {
     else break
   }
 
-  const maxXpInDay = Math.max(...Object.values(xpByDay), 0)
-  const weekXPTotal = weekLogs.reduce((s, l) => s + (habitXpMap[l.habit_id] ?? 10), 0)
-
-  // Best domain this week
-  const domainXP: Record<string, number> = {}
+  // Best domain this week by count
+  const domainCount: Record<string, number> = {}
   for (const log of weekLogs) {
     const h = habits.find((h) => h.id === log.habit_id)
-    if (h) domainXP[h.domain_slug] = (domainXP[h.domain_slug] ?? 0) + h.xp_reward
+    if (h) domainCount[h.domain_slug] = (domainCount[h.domain_slug] ?? 0) + 1
   }
-  const topDomainSlug = Object.entries(domainXP).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+  const topDomainSlug = Object.entries(domainCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
   const topDomain = DOMAINS.find((d) => d.slug === topDomainSlug)?.nameHe ?? ''
 
-  // Completion pct this week
   const uniqueDaysWithLogs = new Set(weekLogs.map((l) => l.completed_at)).size
   const completionPct = Math.round((uniqueDaysWithLogs / 7) * 100)
-
-  // Habits completed this week count
   const habitsCompletedThisWeek = weekLogs.length
 
   return (
     <ProgressClient
       profile={profile}
       heatMapDays={heatMapDays}
-      weeklyXP={weeklyXP}
+      weeklyActivity={weeklyActivity}
       achievementData={{
-        xp: profile.xp,
         streak: profile.current_streak,
         habitCount: habits.length,
         domainSlugsWithHabits,
         torahStreak,
-        maxXpInDay,
       }}
       weekSummary={{
-        totalXP: weekXPTotal,
         bestDomain: topDomain,
         streak: profile.current_streak,
         completionPct,

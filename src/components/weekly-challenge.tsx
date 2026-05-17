@@ -6,8 +6,7 @@ const CHALLENGES = [
   { he: 'סיים 3 הרגלים ביום במשך 5 ימים',   en: 'Complete 3 habits/day for 5 days',   target: 5 },
   { he: 'השלם את כל הרגלי הספורט השבוע',     en: 'Complete all Sports habits this week', target: 7 },
   { he: 'למד תורה כל יום השבוע',              en: 'Learn Torah every day this week',      target: 7 },
-  { he: 'צבור 200 XP השבוע',                  en: 'Earn 200 XP this week',                target: 200 },
-  { he: 'הוסף הרגל חדש בכל תחום',            en: 'Add a habit in every domain',           target: 8 },
+{ he: 'הוסף הרגל חדש בכל תחום',            en: 'Add a habit in every domain',           target: 8 },
   { he: '5 ימים ברצף ללא דילוג',              en: '5 days streak without skipping',        target: 5 },
 ]
 

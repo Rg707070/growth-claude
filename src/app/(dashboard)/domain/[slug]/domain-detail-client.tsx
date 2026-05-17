@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input'
 import { PomodoroTimer } from '@/components/pomodoro-timer'
 import { DomainJournal } from '@/components/domain-journal'
 import { PortfolioTracker } from '@/components/portfolio-tracker'
-import { MesillatQuote } from '@/components/mesillat-quote'
 import { DOMAIN_INTEGRATIONS } from '@/lib/domain-integrations'
 import type { Domain, Habit } from '@/types'
 
@@ -141,9 +140,6 @@ export function DomainDetailClient({
           <DomainWidget slug={domain.slug} />
         </div>
       )}
-
-      {/* Mesillat quote — Torah domain only */}
-      {domain.slug === 'torah' && <MesillatQuote />}
 
       {/* Portfolio tracker — trading domain only */}
       {domain.slug === 'trading' && <PortfolioTracker />}

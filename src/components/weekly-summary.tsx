@@ -3,13 +3,13 @@
 import { useLang } from '@/lib/lang'
 
 interface WeeklySummaryProps {
-  totalXP: number
+  habitsCompleted: number
   bestDomain: string
   streak: number
   completionPct: number
 }
 
-export function WeeklySummary({ totalXP, bestDomain, streak, completionPct }: WeeklySummaryProps) {
+export function WeeklySummary({ habitsCompleted, bestDomain, streak, completionPct }: WeeklySummaryProps) {
   const { isRTL } = useLang()
   const isSunday = new Date().getDay() === 0
   if (!isSunday) return null
@@ -24,8 +24,8 @@ export function WeeklySummary({ totalXP, bestDomain, streak, completionPct }: We
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center">
-          <p className="text-2xl font-bold text-white">{totalXP}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">XP {isRTL ? 'סה"כ' : 'total'}</p>
+          <p className="text-2xl font-bold text-white">{habitsCompleted}</p>
+          <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'הרגלים' : 'habits done'}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-white">{streak}</p>
