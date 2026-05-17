@@ -404,10 +404,10 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
   const todaySaved = reflections.some((r) => r.date === todayDate)
 
   return (
-    <div className="pt-12 pb-32">
+    <div className="pt-12 pb-32 md:pt-8 md:pb-12">
 
-      {/* Day tabs */}
-      <div className="px-4 mb-3" dir="rtl">
+      {/* Day tabs — mobile only */}
+      <div className="px-4 mb-3 md:hidden" dir="rtl">
         <div className="flex gap-1">
           {DAYS.map((d) => (
             <button key={d} onClick={() => setDay(d)}
@@ -423,9 +423,16 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
         </div>
       </div>
 
+      {/* Page title — desktop only */}
+      <div className="hidden md:block mb-6" dir="rtl">
+        <h1 className="text-2xl font-black" style={{ color: 'var(--foreground)' }}>
+          לוז שבועי
+        </h1>
+      </div>
+
       {/* Current activity card */}
       {isToday && currentItem && (
-        <div className="px-4 mb-3 animate-fade-in" dir="rtl">
+        <div className="px-4 md:px-0 mb-3 animate-fade-in" dir="rtl">
           <div className="rounded-2xl p-4 border" style={{
             background:  col(currentItem.type, isDark).bg.replace('0.08', '0.16'),
             borderColor: col(currentItem.type, isDark).border,
@@ -446,7 +453,7 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
       )}
 
       {/* Top actions */}
-      <div className="px-4 mb-4 flex justify-between items-center" dir="rtl">
+      <div className="px-4 md:px-0 mb-4 flex justify-between items-center" dir="rtl">
         <button onClick={() => setAddOpen((v) => !v)}
           className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
             addOpen ? 'bg-cyan-400/10 text-cyan-300 border-cyan-400/20' : 'bg-white/4 text-white/30 border-white/8 hover:text-white/50'
@@ -465,7 +472,7 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
 
       {/* Add item panel */}
       {addOpen && (
-        <div className="px-4 mb-4 animate-fade-in" dir="rtl">
+        <div className="px-4 md:px-0 mb-4 animate-fade-in" dir="rtl">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-2">
             <div className="flex gap-2">
               <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)}
@@ -475,11 +482,21 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
                 className="flex-1 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-1.5 focus:outline-none focus:border-cyan-400/30 placeholder:text-white/20"
               />
             </div>
-            <select value={newType} onChange={(e) => setNewType(e.target.value)}
-              className="rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
-            >
-              {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            <div className="flex gap-2">
+              <select value={newType} onChange={(e) => setNewType(e.target.value)}
+                className="flex-1 rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
+              >
+                {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              {/* Day selector — desktop only (mobile uses day tabs) */}
+              <select value={day} onChange={(e) => setDay(Number(e.target.value))}
+                className="hidden md:block flex-1 rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-1.5 focus:outline-none"
+              >
+                {DAYS.map((d) => (
+                  <option key={d} value={d}>{DAY_NAMES_HE[d]}{d === todayDay ? ' (היום)' : ''}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2 mt-1">
               <button onClick={addItem} disabled={saving || !newTime || !newLabel.trim()}
                 className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
@@ -494,7 +511,7 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
 
       {/* Reflection panel */}
       {reflOpen && (
-        <div className="px-4 mb-4 animate-fade-in" dir="rtl">
+        <div className="px-4 md:px-0 mb-4 animate-fade-in" dir="rtl">
           <textarea value={reflText} onChange={(e) => setReflText(e.target.value)}
             placeholder="מה קרה בפועל? מה השתנה מהלוז?"
             className="w-full rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm p-3 resize-none focus:outline-none focus:border-cyan-400/30 placeholder:text-white/20 leading-relaxed"
@@ -511,8 +528,8 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
         </div>
       )}
 
-      {/* Activity list */}
-      <div className="px-4 flex flex-col gap-2">
+      {/* Activity list — mobile: selected day */}
+      <div className="md:hidden px-4 flex flex-col gap-2">
         {items.map((item) => {
           const isCurrent = isToday && item === currentItem
           const isPast    = isToday && toMin(item.time) < nowMin && !isCurrent
@@ -537,6 +554,76 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
         {items.length === 0 && (
           <p className="text-center text-white/20 text-sm py-8">אין פעילויות ביום זה</p>
         )}
+      </div>
+
+      {/* Activity grid — desktop: all 6 days side-by-side */}
+      <div className="hidden md:grid md:grid-cols-6 md:gap-3" dir="rtl">
+        {DAYS.map((d) => {
+          const dayItems = (userItems[d] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
+          const isDayToday = d === todayDay
+          const isDaySelected = d === day
+          const dayCurrentItem = isDayToday
+            ? [...dayItems].reverse().find((i) => toMin(i.time) <= nowMin) ?? null
+            : null
+          return (
+            <div
+              key={d}
+              className="flex flex-col gap-2 rounded-2xl p-3 transition-all cursor-pointer"
+              onClick={() => setDay(d)}
+              style={{
+                background: isDaySelected
+                  ? 'rgba(34,211,238,0.05)'
+                  : 'var(--c-surface-2)',
+                border: isDaySelected
+                  ? '1px solid rgba(34,211,238,0.30)'
+                  : isDayToday
+                  ? '1px solid rgba(34,211,238,0.18)'
+                  : '1px solid var(--c-border)',
+              }}
+            >
+              {/* Day header */}
+              <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: 'var(--c-border)' }}>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: isDayToday ? 'rgb(103,232,249)' : 'var(--foreground)' }}
+                >
+                  {DAY_NAMES_HE[d]}
+                </span>
+                {isDayToday && (
+                  <span className="text-[9px] font-semibold tracking-wider uppercase" style={{ color: 'rgb(103,232,249)' }}>
+                    היום
+                  </span>
+                )}
+              </div>
+              {/* Items */}
+              {dayItems.length === 0 ? (
+                <p className="text-center text-white/20 text-xs py-4">—</p>
+              ) : (
+                dayItems.map((item) => {
+                  const isCurrent = isDayToday && item === dayCurrentItem
+                  const isPast    = isDayToday && toMin(item.time) < nowMin && !isCurrent
+                  return (
+                    <ActivityCard
+                      key={item.id}
+                      item={item}
+                      dayOfWeek={d}
+                      checked={isDayToday && checked.has(item.time)}
+                      note={notes[item.time] ?? ''}
+                      isCurrent={isCurrent}
+                      isPast={isPast}
+                      showCheck={isDayToday}
+                      onToggle={() => toggleCheck(item.time)}
+                      onNote={(t) => saveNote(item.time, t)}
+                      onSave={saveEdit}
+                      onDelete={deleteItem}
+                      getDuplicateCount={getDuplicateCount}
+                    />
+                  )
+                })
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

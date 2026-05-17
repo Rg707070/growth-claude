@@ -63,12 +63,14 @@ export function DashboardClient({
     }
   }, [completedToday, totalToday])
 
+  const domainsToShow = activeDomainsProgress.length > 0 ? activeDomainsProgress : domainProgress
+
   return (
     <TimeBackground>
-      <div className="px-4 pt-12 pb-32 space-y-6">
+      <div className="px-4 pt-12 pb-32 space-y-6 md:px-0 md:pt-8 md:pb-12 md:space-y-8">
         {/* Header hero card */}
         <div
-          className="rounded-3xl p-5 relative overflow-hidden"
+          className="rounded-3xl p-5 md:p-7 relative overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, var(--c-hero-start), var(--c-hero-end))',
             border: '1px solid var(--c-hero-border)',
@@ -77,20 +79,20 @@ export function DashboardClient({
         >
           {/* Glow blob */}
           <div
-            className="absolute -top-8 -right-8 w-32 h-32 rounded-full blur-3xl pointer-events-none"
+            className="absolute -top-8 -right-8 w-32 h-32 md:w-48 md:h-48 rounded-full blur-3xl pointer-events-none"
             style={{ background: 'var(--c-primary-glow)' }}
           />
 
           <div className="flex items-start justify-between mb-4 relative">
             <div>
-              <p className="text-white/45 text-xs font-medium mb-1">
+              <p className="text-white/45 text-xs md:text-sm font-medium mb-1">
                 {new Date().toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',
                 })}
               </p>
-              <h1 className="text-xl font-black text-white leading-tight">{greeting}</h1>
+              <h1 className="text-xl md:text-3xl font-black text-white leading-tight">{greeting}</h1>
             </div>
             <LangToggle />
           </div>
@@ -102,67 +104,109 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Weekly Activity chart */}
-        <WeeklyChart days={weeklyActivity} />
+        {/* Mobile: single column flow */}
+        <div className="md:hidden space-y-6">
+          <WeeklyChart days={weeklyActivity} />
+          <WeeklyChallenge currentProgress={challengeProgress} />
 
-        {/* Weekly Challenge */}
-        <WeeklyChallenge currentProgress={challengeProgress} />
-
-        {/* Domains Grid */}
-        <div>
-          <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
-            {t('allDomains')}
-          </h2>
-          {activeDomainsProgress.length > 0 ? (
+          <div>
+            <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+              {t('allDomains')}
+            </h2>
             <div className="grid grid-cols-2 gap-3">
-              {activeDomainsProgress.map((dp) => (
+              {domainsToShow.map((dp) => (
                 <DomainCard key={dp.domain.slug} data={dp} />
               ))}
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {domainProgress.map((dp) => (
-                <DomainCard key={dp.domain.slug} data={dp} />
-              ))}
-            </div>
-          )}
+          </div>
+
+          <ScheduleToday />
+
+          <DailyPlan
+            habits={habits}
+            completedIds={completedIds}
+            streak={profile.current_streak}
+          />
+
+          <div>
+            <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+              {t('todayHabits')}
+            </h2>
+            {todayHabits.length === 0 ? (
+              <div className="text-center py-8 text-white/30 text-sm">
+                {t('noHabitsYet')}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {todayHabits.map((habit) => (
+                  <HabitRow
+                    key={habit.id}
+                    habit={habit}
+                    isCompleted={completedSet.has(habit.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Today's Schedule */}
-        <ScheduleToday />
-
-        {/* Daily AI Plan */}
-        <DailyPlan
-          habits={habits}
-          completedIds={completedIds}
-          streak={profile.current_streak}
-        />
-
-        {/* Today's Habits */}
-        <div>
-          <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
-            {t('todayHabits')}
-          </h2>
-          {todayHabits.length === 0 ? (
-            <div className="text-center py-8 text-white/30 text-sm">
-              {t('noHabitsYet')}
+        {/* Desktop: 3-column dashboard grid */}
+        <div className="hidden md:grid md:grid-cols-3 md:gap-6">
+          {/* Main column (2/3) */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Domains */}
+            <div>
+              <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+                {t('allDomains')}
+              </h2>
+              <div className="grid grid-cols-4 gap-3">
+                {domainsToShow.map((dp) => (
+                  <DomainCard key={dp.domain.slug} data={dp} />
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {todayHabits.map((habit) => (
-                <HabitRow
-                  key={habit.id}
-                  habit={habit}
-                  isCompleted={completedSet.has(habit.id)}
-                />
-              ))}
+
+            {/* Today's Habits */}
+            <div>
+              <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+                {t('todayHabits')}
+              </h2>
+              {todayHabits.length === 0 ? (
+                <div className="text-center py-8 text-white/30 text-sm">
+                  {t('noHabitsYet')}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {todayHabits.map((habit) => (
+                    <HabitRow
+                      key={habit.id}
+                      habit={habit}
+                      isCompleted={completedSet.has(habit.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Side column (1/3) */}
+          <div className="md:col-span-1 space-y-6">
+            <WeeklyChart days={weeklyActivity} />
+            <WeeklyChallenge currentProgress={challengeProgress} />
+            <ScheduleToday />
+            <DailyPlan
+              habits={habits}
+              completedIds={completedIds}
+              streak={profile.current_streak}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Wave at bottom */}
-      <WaveAnimation />
+      {/* Wave at bottom — mobile only */}
+      <div className="md:hidden">
+        <WaveAnimation />
+      </div>
     </TimeBackground>
   )
 }

@@ -55,14 +55,14 @@ export function FAB() {
       {/* Sheet backdrop */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm md:hidden"
           onClick={reset}
         />
       )}
 
       {/* Slide-up sheet */}
       {open && (
-        <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
+        <div className="fixed bottom-20 left-0 right-0 z-50 px-4 md:hidden">
           <div className="rounded-2xl p-5 shadow-2xl" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
             {/* Close */}
             <div className="flex items-center justify-between mb-4">
@@ -134,7 +134,7 @@ export function FAB() {
       {/* FAB button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center animate-fab-ring hover:scale-110 active:scale-95 transition-transform"
+        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center animate-fab-ring hover:scale-110 active:scale-95 transition-transform md:hidden"
         aria-label={isRTL ? 'הוסף הרגל' : 'Add habit'}
       >
         <Plus size={24} className="text-white" strokeWidth={2.5} />
