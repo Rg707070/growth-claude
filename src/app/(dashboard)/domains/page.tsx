@@ -24,7 +24,7 @@ export default function DomainsPage() {
             onClick={() => router.push(`/domain/${domain.slug}`)}
             className="w-full flex items-center gap-4 text-start active:scale-[0.98] transition-all duration-200"
             style={{
-              background: `linear-gradient(135deg, oklch(0.13 0.05 143), oklch(0.10 0.04 143))`,
+              background: 'var(--c-surface)',
               border: `1px solid ${domain.color}22`,
               borderRadius: '1.25rem',
               padding: '0.875rem 1rem',

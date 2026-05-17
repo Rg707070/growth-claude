@@ -5,17 +5,30 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
 import { Check, MessageSquare, Pencil, Trash2, X } from 'lucide-react'
+import { useTheme } from '@/lib/theme'
 
 // ─── Design ───────────────────────────────────────────────────────────────────
-const COL: Record<string, { bg: string; border: string; text: string }> = {
-  torah:  { bg: 'rgba(251,191,36,0.08)',  border: 'rgba(251,191,36,0.25)',  text: '#fde68a' },
-  shiur:  { bg: 'rgba(56,189,248,0.08)',  border: 'rgba(56,189,248,0.25)',  text: '#bae6fd' },
-  prayer: { bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.25)',  text: '#a7f3d0' },
-  sports: { bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.25)', text: '#fca5a5' },
-  break:  { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.07)', text: 'rgba(255,255,255,0.35)' },
-  other:  { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.07)', text: 'rgba(255,255,255,0.40)' },
+function col(type: string, isDark: boolean) {
+  const map = isDark ? COL_DARK : COL_LIGHT
+  return map[type] ?? map.other
 }
-const col = (type: string) => COL[type] ?? COL.other
+
+const COL_DARK: Record<string, { bg: string; border: string; text: string }> = {
+  torah:  { bg: 'rgba(77,124,15,0.15)',   border: 'rgba(77,124,15,0.40)',   text: '#bef264' },
+  shiur:  { bg: 'rgba(15,118,110,0.15)',  border: 'rgba(15,118,110,0.40)',  text: '#5eead4' },
+  prayer: { bg: 'rgba(5,150,105,0.15)',   border: 'rgba(5,150,105,0.40)',   text: '#6ee7b7' },
+  sports: { bg: 'rgba(22,163,74,0.15)',   border: 'rgba(22,163,74,0.40)',   text: '#86efac' },
+  break:  { bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.35)' },
+  other:  { bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.40)' },
+}
+const COL_LIGHT: Record<string, { bg: string; border: string; text: string }> = {
+  torah:  { bg: 'rgba(77,124,15,0.08)',   border: 'rgba(77,124,15,0.30)',   text: '#4d7c0f' },
+  shiur:  { bg: 'rgba(15,118,110,0.08)',  border: 'rgba(15,118,110,0.30)',  text: '#0f766e' },
+  prayer: { bg: 'rgba(5,150,105,0.08)',   border: 'rgba(5,150,105,0.30)',   text: '#047857' },
+  sports: { bg: 'rgba(22,163,74,0.08)',   border: 'rgba(22,163,74,0.30)',   text: '#166534' },
+  break:  { bg: 'rgba(0,0,0,0.03)',       border: 'rgba(0,0,0,0.10)',       text: '#6b7280' },
+  other:  { bg: 'rgba(0,0,0,0.03)',       border: 'rgba(0,0,0,0.10)',       text: '#6b7280' },
+}
 
 const TYPE_OPTIONS = [
   { value: 'torah',  label: 'תורה'  },
@@ -71,7 +84,7 @@ function ScopeModal({ label, matchCount, onSelect, onCancel }: ScopeModalProps) 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 px-4" dir="rtl">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-[oklch(0.12_0.04_238)] p-5 animate-fade-in">
+      <div className="relative w-full max-w-sm rounded-3xl p-5 animate-fade-in" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
         <p className="text-sm font-semibold text-white mb-1">שינוי "{label}"</p>
         <p className="text-[11px] text-white/35 mb-4">
           נמצא ב-{matchCount} ימים נוספים. לשנות איפה?
@@ -93,10 +106,10 @@ function ScopeModal({ label, matchCount, onSelect, onCancel }: ScopeModalProps) 
           </button>
           <button
             onClick={() => onSelect('once')}
-            className="w-full text-right px-4 py-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06] hover:bg-cyan-400/[0.10] transition-colors"
+            className="w-full text-right px-4 py-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.10] transition-colors"
           >
-            <p className="text-sm font-medium text-cyan-300">חד פעמי</p>
-            <p className="text-[10px] text-cyan-300/50 mt-0.5">רק השבוע, הלוז הקבוע לא ישתנה</p>
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-300">חד פעמי</p>
+            <p className="text-[10px] text-emerald-600/50 dark:text-emerald-300/50 mt-0.5">רק השבוע, הלוז הקבוע לא ישתנה</p>
           </button>
         </div>
         <button onClick={onCancel} className="absolute top-4 left-4 text-white/20 hover:text-white/50">
@@ -124,6 +137,7 @@ interface CardProps {
 }
 
 function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showCheck, onToggle, onNote, onSave, onDelete, getDuplicateCount }: CardProps) {
+  const { isDark } = useTheme()
   const [noteOpen, setNoteOpen]   = useState(!!note)
   const [noteText, setNoteText]   = useState(note)
   const [editMode, setEditMode]   = useState(false)
@@ -133,7 +147,7 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
   const [showScope, setShowScope] = useState(false)
   const [busy, setBusy]           = useState(false)
 
-  const c = col(item.type)
+  const c = col(item.type, isDark)
   const opacity = checked ? 0.45 : isPast ? 0.55 : 1
 
   function handleSaveClick() {
@@ -274,6 +288,8 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
 const DAYS = [0, 1, 2, 3, 4, 5]
 
 export function SchedulePageClient({ userId, reflections, userItems, allItems, todayChecks }: Props) {
+  const { isDark } = useTheme()
+
   const todayDay  = new Date().getDay()
   const todayDate = new Date().toISOString().split('T')[0]
   const nowMin    = new Date().getHours() * 60 + new Date().getMinutes()
@@ -411,15 +427,15 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
       {isToday && currentItem && (
         <div className="px-4 mb-3 animate-fade-in" dir="rtl">
           <div className="rounded-2xl p-4 border" style={{
-            background:  col(currentItem.type).bg.replace('0.08', '0.16'),
-            borderColor: col(currentItem.type).border,
-            boxShadow:   `0 0 24px ${col(currentItem.type).border.replace('0.25', '0.10')}`,
+            background:  col(currentItem.type, isDark).bg.replace('0.08', '0.16'),
+            borderColor: col(currentItem.type, isDark).border,
+            boxShadow:   `0 0 24px ${col(currentItem.type, isDark).border.replace('0.25', '0.10')}`,
           }}>
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: col(currentItem.type).border }} />
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: col(currentItem.type, isDark).border }} />
               <span className="text-[10px] text-white/30 tracking-widest uppercase">עכשיו</span>
             </div>
-            <p className="text-[17px] font-semibold" style={{ color: col(currentItem.type).text }}>{currentItem.label}</p>
+            <p className="text-[17px] font-semibold" style={{ color: col(currentItem.type, isDark).text }}>{currentItem.label}</p>
             {(() => {
               const idx  = items.findIndex((i) => i.time === currentItem.time)
               const next = items[idx + 1]

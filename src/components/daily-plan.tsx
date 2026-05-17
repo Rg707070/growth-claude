@@ -71,8 +71,8 @@ export function DailyPlan({ habits, completedIds, streak }: DailyPlanProps) {
     <div
       className="rounded-2xl overflow-hidden"
       style={{
-        background: 'oklch(0.13 0.05 143)',
-        border: '1px solid oklch(0.72 0.14 145 / 14%)',
+        background: 'var(--c-surface)',
+        border: '1px solid var(--c-border)',
       }}
     >
       {/* Header — always visible */}

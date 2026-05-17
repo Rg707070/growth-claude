@@ -78,15 +78,15 @@ export function DashboardClient({
         <div
           className="rounded-3xl p-5 relative overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, oklch(0.16 0.07 145), oklch(0.11 0.05 143))',
-            border: '1px solid oklch(0.72 0.20 145 / 18%)',
-            boxShadow: '0 0 40px oklch(0.72 0.20 145 / 12%), 0 8px 32px rgba(0,0,0,0.4)',
+            background: 'linear-gradient(135deg, var(--c-hero-start), var(--c-hero-end))',
+            border: '1px solid var(--c-hero-border)',
+            boxShadow: '0 0 40px var(--c-hero-shadow), 0 8px 32px var(--c-shadow-lg)',
           }}
         >
           {/* Glow blob */}
           <div
             className="absolute -top-8 -right-8 w-32 h-32 rounded-full blur-3xl pointer-events-none"
-            style={{ background: 'oklch(0.72 0.20 145 / 18%)' }}
+            style={{ background: 'var(--c-primary-glow)' }}
           />
 
           <div className="flex items-start justify-between mb-4 relative">

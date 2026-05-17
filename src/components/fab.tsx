@@ -63,7 +63,7 @@ export function FAB() {
       {/* Slide-up sheet */}
       {open && (
         <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
-          <div className="bg-[oklch(0.12_0.05_143)] border border-white/10 rounded-2xl p-5 shadow-2xl">
+          <div className="rounded-2xl p-5 shadow-2xl" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
             {/* Close */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-white font-semibold text-sm">

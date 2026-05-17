@@ -11,17 +11,17 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
-  isDark: true,
+  isDark: false,
 })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
     const saved = localStorage.getItem('growth-theme') as Theme | null
-    const initial = saved ?? 'dark'
+    const initial = saved ?? 'light'
     setTheme(initial)
     applyTheme(initial)
   }, [])

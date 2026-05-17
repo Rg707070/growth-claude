@@ -23,39 +23,39 @@ export function XPBar({ xp }: XPBarProps) {
         <div className="flex items-center gap-2">
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center text-base"
-            style={{ background: 'oklch(0.72 0.20 145 / 18%)', border: '1px solid oklch(0.72 0.20 145 / 25%)' }}
+            style={{ background: 'var(--c-primary-glow)', border: '1px solid var(--primary)' }}
           >
             {emoji}
           </div>
           <div>
-            <p className="text-white font-bold text-sm leading-tight">
+            <p className="font-bold text-sm leading-tight" style={{ color: 'var(--foreground)' }}>
               {isRTL ? level.nameHe : level.nameEn}
             </p>
-            <p className="text-white/40 text-[10px]">
+            <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
               {t('level')} {level.level}
             </p>
           </div>
         </div>
         <div className="text-end">
-          <p className="text-white font-bold text-sm">{xp.toLocaleString()}</p>
-          <p className="text-white/40 text-[10px]">{t('xp')}</p>
+          <p className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>{xp.toLocaleString()}</p>
+          <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>{t('xp')}</p>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: 'oklch(0.72 0.20 145 / 12%)' }}>
+      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--c-primary-glow)' }}>
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{
             width: `${progress}%`,
-            background: 'linear-gradient(90deg, oklch(0.62 0.17 145), oklch(0.72 0.20 145))',
-            boxShadow: '0 0 8px oklch(0.72 0.20 145 / 60%)',
+            background: 'linear-gradient(90deg, var(--c-hero-end), var(--primary))',
+            boxShadow: '0 0 8px var(--c-primary-glow)',
           }}
         />
       </div>
 
       {xpToNext !== null && (
-        <p className="text-[10px] text-white/35">
+        <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
           {xpToNext} {t('xp')} {t('nextLevel')}
         </p>
       )}

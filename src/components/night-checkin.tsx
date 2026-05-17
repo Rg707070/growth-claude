@@ -65,7 +65,7 @@ export function NightCheckIn() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-[oklch(0.12_0.04_240)] border border-white/10 rounded-2xl p-6 shadow-2xl">
+      <div className="w-full max-w-sm rounded-2xl p-6 shadow-2xl" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
         {submitted ? (
           <div className="text-center py-4">
             <p className="text-4xl mb-2">🌙</p>
@@ -96,8 +96,8 @@ export function NightCheckIn() {
                         onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
                         className={`text-2xl w-10 h-10 rounded-xl transition-all ${
                           answers[q.id] === opt
-                            ? 'bg-cyan-500/30 ring-2 ring-cyan-400 scale-110'
-                            : 'bg-white/8 hover:bg-white/15'
+                            ? 'bg-emerald-500/20 ring-2 ring-emerald-500 scale-110'
+                            : 'bg-black/5 hover:bg-black/10 dark:bg-white/8 dark:hover:bg-white/15'
                         }`}
                       >
                         {opt}
