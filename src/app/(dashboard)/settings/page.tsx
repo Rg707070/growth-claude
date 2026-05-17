@@ -9,7 +9,7 @@ import { Moon, Sun } from 'lucide-react'
 
 export default function SettingsPage() {
   const { t, lang, toggleLang, isRTL } = useLang()
-  const { theme, toggleTheme } = useTheme()
+  const { theme, toggleTheme, isDark } = useTheme()
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -21,30 +21,36 @@ export default function SettingsPage() {
 
   return (
     <div className="px-4 pt-12 space-y-6">
-      <h1 className="text-xl font-bold text-white">{t('settings')}</h1>
+      <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
+        {t('settings')}
+      </h1>
 
       {/* Theme */}
-      <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-3">
-        <p className="text-white/60 text-sm">{isRTL ? 'מצב תצוגה' : 'Display mode'}</p>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'מצב תצוגה' : 'Display mode'}
+        </p>
         <div className="flex gap-2">
           <button
             onClick={() => theme !== 'dark' && toggleTheme()}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+            style={
               theme === 'dark'
-                ? 'bg-slate-800 text-white border border-cyan-500/40'
-                : 'bg-white/10 text-white/50 hover:bg-white/20'
-            }`}
+                ? { background: 'oklch(0.16 0.07 145)', color: 'oklch(0.72 0.20 145)', border: '1px solid oklch(0.72 0.20 145 / 40%)' }
+                : { background: 'var(--c-surface-2)', color: 'var(--muted-foreground)', border: '1px solid var(--c-border)' }
+            }
           >
             <Moon size={15} />
             {isRTL ? 'כהה' : 'Dark'}
           </button>
           <button
             onClick={() => theme !== 'light' && toggleTheme()}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+            style={
               theme === 'light'
-                ? 'bg-sky-100 text-sky-900 border border-sky-300'
-                : 'bg-white/10 text-white/50 hover:bg-white/20'
-            }`}
+                ? { background: 'oklch(0.44 0.18 145)', color: 'white', border: '1px solid oklch(0.44 0.18 145 / 0%)' }
+                : { background: 'var(--c-surface-2)', color: 'var(--muted-foreground)', border: '1px solid var(--c-border)' }
+            }
           >
             <Sun size={15} />
             {isRTL ? 'בהיר' : 'Light'}
@@ -53,26 +59,30 @@ export default function SettingsPage() {
       </div>
 
       {/* Language */}
-      <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-3">
-        <p className="text-white/60 text-sm">{t('language')}</p>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          {t('language')}
+        </p>
         <div className="flex gap-2">
           <button
             onClick={() => lang !== 'he' && toggleLang()}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={
               lang === 'he'
-                ? 'bg-white text-black'
-                : 'bg-white/10 text-white/60 hover:bg-white/20'
-            }`}
+                ? { background: 'var(--primary)', color: 'white' }
+                : { background: 'var(--c-surface-2)', color: 'var(--muted-foreground)', border: '1px solid var(--c-border)' }
+            }
           >
             עברית
           </button>
           <button
             onClick={() => lang !== 'en' && toggleLang()}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={
               lang === 'en'
-                ? 'bg-white text-black'
-                : 'bg-white/10 text-white/60 hover:bg-white/20'
-            }`}
+                ? { background: 'var(--primary)', color: 'white' }
+                : { background: 'var(--c-surface-2)', color: 'var(--muted-foreground)', border: '1px solid var(--c-border)' }
+            }
           >
             English
           </button>
@@ -80,13 +90,13 @@ export default function SettingsPage() {
       </div>
 
       {/* Logout */}
-      <Button
+      <button
         onClick={handleLogout}
-        variant="outline"
-        className="w-full h-12 rounded-xl border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+        className="w-full h-12 rounded-xl text-sm font-semibold transition-all"
+        style={{ background: 'oklch(0.65 0.22 25 / 10%)', color: 'oklch(0.60 0.22 25)', border: '1px solid oklch(0.65 0.22 25 / 25%)' }}
       >
         {t('logout')}
-      </Button>
+      </button>
     </div>
   )
 }
