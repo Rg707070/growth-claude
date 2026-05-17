@@ -47,8 +47,25 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
     { key: 'watchlist', icon: Eye, labelHe: 'מעקב', labelEn: 'Watch' },
   ]
 
+  const hasEquity = stats.equity > 0
+  const entryForm = hasEquity ? (
+    <TradeEntryForm
+      userId={userId}
+      equity={stats.equity}
+      defaultRiskPct={account?.default_risk_pct ?? 1}
+      symbol={symbol}
+    />
+  ) : (
+    <button
+      onClick={() => setShowCapital(true)}
+      className="w-full py-4 rounded-2xl border border-dashed border-cyan-400/30 text-cyan-400 text-sm font-medium hover:bg-cyan-400/5 transition-colors"
+    >
+      {isRTL ? 'הגדר הון התחלתי כדי לפתוח עסקה' : 'Set starting capital to trade'}
+    </button>
+  )
+
   return (
-    <div className="px-4 pt-12 pb-8 space-y-4 max-w-7xl mx-auto">
+    <div className="px-4 pt-12 pb-8 space-y-4 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -77,56 +94,87 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
       {/* Account stats */}
       <AccountStatsBar stats={stats} onEditCapital={() => setShowCapital(true)} />
 
-      {/* Tab nav */}
-      <div className="flex gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/5">
-        {tabs.map(({ key, icon: Icon, labelHe, labelEn }) => {
-          const active = tab === key
-          return (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors"
-              style={{
-                background: active ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                color: active ? '#06b6d4' : 'rgba(255,255,255,0.5)',
-              }}
-            >
-              <Icon size={14} />
-              <span>{isRTL ? labelHe : labelEn}</span>
-            </button>
-          )
-        })}
+      {/* ============================================================ */}
+      {/* DESKTOP LAYOUT (lg+): two-column grid, everything visible    */}
+      {/* ============================================================ */}
+      <div className="hidden lg:grid grid-cols-12 gap-4">
+        {/* Chart column — large */}
+        <div className="col-span-8 xl:col-span-9 space-y-4">
+          <AdvancedChart
+            symbol={symbol}
+            className="h-[calc(100vh-220px)] min-h-[600px]"
+          />
+        </div>
+
+        {/* Side panel column */}
+        <div className="col-span-4 xl:col-span-3 space-y-3">
+          <div className="flex gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/5">
+            {tabs.map(({ key, icon: Icon, labelHe, labelEn }) => {
+              const active = tab === key
+              return (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-colors"
+                  style={{
+                    background: active ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                    color: active ? '#06b6d4' : 'rgba(255,255,255,0.5)',
+                  }}
+                >
+                  <Icon size={13} />
+                  <span>{isRTL ? labelHe : labelEn}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="max-h-[calc(100vh-280px)] overflow-y-auto pe-1 trading-scroll">
+            {tab === 'dashboard' && entryForm}
+            {tab === 'journal' && (
+              <JournalTab trades={trades} onPickSymbol={pickSymbol} />
+            )}
+            {tab === 'watchlist' && (
+              <WatchlistTab userId={userId} items={watchlist} onPickSymbol={pickSymbol} />
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Content */}
-      {tab === 'dashboard' && (
-        <div className="space-y-4">
-          <AdvancedChart symbol={symbol} height={560} />
-          {stats.equity > 0 ? (
-            <TradeEntryForm
-              userId={userId}
-              equity={stats.equity}
-              defaultRiskPct={account?.default_risk_pct ?? 1}
-              symbol={symbol}
-            />
-          ) : (
-            <button
-              onClick={() => setShowCapital(true)}
-              className="w-full py-4 rounded-2xl border border-dashed border-cyan-400/30 text-cyan-400 text-sm font-medium hover:bg-cyan-400/5 transition-colors"
-            >
-              {isRTL
-                ? 'הגדר הון התחלתי כדי לפתוח עסקה ראשונה'
-                : 'Set starting capital to open your first trade'}
-            </button>
-          )}
+      {/* ============================================================ */}
+      {/* MOBILE LAYOUT (<lg): stacked with tab switching              */}
+      {/* ============================================================ */}
+      <div className="lg:hidden space-y-4">
+        <div className="flex gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/5">
+          {tabs.map(({ key, icon: Icon, labelHe, labelEn }) => {
+            const active = tab === key
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors"
+                style={{
+                  background: active ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                  color: active ? '#06b6d4' : 'rgba(255,255,255,0.5)',
+                }}
+              >
+                <Icon size={14} />
+                <span>{isRTL ? labelHe : labelEn}</span>
+              </button>
+            )
+          })}
         </div>
-      )}
 
-      {tab === 'journal' && <JournalTab trades={trades} onPickSymbol={pickSymbol} />}
-
-      {tab === 'watchlist' && (
-        <WatchlistTab userId={userId} items={watchlist} onPickSymbol={pickSymbol} />
-      )}
+        {tab === 'dashboard' && (
+          <>
+            <AdvancedChart symbol={symbol} className="h-[70vh] min-h-[480px]" />
+            {entryForm}
+          </>
+        )}
+        {tab === 'journal' && <JournalTab trades={trades} onPickSymbol={pickSymbol} />}
+        {tab === 'watchlist' && (
+          <WatchlistTab userId={userId} items={watchlist} onPickSymbol={pickSymbol} />
+        )}
+      </div>
 
       {showCapital && (
         <CapitalModal
@@ -135,6 +183,22 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
           onClose={() => setShowCapital(false)}
         />
       )}
+
+      <style jsx>{`
+        .trading-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .trading-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .trading-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 3px;
+        }
+        .trading-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.15);
+        }
+      `}</style>
     </div>
   )
 }

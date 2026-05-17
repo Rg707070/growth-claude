@@ -1,6 +1,7 @@
 import { BottomNav } from '@/components/bottom-nav'
 import { FAB } from '@/components/fab'
 import { NightCheckIn } from '@/components/night-checkin'
+import { DashboardMain } from '@/components/dashboard-main'
 
 export default function DashboardLayout({
   children,
@@ -9,7 +10,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-md mx-auto pb-24">{children}</main>
+      <DashboardMain>{children}</DashboardMain>
       <BottomNav />
       <FAB />
       <NightCheckIn />

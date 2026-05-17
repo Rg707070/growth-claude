@@ -4,10 +4,10 @@ import { useEffect, useRef } from 'react'
 
 interface Props {
   symbol: string
-  height?: number
+  className?: string
 }
 
-export function AdvancedChart({ symbol, height = 560 }: Props) {
+export function AdvancedChart({ symbol, className = '' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const lastSymbol = useRef<string>('')
 
@@ -20,7 +20,7 @@ export function AdvancedChart({ symbol, height = 560 }: Props) {
 
     const widgetDiv = document.createElement('div')
     widgetDiv.className = 'tradingview-widget-container__widget'
-    widgetDiv.style.height = `${height}px`
+    widgetDiv.style.height = '100%'
     widgetDiv.style.width = '100%'
     containerRef.current.appendChild(widgetDiv)
 
@@ -54,13 +54,12 @@ export function AdvancedChart({ symbol, height = 560 }: Props) {
       gridColor: 'rgba(148, 163, 184, 0.06)',
     })
     containerRef.current.appendChild(script)
-  }, [symbol, height])
+  }, [symbol])
 
   return (
     <div
-      className="tradingview-widget-container rounded-2xl overflow-hidden border border-white/10 bg-slate-900"
+      className={`tradingview-widget-container rounded-2xl overflow-hidden border border-white/10 bg-slate-900 ${className}`}
       ref={containerRef}
-      style={{ height: `${height}px` }}
     />
   )
 }
