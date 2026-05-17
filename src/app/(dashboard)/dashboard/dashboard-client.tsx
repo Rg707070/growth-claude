@@ -13,6 +13,7 @@ import { StreakBadge } from '@/components/streak-badge'
 import { WeeklyChallenge } from '@/components/weekly-challenge'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { triggerConfetti } from '@/components/confetti'
+import { DailyPlan } from '@/components/daily-plan'
 import type { Profile, Habit, DomainProgress } from '@/types'
 
 interface DayXP {
@@ -147,6 +148,13 @@ export function DashboardClient({
 
         {/* Today's Schedule */}
         <ScheduleToday />
+
+        {/* Daily AI Plan */}
+        <DailyPlan
+          habits={habits}
+          completedIds={completedIds}
+          streak={profile.current_streak}
+        />
 
         {/* Today's Habits */}
         <div>
