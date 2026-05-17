@@ -2,7 +2,9 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDomainBySlug } from '@/lib/domains'
 import { DomainDetailClient } from './domain-detail-client'
+import { TradingWorkspaceClient } from '@/components/trading/trading-workspace-client'
 import type { Habit, HabitLog } from '@/types'
+import type { Trade, TradingAccount, WatchlistItem } from '@/types/trading'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -18,6 +20,31 @@ export default async function DomainPage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  if (slug === 'trading') {
+    const [accountRes, tradesRes, watchlistRes] = await Promise.all([
+      supabase.from('trading_account').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('opened_at', { ascending: false }),
+      supabase
+        .from('watchlist')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('sort_order', { ascending: true }),
+    ])
+
+    return (
+      <TradingWorkspaceClient
+        userId={user.id}
+        account={(accountRes.data as TradingAccount | null) ?? null}
+        trades={(tradesRes.data as Trade[]) ?? []}
+        watchlist={(watchlistRes.data as WatchlistItem[]) ?? []}
+      />
+    )
+  }
 
   const today = new Date().toISOString().split('T')[0]
 
