@@ -13,10 +13,10 @@ interface HeatMapProps {
 
 function pctToColor(pct: number): string {
   if (pct === 0)  return 'rgba(255,255,255,0.06)'
-  if (pct < 30)   return 'rgba(34,211,238,0.20)'
-  if (pct < 60)   return 'rgba(34,211,238,0.45)'
-  if (pct < 90)   return 'rgba(34,211,238,0.70)'
-  return 'rgba(34,211,238,0.95)'
+  if (pct < 30)   return 'rgba(52,211,153,0.20)'
+  if (pct < 60)   return 'rgba(52,211,153,0.45)'
+  if (pct < 90)   return 'rgba(52,211,153,0.70)'
+  return 'rgba(52,211,153,0.95)'
 }
 
 export function HeatMap({ days }: HeatMapProps) {

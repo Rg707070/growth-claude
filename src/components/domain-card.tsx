@@ -23,7 +23,7 @@ export function DomainCard({ data }: DomainCardProps) {
       onClick={() => router.push(`/domain/${domain.slug}`)}
       className="w-full text-start active:scale-95 transition-all duration-200 hover:scale-[1.02]"
       style={{
-        background: `linear-gradient(145deg, oklch(0.14 0.05 238), oklch(0.11 0.04 238))`,
+        background: `linear-gradient(145deg, oklch(0.14 0.05 143), oklch(0.11 0.04 143))`,
         border: `1px solid ${domain.color}28`,
         borderRadius: '1.25rem',
         boxShadow: `0 0 24px ${domain.glowColor}, 0 4px 20px rgba(0,0,0,0.5)`,

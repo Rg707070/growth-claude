@@ -20,10 +20,10 @@ export function WeeklyChart({ days }: WeeklyChartProps) {
   const today = new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600/10 to-cyan-500/5 border border-blue-500/20 shadow-[0_0_16px_rgba(59,130,246,0.1)]">
+    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600/10 to-emerald-500/5 border border-emerald-500/20 shadow-[0_0_16px_rgba(52,211,153,0.1)]">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">📊</span>
-        <span className="text-blue-300 text-xs font-semibold uppercase tracking-wide">
+        <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">
           {isRTL ? 'XP שבועי' : 'Weekly XP'}
         </span>
       </div>
@@ -40,15 +40,15 @@ export function WeeklyChart({ days }: WeeklyChartProps) {
                 <div
                   className={`w-full rounded-t-md transition-all duration-700 ${
                     isToday
-                      ? 'bg-gradient-to-t from-cyan-500 to-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.5)]'
+                      ? 'bg-gradient-to-t from-emerald-500 to-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
                       : d.xp > 0
-                      ? 'bg-gradient-to-t from-blue-600 to-blue-400'
+                      ? 'bg-gradient-to-t from-emerald-700 to-emerald-500'
                       : 'bg-white/8'
                   }`}
                   style={{ height: `${Math.max(pct, d.xp > 0 ? 8 : 3)}%` }}
                 />
               </div>
-              <span className={`text-[10px] font-medium ${isToday ? 'text-cyan-300' : 'text-white/40'}`}>
+              <span className={`text-[10px] font-medium ${isToday ? 'text-emerald-300' : 'text-white/40'}`}>
                 {label}
               </span>
             </div>

@@ -75,7 +75,7 @@ export function ProgressClient({
           <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider">
             {isRTL ? 'הישגים' : 'Achievements'}
           </h2>
-          <span className="text-xs text-cyan-400 ml-auto">
+          <span className="text-xs text-emerald-400 ml-auto">
             {unlockedIds.length}/{ACHIEVEMENTS.length}
           </span>
         </div>

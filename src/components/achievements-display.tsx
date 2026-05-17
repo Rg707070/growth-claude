@@ -21,7 +21,7 @@ export function AchievementsDisplay({ unlockedIds }: AchievementsDisplayProps) {
             title={isRTL ? a.descHe : a.descHe}
             className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
               unlocked
-                ? 'bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_10px_rgba(52,211,153,0.2)]'
                 : 'bg-white/3 border-white/8 opacity-35'
             }`}
           >
@@ -30,7 +30,7 @@ export function AchievementsDisplay({ unlockedIds }: AchievementsDisplayProps) {
               {isRTL ? a.nameHe : a.nameEn}
             </span>
             {unlocked && (
-              <span className="text-[8px] text-cyan-400">✓</span>
+              <span className="text-[8px] text-emerald-400">✓</span>
             )}
           </div>
         )

@@ -63,7 +63,7 @@ export function FAB() {
       {/* Slide-up sheet */}
       {open && (
         <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
-          <div className="bg-[oklch(0.12_0.04_240)] border border-white/10 rounded-2xl p-5 shadow-2xl">
+          <div className="bg-[oklch(0.12_0.05_143)] border border-white/10 rounded-2xl p-5 shadow-2xl">
             {/* Close */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-white font-semibold text-sm">
@@ -107,7 +107,7 @@ export function FAB() {
                   onChange={(e) => setHabitName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && save()}
                   placeholder={isRTL ? 'שם ההרגל...' : 'Habit name...'}
-                  className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
+                  className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
                 <div className="flex gap-2">
@@ -120,7 +120,7 @@ export function FAB() {
                   <button
                     onClick={save}
                     disabled={!habitName.trim() || saving}
-                    className="flex-1 py-2.5 rounded-xl bg-cyan-500 text-white font-semibold text-sm hover:bg-cyan-400 disabled:opacity-50 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-semibold text-sm hover:bg-emerald-400 disabled:opacity-50 transition-colors"
                   >
                     {saving ? '...' : isRTL ? 'שמור' : 'Save'}
                   </button>
@@ -134,7 +134,7 @@ export function FAB() {
       {/* FAB button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center animate-fab-ring hover:scale-110 active:scale-95 transition-transform"
+        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center animate-fab-ring hover:scale-110 active:scale-95 transition-transform"
         aria-label={isRTL ? 'הוסף הרגל' : 'Add habit'}
       >
         <Plus size={24} className="text-white" strokeWidth={2.5} />

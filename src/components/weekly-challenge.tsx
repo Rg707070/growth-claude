@@ -22,10 +22,10 @@ export function WeeklyChallenge({ currentProgress = 0 }: WeeklyChallengeProps) {
   const pct = Math.min(100, Math.round((currentProgress / challenge.target) * 100))
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/15 to-blue-600/5 border border-cyan-500/20 shadow-[0_0_16px_rgba(34,211,238,0.1)]">
+    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 border border-emerald-500/20 shadow-[0_0_16px_rgba(52,211,153,0.1)]">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg">🎯</span>
-        <span className="text-cyan-300 text-xs font-semibold uppercase tracking-wide">
+        <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">
           {isRTL ? 'אתגר השבוע' : 'Weekly Challenge'}
         </span>
       </div>
@@ -35,11 +35,11 @@ export function WeeklyChallenge({ currentProgress = 0 }: WeeklyChallengeProps) {
       <div className="flex items-center gap-3">
         <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full transition-all duration-700"
+            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full transition-all duration-700"
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className="text-xs text-cyan-300/70 font-mono flex-shrink-0">
+        <span className="text-xs text-emerald-300/70 font-mono flex-shrink-0">
           {currentProgress}/{challenge.target}
         </span>
       </div>

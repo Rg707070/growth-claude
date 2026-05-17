@@ -71,13 +71,13 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
           onBlur={save}
           onKeyDown={(e) => e.key === 'Enter' && save()}
           placeholder={isRTL ? 'מחשבה אחת להיום...' : 'One thought for today...'}
-          className="flex-1 bg-white/8 border border-white/12 rounded-xl px-3 py-2 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-cyan-500/40"
+          className="flex-1 bg-white/8 border border-white/12 rounded-xl px-3 py-2 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-emerald-500/40"
           dir={isRTL ? 'rtl' : 'ltr'}
         />
         <button
           onClick={save}
           disabled={saving || !text.trim()}
-          className="px-3 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 text-sm hover:bg-cyan-500/30 disabled:opacity-40 transition-colors"
+          className="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-sm hover:bg-emerald-500/30 disabled:opacity-40 transition-colors"
         >
           {saving ? '...' : '✓'}
         </button>

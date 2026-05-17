@@ -46,13 +46,13 @@ export function PomodoroTimer() {
     ? ((BREAK_SECONDS - seconds) / BREAK_SECONDS) * 100
     : ((WORK_SECONDS - seconds) / WORK_SECONDS) * 100
 
-  const accentColor = onBreak ? '#34D399' : '#22D3EE'
+  const accentColor = onBreak ? '#34D399' : '#10b981'
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-600/5 border border-cyan-500/20">
+    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">⏱</span>
-        <span className="text-cyan-300 text-xs font-semibold uppercase tracking-wide">
+        <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">
           {isRTL
             ? onBreak ? 'הפסקה' : 'פומודורו'
             : onBreak ? 'Break' : 'Pomodoro'}

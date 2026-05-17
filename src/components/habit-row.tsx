@@ -128,7 +128,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         className="text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
         style={{
           background: done ? `${accentColor}20` : 'oklch(0.75 0.17 205 / 12%)',
-          color: done ? accentColor : 'oklch(0.75 0.17 205)',
+          color: done ? accentColor : 'oklch(0.72 0.20 145)',
         }}
       >
         +{habit.xp_reward}

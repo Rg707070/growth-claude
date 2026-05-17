@@ -23,7 +23,7 @@ export function XPBar({ xp }: XPBarProps) {
         <div className="flex items-center gap-2">
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center text-base"
-            style={{ background: 'oklch(0.75 0.17 205 / 18%)', border: '1px solid oklch(0.75 0.17 205 / 25%)' }}
+            style={{ background: 'oklch(0.72 0.20 145 / 18%)', border: '1px solid oklch(0.72 0.20 145 / 25%)' }}
           >
             {emoji}
           </div>
@@ -43,13 +43,13 @@ export function XPBar({ xp }: XPBarProps) {
       </div>
 
       {/* Progress bar */}
-      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: 'oklch(0.75 0.17 205 / 12%)' }}>
+      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: 'oklch(0.72 0.20 145 / 12%)' }}>
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{
             width: `${progress}%`,
-            background: 'linear-gradient(90deg, oklch(0.65 0.15 210), oklch(0.75 0.17 205))',
-            boxShadow: '0 0 8px oklch(0.75 0.17 205 / 60%)',
+            background: 'linear-gradient(90deg, oklch(0.62 0.17 145), oklch(0.72 0.20 145))',
+            boxShadow: '0 0 8px oklch(0.72 0.20 145 / 60%)',
           }}
         />
       </div>
