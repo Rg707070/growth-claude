@@ -1,54 +1,63 @@
 'use client'
 
-import { ExternalLink, TrendingUp } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 
-// Rotem's portfolio stocks
-const PORTFOLIO_STOCKS = [
-  { ticker: 'LUNR', exchange: 'NASDAQ' },
-  { ticker: 'AFRM', exchange: 'NASDAQ' },
-  { ticker: 'CVNA', exchange: 'NASDAQ' },
-  { ticker: 'GME', exchange: 'NYSE' },
-  { ticker: 'OKLO', exchange: 'NYSE' },
-  { ticker: 'DELL', exchange: 'NYSE' },
-  { ticker: 'OPEN', exchange: 'NASDAQ' },
-  { ticker: 'NNE', exchange: 'NASDAQ' },
-  { ticker: 'AAPL', exchange: 'NASDAQ' },
-  { ticker: 'ASTS', exchange: 'NASDAQ' },
-  { ticker: 'JNJ', exchange: 'NYSE' },
+const PORTFOLIO_SYMBOLS = [
+  { s: 'NASDAQ:LUNR', d: 'LUNR' },
+  { s: 'NASDAQ:AFRM', d: 'AFRM' },
+  { s: 'NASDAQ:CVNA', d: 'CVNA' },
+  { s: 'NYSE:GME', d: 'GME' },
+  { s: 'NYSE:OKLO', d: 'OKLO' },
+  { s: 'NYSE:DELL', d: 'DELL' },
+  { s: 'NASDAQ:OPEN', d: 'OPEN' },
+  { s: 'NASDAQ:NNE', d: 'NNE' },
+  { s: 'NASDAQ:AAPL', d: 'AAPL' },
+  { s: 'NASDAQ:ASTS', d: 'ASTS' },
+  { s: 'NYSE:JNJ', d: 'JNJ' },
 ]
 
 export function TradingViewWidget() {
-  return (
-    <div className="space-y-3">
-      {/* Main link */}
-      <a
-        href="https://www.tradingview.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
-      >
-        <TrendingUp size={18} className="text-violet-400" />
-        <span className="text-white font-medium text-sm flex-1">פתח TradingView</span>
-        <ExternalLink size={14} className="text-violet-400/60" />
-      </a>
+  const containerRef = useRef<HTMLDivElement>(null)
 
-      {/* Portfolio watchlist */}
-      <div>
-        <p className="text-white/40 text-xs font-medium mb-2">תיק המניות שלך</p>
-        <div className="flex flex-wrap gap-1.5">
-          {PORTFOLIO_STOCKS.map(({ ticker, exchange }) => (
-            <a
-              key={ticker}
-              href={`https://www.tradingview.com/chart/?symbol=${exchange}:${ticker}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs px-2.5 py-1.5 rounded-lg bg-violet-500/15 text-violet-300 hover:bg-violet-500/30 transition-colors font-mono font-semibold border border-violet-500/20"
-            >
-              {ticker}
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    containerRef.current.innerHTML = ''
+
+    const widgetDiv = document.createElement('div')
+    widgetDiv.className = 'tradingview-widget-container__widget'
+    containerRef.current.appendChild(widgetDiv)
+
+    const script = document.createElement('script')
+    script.src =
+      'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js'
+    script.type = 'text/javascript'
+    script.async = true
+    script.text = JSON.stringify({
+      colorTheme: 'dark',
+      dateRange: '1D',
+      showChart: true,
+      locale: 'he_IL',
+      isTransparent: true,
+      showSymbolLogo: true,
+      showFloatingTooltip: false,
+      width: '100%',
+      height: '420',
+      tabs: [
+        {
+          title: 'תיק שלי',
+          symbols: PORTFOLIO_SYMBOLS,
+          originalTitle: 'My Portfolio',
+        },
+      ],
+    })
+    containerRef.current.appendChild(script)
+  }, [])
+
+  return (
+    <div
+      className="tradingview-widget-container rounded-xl overflow-hidden"
+      ref={containerRef}
+    />
   )
 }
