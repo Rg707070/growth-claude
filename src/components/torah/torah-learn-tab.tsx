@@ -226,6 +226,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
     return (
       <SefariaReader
         initialRef={readerRef}
+        userId={userId}
         onClose={() => setReaderRef(null)}
         onStartSession={openReaderAndStartSession}
       />
