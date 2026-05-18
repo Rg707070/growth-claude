@@ -207,3 +207,66 @@ create policy "Users manage own activity checks"
   on public.activity_checks for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ============================================================
+-- TORAH WORKSPACE — LEARNING SESSIONS
+-- ============================================================
+create table if not exists public.learning_sessions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  text_title text not null,
+  text_category text default 'other' not null,
+  started_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  ended_at timestamp with time zone,
+  duration_seconds integer default 0 not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.learning_sessions enable row level security;
+create policy "Users manage own learning sessions"
+  on public.learning_sessions for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ============================================================
+-- TORAH WORKSPACE — LEARNING NOTES
+-- ============================================================
+create table if not exists public.learning_notes (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  session_id uuid references public.learning_sessions on delete set null,
+  content text not null,
+  type text default 'note' not null,
+  text_reference text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.learning_notes enable row level security;
+create policy "Users manage own learning notes"
+  on public.learning_notes for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ============================================================
+-- TORAH WORKSPACE — LEARNING SUMMARIES
+-- ============================================================
+create table if not exists public.learning_summaries (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  title text not null,
+  content text not null,
+  source text,
+  category text default 'other' not null,
+  tags text[] default '{}' not null,
+  folder text default 'כללי' not null,
+  is_favorite boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.learning_summaries enable row level security;
+create policy "Users manage own learning summaries"
+  on public.learning_summaries for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

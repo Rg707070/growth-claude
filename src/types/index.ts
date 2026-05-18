@@ -46,3 +46,41 @@ export interface DomainProgress {
   completedToday: number
   streak: number
 }
+
+export type TextCategory = 'gemara' | 'mishnah' | 'tanakh' | 'halacha' | 'article' | 'other'
+
+export interface LearningSession {
+  id: string
+  user_id: string
+  text_title: string
+  text_category: TextCategory
+  started_at: string
+  ended_at: string | null
+  duration_seconds: number
+  created_at: string
+}
+
+export interface LearningNote {
+  id: string
+  user_id: string
+  session_id: string | null
+  content: string
+  type: 'note' | 'question' | 'highlight'
+  text_reference: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LearningSummary {
+  id: string
+  user_id: string
+  title: string
+  content: string
+  source: string | null
+  category: string
+  tags: string[]
+  folder: string
+  is_favorite: boolean
+  created_at: string
+  updated_at: string
+}
