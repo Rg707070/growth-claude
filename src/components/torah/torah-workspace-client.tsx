@@ -8,7 +8,7 @@ import { TorahLearnTab } from './torah-learn-tab'
 import { TorahFeedTab } from './torah-feed-tab'
 import { TorahSummariesTab } from './torah-summaries-tab'
 import { TorahProfileTab } from './torah-profile-tab'
-import type { Habit, LearningSession, LearningSummary, TorahLesson } from '@/types'
+import type { Habit, LearningSession, LearningSummary, TorahLesson, DailyTrack } from '@/types'
 
 interface Props {
   userId: string
@@ -21,6 +21,7 @@ interface Props {
   todaySessionCount: number
   lessons: TorahLesson[]
   savedLessonIds: string[]
+  dailyTracks: DailyTrack[]
 }
 
 type Tab = 'home' | 'learn' | 'feed' | 'summaries' | 'profile'
@@ -39,6 +40,7 @@ export function TorahWorkspaceClient({
   todaySessionCount,
   lessons,
   savedLessonIds,
+  dailyTracks,
 }: Props) {
   const { t } = useLang()
   const [activeTab, setActiveTab] = useState<Tab>('home')
@@ -72,6 +74,10 @@ export function TorahWorkspaceClient({
 
   function onSummaryDeleted(id: string) {
     setLocalSummaries((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  function onSessionDeleted(id: string) {
+    setLocalSessions((prev) => prev.filter((s) => s.id !== id))
   }
 
   return (
@@ -138,6 +144,8 @@ export function TorahWorkspaceClient({
             userId={userId}
             recentSessions={localSessions}
             onSessionSaved={onSessionSaved}
+            onSessionDeleted={onSessionDeleted}
+            initialTracks={dailyTracks}
           />
         )}
         {activeTab === 'feed' && (

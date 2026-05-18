@@ -82,6 +82,16 @@ export interface LearningNote {
   updated_at: string
 }
 
+export interface DailyTrack {
+  id: string
+  user_id: string
+  name: string
+  content: string
+  last_done: string | null
+  sort_order: number
+  created_at: string
+}
+
 export interface LearningSummary {
   id: string
   user_id: string

@@ -4,7 +4,7 @@ import { getDomainBySlug } from '@/lib/domains'
 import { DomainDetailClient } from './domain-detail-client'
 import { TradingWorkspaceClient } from '@/components/trading/trading-workspace-client'
 import { TorahWorkspaceClient } from '@/components/torah/torah-workspace-client'
-import type { Habit, HabitLog, LearningSession, LearningSummary, TorahLesson } from '@/types'
+import type { Habit, HabitLog, LearningSession, LearningSummary, TorahLesson, DailyTrack } from '@/types'
 import type { Trade, TradingAccount, WatchlistItem } from '@/types/trading'
 
 interface Props {
@@ -49,7 +49,7 @@ export default async function DomainPage({ params }: Props) {
 
   if (slug === 'torah') {
     const today = new Date().toISOString().split('T')[0]
-    const [habitsRes, logsRes, sessionsRes, summariesRes, statsRes, lessonsRes, savedRes] =
+    const [habitsRes, logsRes, sessionsRes, summariesRes, statsRes, lessonsRes, savedRes, tracksRes] =
       await Promise.all([
         supabase
           .from('habits')
@@ -87,6 +87,11 @@ export default async function DomainPage({ params }: Props) {
           .from('saved_lessons')
           .select('lesson_id')
           .eq('user_id', user.id),
+        supabase
+          .from('torah_daily_tracks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('sort_order', { ascending: true }),
       ])
 
     const habits = (habitsRes.data as Habit[]) ?? []
@@ -102,6 +107,7 @@ export default async function DomainPage({ params }: Props) {
     const savedLessonIds = ((savedRes.data as { lesson_id: string }[]) ?? []).map(
       (r) => r.lesson_id
     )
+    const dailyTracks = (tracksRes.data as DailyTrack[]) ?? []
 
     return (
       <TorahWorkspaceClient
@@ -115,6 +121,7 @@ export default async function DomainPage({ params }: Props) {
         todaySessionCount={todaySessions.length}
         lessons={lessons}
         savedLessonIds={savedLessonIds}
+        dailyTracks={dailyTracks}
       />
     )
   }

@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Play, Square, Plus, BookOpen, MessageSquare, HelpCircle, ChevronDown } from 'lucide-react'
+import { Play, Square, Plus, BookOpen, MessageSquare, HelpCircle, ChevronDown, ChevronUp, Trash2, Search, X } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
-import type { LearningSession, LearningNote, TextCategory } from '@/types'
+import { TorahDailySchedule } from './torah-daily-schedule'
+import type { LearningSession, LearningNote, TextCategory, DailyTrack } from '@/types'
 
 const TORAH_COLOR = '#0f766e'
 
@@ -34,6 +35,12 @@ function formatDuration(seconds: number) {
   return rem > 0 ? `${h}ש' ${rem}ד'` : `${h}ש'`
 }
 
+function flattenHe(text: string | string[] | string[][]): string[] {
+  if (!text) return []
+  if (typeof text === 'string') return [text]
+  return (text as (string | string[])[]).flatMap((v) => (Array.isArray(v) ? v : [v]))
+}
+
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
@@ -47,10 +54,12 @@ function timeAgo(iso: string) {
 interface Props {
   userId: string
   recentSessions: LearningSession[]
+  initialTracks: DailyTrack[]
   onSessionSaved: (session: LearningSession, addedSeconds: number) => void
+  onSessionDeleted: (id: string) => void
 }
 
-export function TorahLearnTab({ userId, recentSessions, onSessionSaved }: Props) {
+export function TorahLearnTab({ userId, recentSessions, initialTracks, onSessionSaved, onSessionDeleted }: Props) {
   const { t } = useLang()
   const supabase = createClient()
 
@@ -65,6 +74,11 @@ export function TorahLearnTab({ userId, recentSessions, onSessionSaved }: Props)
   const [noteTab, setNoteTab] = useState<NoteTab>('notes')
   const [saving, setSaving] = useState(false)
   const [showCatPicker, setShowCatPicker] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [sefariaOpen, setSefariaOpen] = useState(true)
+  const [sefariaQuery, setSefariaQuery] = useState('')
+  const [sefariaLoading, setSefariaLoading] = useState(false)
+  const [sefariaResult, setSefariaResult] = useState<{ ref: string; heTitle: string; verses: string[] } | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number>(0)
@@ -146,6 +160,31 @@ export function TorahLearnTab({ userId, recentSessions, onSessionSaved }: Props)
     setNoteInput('')
   }
 
+  async function searchSefaria() {
+    if (!sefariaQuery.trim()) return
+    setSefariaLoading(true)
+    setSefariaResult(null)
+    try {
+      const r = await fetch(
+        `https://www.sefaria.org/api/texts/${encodeURIComponent(sefariaQuery.trim())}?context=0&pad=0`
+      )
+      const data = await r.json()
+      const verses = flattenHe(data.he).filter(Boolean).slice(0, 20)
+      setSefariaResult({ ref: data.ref ?? sefariaQuery, heTitle: data.heTitle ?? sefariaQuery, verses })
+    } catch {
+      setSefariaResult(null)
+    }
+    setSefariaLoading(false)
+  }
+
+  async function deleteSession(id: string) {
+    setDeletingId(id)
+    await supabase.from('learning_notes').delete().eq('session_id', id)
+    await supabase.from('learning_sessions').delete().eq('id', id)
+    onSessionDeleted(id)
+    setDeletingId(null)
+  }
+
   const visibleNotes = notes.filter((n) => (noteTab === 'notes' ? n.type === 'note' : n.type === 'question'))
   const selectedCat = CATEGORIES.find((c) => c.value === category)
 
@@ -208,6 +247,101 @@ export function TorahLearnTab({ userId, recentSessions, onSessionSaved }: Props)
             </button>
           </div>
 
+          {/* Sefaria panel */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ border: '1px solid rgba(245,158,11,0.22)' }}
+          >
+            <button
+              onClick={() => setSefariaOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 transition-colors"
+              style={{ background: 'rgba(245,158,11,0.09)' }}
+            >
+              <div className="flex items-center gap-1.5 text-amber-400/60">
+                {sefariaOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-amber-300 text-sm font-semibold">ספריא</span>
+                <span className="text-base">📚</span>
+              </div>
+            </button>
+
+            {sefariaOpen && (
+              <div className="p-4 space-y-4" style={{ background: 'rgba(245,158,11,0.03)' }}>
+                {/* Text search */}
+                <div className="space-y-2">
+                  <p className="text-xs text-white/40 text-right">חיפוש מראה מקום</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={searchSefaria}
+                      disabled={sefariaLoading || !sefariaQuery.trim()}
+                      className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-opacity disabled:opacity-30"
+                      style={{ background: 'rgba(245,158,11,0.18)', color: '#f59e0b' }}
+                    >
+                      <Search size={15} />
+                    </button>
+                    <input
+                      value={sefariaQuery}
+                      onChange={(e) => setSefariaQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') searchSefaria() }}
+                      placeholder="ברכות ב:א — Berakhot 2a"
+                      className="flex-1 bg-transparent text-sm text-white placeholder-white/20 outline-none text-right border-b"
+                      style={{ borderColor: 'rgba(245,158,11,0.2)' }}
+                      dir="rtl"
+                    />
+                  </div>
+
+                  {sefariaLoading && (
+                    <p className="text-white/30 text-xs text-right">טוען...</p>
+                  )}
+
+                  {sefariaResult && (
+                    <div
+                      className="rounded-xl p-3 space-y-2"
+                      style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => setSefariaResult(null)}
+                          className="text-white/30 hover:text-white/60 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                        <p className="text-amber-400 text-xs font-semibold">{sefariaResult.heTitle}</p>
+                      </div>
+                      <div className="max-h-52 overflow-y-auto space-y-1.5" dir="rtl">
+                        {sefariaResult.verses.length > 0 ? (
+                          sefariaResult.verses.map((v, i) => (
+                            <p
+                              key={i}
+                              className="text-white/80 text-sm leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: v }}
+                            />
+                          ))
+                        ) : (
+                          <p className="text-white/30 text-xs py-2">לא נמצא טקסט</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => { setTextTitle(sefariaResult.ref); setSefariaResult(null) }}
+                        className="w-full text-xs py-2 rounded-lg transition-opacity hover:opacity-80"
+                        style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}
+                        dir="rtl"
+                      >
+                        התחל שיעור על טקסט זה ←
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ borderTop: '1px solid rgba(245,158,11,0.1)' }} />
+
+                {/* Personal daily schedule */}
+                <TorahDailySchedule userId={userId} initialTracks={initialTracks} />
+              </div>
+            )}
+          </div>
+
           {/* Recent sessions */}
           {recentSessions.length > 0 && (
             <section>
@@ -219,11 +353,18 @@ export function TorahLearnTab({ userId, recentSessions, onSessionSaved }: Props)
                     className="flex items-center justify-between p-3 rounded-xl"
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
                   >
-                    <span className="text-xs text-white/30">{timeAgo(s.created_at)}</span>
-                    <div className="text-right">
+                    <button
+                      onClick={() => deleteSession(s.id)}
+                      disabled={deletingId === s.id}
+                      className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-opacity hover:opacity-80 disabled:opacity-30"
+                      style={{ background: 'rgba(239,68,68,0.12)', color: 'rgba(239,68,68,0.7)' }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <div className="text-right flex-1 mx-2">
                       <p className="text-sm text-white/85">{s.text_title}</p>
                       <p className="text-xs text-white/35 mt-0.5">
-                        {CATEGORIES.find((c) => c.value === s.text_category)?.labelHe} · {formatDuration(s.duration_seconds)}
+                        {CATEGORIES.find((c) => c.value === s.text_category)?.labelHe} · {formatDuration(s.duration_seconds)} · {timeAgo(s.created_at)}
                       </p>
                     </div>
                   </div>
