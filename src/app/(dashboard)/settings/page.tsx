@@ -36,7 +36,7 @@ export default function SettingsPage() {
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
             style={
               theme === 'dark'
-                ? { background: 'oklch(0.16 0.07 145)', color: 'oklch(0.72 0.20 145)', border: '1px solid oklch(0.72 0.20 145 / 40%)' }
+                ? { background: 'var(--c-primary-glow)', color: 'var(--primary)', border: '1px solid var(--primary)' }
                 : { background: 'var(--c-surface-2)', color: 'var(--muted-foreground)', border: '1px solid var(--c-border)' }
             }
           >
@@ -48,7 +48,7 @@ export default function SettingsPage() {
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
             style={
               theme === 'light'
-                ? { background: 'oklch(0.44 0.18 145)', color: 'white', border: '1px solid oklch(0.44 0.18 145 / 0%)' }
+                ? { background: 'var(--primary)', color: 'var(--primary-foreground)', border: '1px solid var(--primary)' }
                 : { background: 'var(--c-surface-2)', color: 'var(--muted-foreground)', border: '1px solid var(--c-border)' }
             }
           >

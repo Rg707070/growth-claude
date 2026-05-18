@@ -23,10 +23,10 @@ export function DomainCard({ data }: DomainCardProps) {
       onClick={() => router.push(`/domain/${domain.slug}`)}
       className="w-full text-start active:scale-95 transition-all duration-200 hover:scale-[1.02]"
       style={{
-        background: 'var(--c-surface)',
-        border: `1px solid ${domain.color}35`,
-        borderRadius: '1.25rem',
-        boxShadow: `0 0 16px ${domain.glowColor}, 0 2px 10px var(--c-shadow)`,
+        background: 'var(--card)',
+        border: `1px solid ${domain.color}22`,
+        borderRadius: '1rem',
+        boxShadow: '0 1px 3px var(--c-shadow)',
         padding: '1rem',
       }}
     >
@@ -34,24 +34,24 @@ export function DomainCard({ data }: DomainCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2"
-            style={{ background: `${domain.color}18`, border: `1px solid ${domain.color}35` }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-lg mb-2"
+            style={{ background: `${domain.color}15` }}
           >
             {domain.icon}
           </div>
-          <p className="font-bold text-sm leading-tight" style={{ color: 'var(--foreground)' }}>
+          <p className="font-semibold text-sm leading-tight" style={{ color: 'var(--foreground)' }}>
             {isRTL ? domain.nameHe : domain.nameEn}
           </p>
         </div>
-        <ProgressRing percentage={pct} color={domain.color} size={48} strokeWidth={3.5}>
-          <span className="text-[10px] font-black" style={{ color: domain.color }}>
+        <ProgressRing percentage={pct} color={domain.color} size={44} strokeWidth={3}>
+          <span className="text-[10px] font-bold" style={{ color: domain.color }}>
             {pct}%
           </span>
         </ProgressRing>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 rounded-full mb-2.5 overflow-hidden" style={{ background: `${domain.color}18` }}>
+      <div className="h-0.5 rounded-full mb-2.5 overflow-hidden" style={{ background: `${domain.color}15` }}>
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{ width: `${pct}%`, background: domain.color }}
@@ -60,11 +60,14 @@ export function DomainCard({ data }: DomainCardProps) {
 
       {/* Bottom stats */}
       <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
+        <div className="flex items-center gap-1.5" style={{ color: 'var(--muted-foreground)' }}>
           {streak > 0 && <span>🔥 {streak}</span>}
         </div>
         {allDone ? (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${domain.color}20`, color: domain.color }}>
+          <span
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+            style={{ background: `${domain.color}18`, color: domain.color }}
+          >
             ✓ {isRTL ? 'הושלם' : 'Done'}
           </span>
         ) : (

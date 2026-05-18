@@ -72,29 +72,22 @@ export function DashboardClient({
       <div className="px-4 pt-12 pb-32 space-y-6 md:px-0 md:pt-8 md:pb-12 md:space-y-8">
         {/* Header hero card */}
         <div
-          className="rounded-3xl p-5 md:p-7 relative overflow-hidden"
+          className="rounded-2xl p-5 md:p-7 relative overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, var(--c-hero-start), var(--c-hero-end))',
             border: '1px solid var(--c-hero-border)',
-            boxShadow: '0 0 40px var(--c-hero-shadow), 0 8px 32px var(--c-shadow-lg)',
           }}
         >
-          {/* Glow blob */}
-          <div
-            className="absolute -top-8 -right-8 w-32 h-32 md:w-48 md:h-48 rounded-full blur-3xl pointer-events-none"
-            style={{ background: 'var(--c-primary-glow)' }}
-          />
-
-          <div className="flex items-start justify-between mb-4 relative">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-white/45 text-xs md:text-sm font-medium mb-1">
+              <p className="text-white/60 text-xs font-medium mb-1">
                 {new Date().toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',
                 })}
               </p>
-              <h1 className="text-xl md:text-3xl font-black text-white leading-tight">{greeting}</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-white leading-tight">{greeting}</h1>
             </div>
             <LangToggle />
           </div>
@@ -112,7 +105,7 @@ export function DashboardClient({
           <WeeklyChallenge challengeProgress={challengeProgress} />
 
           <div>
-            <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
               {t('allDomains')}
             </h2>
             <div className="grid grid-cols-2 gap-3">
@@ -131,11 +124,11 @@ export function DashboardClient({
           />
 
           <div>
-            <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
               {t('todayHabits')}
             </h2>
             {todayHabits.length === 0 ? (
-              <div className="text-center py-8 text-white/30 text-sm">
+              <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
                 {t('noHabitsYet')}
               </div>
             ) : (
@@ -156,9 +149,8 @@ export function DashboardClient({
         <div className="hidden md:grid md:grid-cols-3 md:gap-6">
           {/* Main column (2/3) */}
           <div className="md:col-span-2 space-y-6">
-            {/* Domains */}
             <div>
-              <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
                 {t('allDomains')}
               </h2>
               <div className="grid grid-cols-4 gap-3">
@@ -168,13 +160,12 @@ export function DashboardClient({
               </div>
             </div>
 
-            {/* Today's Habits */}
             <div>
-              <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
                 {t('todayHabits')}
               </h2>
               {todayHabits.length === 0 ? (
-                <div className="text-center py-8 text-white/30 text-sm">
+                <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
                   {t('noHabitsYet')}
                 </div>
               ) : (

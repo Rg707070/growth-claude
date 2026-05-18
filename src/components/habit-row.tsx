@@ -86,26 +86,17 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         swiped ? 'animate-swipe-done' : ''
       }`}
       style={{
-        background: done
-          ? `${accentColor}0e`
-          : 'oklch(0.14 0.04 238 / 80%)',
-        border: `1px solid ${done ? `${accentColor}25` : 'oklch(0.75 0.12 210 / 10%)'}`,
+        background: done ? `${accentColor}0d` : 'var(--card)',
+        border: `1px solid ${done ? `${accentColor}25` : 'var(--border)'}`,
         padding: '0.75rem',
       }}
     >
-      {/* Left accent bar */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full"
-        style={{ background: done ? accentColor : `${accentColor}50` }}
-      />
-
       {/* Checkbox */}
       <div
-        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-300"
+        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
         style={{
           borderColor: accentColor,
           backgroundColor: done ? accentColor : 'transparent',
-          boxShadow: done ? `0 0 10px ${accentColor}50` : 'none',
         }}
       >
         {done && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -114,15 +105,15 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       {/* Name */}
       <div className="flex-1 min-w-0">
         <p
-          className={`text-sm font-semibold truncate transition-all ${
-            done ? 'text-white/35' : 'text-white'
-          }`}
-          style={{ textDecoration: done ? 'line-through' : 'none' }}
+          className="text-sm font-medium truncate transition-all"
+          style={{
+            color: done ? 'var(--muted-foreground)' : 'var(--foreground)',
+            textDecoration: done ? 'line-through' : 'none',
+          }}
         >
           {habit.name}
         </p>
       </div>
-
     </button>
   )
 }

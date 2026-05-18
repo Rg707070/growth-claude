@@ -71,7 +71,7 @@ export function FAB() {
       {/* Sheet backdrop */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm md:hidden"
           onClick={reset}
         />
       )}
@@ -79,15 +79,22 @@ export function FAB() {
       {/* Slide-up sheet */}
       {open && (
         <div className="fixed bottom-20 left-0 right-0 z-50 px-4 md:hidden">
-          <div className="rounded-2xl p-5 shadow-2xl" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
-            {/* Close */}
+          <div
+            className="rounded-2xl p-5 shadow-xl"
+            style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}
+          >
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <span className="text-white font-semibold text-sm">
+              <span className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
                 {step === 'domain'
                   ? isRTL ? 'בחר תחום' : 'Choose domain'
                   : isRTL ? `הרגל ל${selectedDomain?.nameHe}` : `Habit for ${selectedDomain?.nameEn}`}
               </span>
-              <button onClick={reset} className="text-white/40 hover:text-white transition-colors">
+              <button
+                onClick={reset}
+                className="transition-colors"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -98,10 +105,14 @@ export function FAB() {
                   <button
                     key={d.slug}
                     onClick={() => pickDomain(d.slug)}
-                    className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/8"
+                    className="flex flex-col items-center gap-1 p-2 rounded-xl active:scale-95 transition-all"
+                    style={{
+                      background: 'var(--secondary)',
+                      border: '1px solid var(--border)',
+                    }}
                   >
-                    <span className="text-2xl">{d.icon}</span>
-                    <span className="text-[9px] text-white/60 text-center leading-tight">
+                    <span className="text-xl">{d.icon}</span>
+                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--muted-foreground)' }}>
                       {isRTL ? d.nameHe : d.nameEn}
                     </span>
                   </button>
@@ -112,8 +123,8 @@ export function FAB() {
             {step === 'name' && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xl">{selectedDomain?.icon}</span>
-                  <span className="text-sm text-white/60">
+                  <span className="text-lg">{selectedDomain?.icon}</span>
+                  <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
                     {isRTL ? selectedDomain?.nameHe : selectedDomain?.nameEn}
                   </span>
                 </div>
@@ -123,7 +134,14 @@ export function FAB() {
                   onChange={(e) => setHabitName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && save()}
                   placeholder={isRTL ? 'שם ההרגל...' : 'Habit name...'}
-                  className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50"
+                  className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-all"
+                  style={{
+                    background: 'var(--c-input)',
+                    border: '1px solid var(--c-input-border)',
+                    color: 'var(--foreground)',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--ring)')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--c-input-border)')}
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
                 {saveError && (
@@ -132,14 +150,20 @@ export function FAB() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setStep('domain')}
-                    className="flex-1 py-2.5 rounded-xl bg-white/8 text-white/60 text-sm hover:bg-white/15 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl text-sm transition-colors"
+                    style={{
+                      background: 'var(--secondary)',
+                      color: 'var(--muted-foreground)',
+                      border: '1px solid var(--border)',
+                    }}
                   >
                     {isRTL ? 'חזור' : 'Back'}
                   </button>
                   <button
                     onClick={save}
                     disabled={!habitName.trim() || saving}
-                    className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-semibold text-sm hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
+                    style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
                   >
                     {saving ? '...' : isRTL ? 'שמור' : 'Save'}
                   </button>
@@ -153,10 +177,15 @@ export function FAB() {
       {/* FAB button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center animate-fab-ring hover:scale-110 active:scale-95 transition-transform md:hidden"
+        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform md:hidden"
+        style={{
+          background: 'var(--primary)',
+          color: 'var(--primary-foreground)',
+          boxShadow: '0 4px 12px var(--c-shadow-lg)',
+        }}
         aria-label={isRTL ? 'הוסף הרגל' : 'Add habit'}
       >
-        <Plus size={24} className="text-white" strokeWidth={2.5} />
+        <Plus size={24} strokeWidth={2.5} />
       </button>
     </>
   )
