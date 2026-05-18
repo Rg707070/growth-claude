@@ -8,7 +8,7 @@ import { TorahLearnTab } from './torah-learn-tab'
 import { TorahFeedTab } from './torah-feed-tab'
 import { TorahSummariesTab } from './torah-summaries-tab'
 import { TorahProfileTab } from './torah-profile-tab'
-import type { Habit, LearningSession, LearningSummary } from '@/types'
+import type { Habit, LearningSession, LearningSummary, TorahLesson } from '@/types'
 
 interface Props {
   userId: string
@@ -19,6 +19,8 @@ interface Props {
   totalSeconds: number
   todaySeconds: number
   todaySessionCount: number
+  lessons: TorahLesson[]
+  savedLessonIds: string[]
 }
 
 type Tab = 'home' | 'learn' | 'feed' | 'summaries' | 'profile'
@@ -35,6 +37,8 @@ export function TorahWorkspaceClient({
   totalSeconds,
   todaySeconds,
   todaySessionCount,
+  lessons,
+  savedLessonIds,
 }: Props) {
   const { t } = useLang()
   const [activeTab, setActiveTab] = useState<Tab>('home')
@@ -42,6 +46,7 @@ export function TorahWorkspaceClient({
   const [localSessions, setLocalSessions] = useState<LearningSession[]>(sessions)
   const [localTodaySeconds, setLocalTodaySeconds] = useState(todaySeconds)
   const [localTodayCount, setLocalTodayCount] = useState(todaySessionCount)
+  const [localSavedIds, setLocalSavedIds] = useState<string[]>(savedLessonIds)
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: t('torahHome'), icon: <Home size={18} /> },
@@ -135,7 +140,14 @@ export function TorahWorkspaceClient({
             onSessionSaved={onSessionSaved}
           />
         )}
-        {activeTab === 'feed' && <TorahFeedTab userId={userId} />}
+        {activeTab === 'feed' && (
+          <TorahFeedTab
+            userId={userId}
+            lessons={lessons}
+            savedLessonIds={localSavedIds}
+            onSavedChange={setLocalSavedIds}
+          />
+        )}
         {activeTab === 'summaries' && (
           <TorahSummariesTab
             userId={userId}

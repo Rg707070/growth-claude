@@ -270,3 +270,58 @@ create policy "Users manage own learning summaries"
   on public.learning_summaries for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ============================================================
+-- TORAH LESSONS (admin-seeded content feed)
+-- ============================================================
+create table if not exists public.torah_lessons (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  speaker text not null,
+  duration_minutes integer not null,
+  category text not null,
+  description text,
+  category_color text default '#0f766e',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- All authenticated users can read lessons
+alter table public.torah_lessons enable row level security;
+create policy "Authenticated users can read lessons"
+  on public.torah_lessons for select
+  using (auth.role() = 'authenticated');
+
+-- ============================================================
+-- SAVED LESSONS (per-user)
+-- ============================================================
+create table if not exists public.saved_lessons (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  lesson_id uuid references public.torah_lessons on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, lesson_id)
+);
+
+alter table public.saved_lessons enable row level security;
+create policy "Users manage own saved lessons"
+  on public.saved_lessons for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ============================================================
+-- SEED: TORAH LESSONS (real content)
+-- ============================================================
+insert into public.torah_lessons (title, speaker, duration_minutes, category, description, category_color) values
+  ('מסכת ברכות — דף ב: מאימתי קורין את שמע בערבית', 'הרב עדין שטיינזלץ', 42, 'גמרא', 'שיעור יסוד על הדף הראשון של הש"ס — זמן קריאת שמע של ערבית וגדר הלילה לעניין מצוות', '#0f766e'),
+  ('פרשת בראשית — בריאת העולם ותפקיד האדם', 'הרב יצחק זילברשטיין', 38, 'פרשה', 'עיון בשאלה מדוע התורה פותחת בבריאה ולא במצוות, ומה משמעות "צלם אלוהים"', '#7c3aed'),
+  ('הלכות שבת — ל"ט מלאכות: מבוא ויסודות', 'הרב אביגדור נבנצל', 55, 'הלכה', 'הגדרת מלאכה, מקור הל"ט מלאכות ממשכן, וכיצד לומדים מכל אחת לחיי היומיום', '#b45309'),
+  ('משנה אבות פרק א — בית יוסי בן יועזר', 'הרב חיים סבתו', 29, 'משנה', 'עיון במשנה "הוי מתאבק בעפר רגליהם" — ענוה, שימוש תלמידי חכמים ולמידה אמיתית', '#be185d'),
+  ('ספר בראשית עם פירוש רש"י — פרק א', 'הרב מרדכי ברויאר', 33, 'תנ"ך', 'לימוד הפסוקים הראשונים עם עיון מעמיק בפירוש רש"י ובשאלות שהוא מעלה', '#15803d'),
+  ('זהירות — פרק ראשון של מסילת ישרים', 'הרב משה שפירא', 47, 'מחשבה', 'הרמח"ל מגדיר את מידת הזהירות — מה היא, כיצד נרכשת ומה מעכב אותה', '#0369a1'),
+  ('הלכות תפילה — זמני תפילת שחרית', 'הרב שלמה זלמן אויערבך', 24, 'הלכה', 'זמן תפילת שחרית, ותיקין, דיני מי שהתאחר ושאלות מעשיות נפוצות', '#b45309'),
+  ('מסכת שבת — דף ב: רשויות שבת', 'הרב שמואל ברוידא', 36, 'גמרא', 'הכרת ארבע רשויות שבת, מקור הגדרותיהן ויישום בזמננו', '#0f766e'),
+  ('פרשת נח — המבול, הברית והקשת', 'הרב יוסף בן-פורת', 31, 'פרשה', 'מה למד נח מהמבול, מהי ברית הקשת ומה נדרש מאיתנו כיום', '#7c3aed'),
+  ('דיני ברכות — ברכות הנהנין: עקרונות', 'הרב יהושע נויבירט', 28, 'הלכה', 'כיצד נקבעת ברכה לכל מאכל, שלושת עיקרי הברכות ודיני ספק ברכות', '#b45309'),
+  ('תהילים — מזמור א: אשרי האיש', 'הרב אריה לוין', 18, 'תנ"ך', 'פירוש מעמיק למזמור הפותח את ספר תהילים — מי הוא "אשרי האיש" ומה עצת הרשעים', '#15803d'),
+  ('זריזות — פרק שני של מסילת ישרים', 'הרב נח ויינברג', 44, 'מחשבה', 'הרמח"ל על ההבדל בין זהירות לזריזות, ומדוע מהירות היא חלק מהעבודה', '#0369a1')
+ON CONFLICT DO NOTHING;

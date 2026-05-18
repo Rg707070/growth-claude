@@ -49,6 +49,17 @@ export interface DomainProgress {
 
 export type TextCategory = 'gemara' | 'mishnah' | 'tanakh' | 'halacha' | 'article' | 'other'
 
+export interface TorahLesson {
+  id: string
+  title: string
+  speaker: string
+  duration_minutes: number
+  category: string
+  description: string | null
+  category_color: string
+  created_at: string
+}
+
 export interface LearningSession {
   id: string
   user_id: string

@@ -4,7 +4,7 @@ import { getDomainBySlug } from '@/lib/domains'
 import { DomainDetailClient } from './domain-detail-client'
 import { TradingWorkspaceClient } from '@/components/trading/trading-workspace-client'
 import { TorahWorkspaceClient } from '@/components/torah/torah-workspace-client'
-import type { Habit, HabitLog, LearningSession, LearningSummary } from '@/types'
+import type { Habit, HabitLog, LearningSession, LearningSummary, TorahLesson } from '@/types'
 import type { Trade, TradingAccount, WatchlistItem } from '@/types/trading'
 
 interface Props {
@@ -49,36 +49,45 @@ export default async function DomainPage({ params }: Props) {
 
   if (slug === 'torah') {
     const today = new Date().toISOString().split('T')[0]
-    const [habitsRes, logsRes, sessionsRes, summariesRes, statsRes] = await Promise.all([
-      supabase
-        .from('habits')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('domain_slug', 'torah')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('habit_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('completed_at', today),
-      supabase
-        .from('learning_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10),
-      supabase
-        .from('learning_summaries')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(20),
-      supabase
-        .from('learning_sessions')
-        .select('duration_seconds')
-        .eq('user_id', user.id),
-    ])
+    const [habitsRes, logsRes, sessionsRes, summariesRes, statsRes, lessonsRes, savedRes] =
+      await Promise.all([
+        supabase
+          .from('habits')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('domain_slug', 'torah')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('habit_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('completed_at', today),
+        supabase
+          .from('learning_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('learning_summaries')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('learning_sessions')
+          .select('duration_seconds')
+          .eq('user_id', user.id),
+        supabase
+          .from('torah_lessons')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('saved_lessons')
+          .select('lesson_id')
+          .eq('user_id', user.id),
+      ])
 
     const habits = (habitsRes.data as Habit[]) ?? []
     const todayLogs = (logsRes.data as HabitLog[]) ?? []
@@ -89,6 +98,10 @@ export default async function DomainPage({ params }: Props) {
     const totalSeconds = allSessions.reduce((acc, s) => acc + s.duration_seconds, 0)
     const todaySessions = sessions.filter((s) => s.created_at.startsWith(today))
     const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration_seconds, 0)
+    const lessons = (lessonsRes.data as TorahLesson[]) ?? []
+    const savedLessonIds = ((savedRes.data as { lesson_id: string }[]) ?? []).map(
+      (r) => r.lesson_id
+    )
 
     return (
       <TorahWorkspaceClient
@@ -100,6 +113,8 @@ export default async function DomainPage({ params }: Props) {
         totalSeconds={totalSeconds}
         todaySeconds={todaySeconds}
         todaySessionCount={todaySessions.length}
+        lessons={lessons}
+        savedLessonIds={savedLessonIds}
       />
     )
   }
