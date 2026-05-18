@@ -113,28 +113,35 @@ export function DomainDetailClient({
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+          className="p-2 rounded-xl transition-colors"
+          style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
         >
-          <ArrowRight size={20} className={`text-white ${isRTL ? '' : 'rotate-180'}`} />
+          <ArrowRight
+            size={20}
+            style={{ color: 'var(--foreground)', transform: isRTL ? 'none' : 'rotate(180deg)' }}
+          />
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1
+            className="text-xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--foreground)' }}
+          >
             <span>{domain.icon}</span>
             <span>{isRTL ? domain.nameHe : domain.nameEn}</span>
           </h1>
-          <p className="text-white/40 text-xs mt-0.5">
+          <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
             {completedCount}/{habits.length} {t('habits')}
           </p>
         </div>
         <ProgressRing percentage={pct} color={domain.color} size={48} strokeWidth={4}>
-          <span className="text-[10px] font-bold text-white">{pct}%</span>
+          <span className="text-[10px] font-bold" style={{ color: domain.color }}>{pct}%</span>
         </ProgressRing>
       </div>
 
       {/* Quick links */}
       {integration?.links && integration.links.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-white/40 text-xs font-semibold uppercase tracking-wider">כלים</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>כלים</h2>
           <QuickLinks links={integration.links} />
         </div>
       )}
@@ -142,7 +149,7 @@ export function DomainDetailClient({
       {/* Domain widget */}
       {integration?.widgetType && (
         <div className="space-y-2">
-          <h2 className="text-white/40 text-xs font-semibold uppercase tracking-wider">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
             {integration.widgetType === 'sefaria' && 'לימוד יומי'}
             {integration.widgetType === 'tradingview' && 'שוק ההון'}
             {integration.widgetType === 'spotify' && 'מוזיקה'}
@@ -162,15 +169,17 @@ export function DomainDetailClient({
       <DomainJournal domainSlug={domain.slug} userId={userId} />
 
       {/* Divider */}
-      <div className="border-t border-white/10" />
+      <div style={{ borderTop: '1px solid var(--border)' }} />
 
       {/* Habits */}
       <div className="space-y-2">
-        <h2 className="text-white/40 text-xs font-semibold uppercase tracking-wider">
+        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
           {t('habits')}
         </h2>
         {habits.length === 0 && !adding && (
-          <div className="text-center py-8 text-white/30 text-sm">{t('noHabitsYet')}</div>
+          <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            {t('noHabitsYet')}
+          </div>
         )}
         {habits.map((habit) => (
           <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
@@ -187,22 +196,25 @@ export function DomainDetailClient({
               onChange={(e) => setNewHabitName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addHabit()}
               placeholder={t('habitName')}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl"
+              className="rounded-xl"
+              style={{
+                background: 'var(--c-input)',
+                border: '1px solid var(--c-input-border)',
+                color: 'var(--foreground)',
+              }}
             />
             <Button
               onClick={addHabit}
               disabled={saving || !newHabitName.trim()}
-              className="rounded-xl bg-white text-black px-4 flex-shrink-0"
+              className="rounded-xl flex-shrink-0"
+              style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
             >
               {t('save')}
             </Button>
             <button
-              onClick={() => {
-                setAdding(false)
-                setNewHabitName('')
-                setSaveError(null)
-              }}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60"
+              onClick={() => { setAdding(false); setNewHabitName(''); setSaveError(null) }}
+              className="p-2 rounded-xl transition-colors"
+              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
             >
               <X size={18} />
             </button>
@@ -214,7 +226,11 @@ export function DomainDetailClient({
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-white/20 text-white/40 hover:text-white/70 hover:border-white/40 transition-all"
+          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
+          style={{
+            borderColor: 'var(--border)',
+            color: 'var(--muted-foreground)',
+          }}
         >
           <Plus size={18} />
           <span className="text-sm">{t('addHabit')}</span>
