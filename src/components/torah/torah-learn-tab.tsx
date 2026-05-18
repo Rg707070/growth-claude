@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Play, Square, Plus, BookOpen, MessageSquare, HelpCircle, ChevronDown, ChevronUp, Trash2, Search, X } from 'lucide-react'
+import { Play, Square, Plus, BookOpen, MessageSquare, HelpCircle, ChevronDown, ChevronUp, Trash2, Search, X, Camera, Loader2 } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
 import { TorahDailySchedule } from './torah-daily-schedule'
@@ -81,9 +81,11 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
   const [sefariaLoading, setSefariaLoading] = useState(false)
   const [sefariaResult, setSefariaResult] = useState<{ ref: string; heTitle: string; verses: string[] } | null>(null)
   const [readerRef, setReaderRef] = useState<string | null>(null)
+  const [scanning, setScanning] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number>(0)
+  const scanInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     return () => {
@@ -182,6 +184,31 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
   function openReaderAndStartSession(ref: string) {
     setTextTitle(ref)
     setReaderRef(null)
+  }
+
+  async function handleScan(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setScanning(true)
+    e.target.value = ''
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const dataUrl = reader.result as string
+      const base64 = dataUrl.split(',')[1]
+      const mediaType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp'
+      try {
+        const res = await fetch('/api/torah/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, mediaType }),
+        })
+        const { ref } = await res.json()
+        if (ref) setReaderRef(ref)
+      } finally {
+        setScanning(false)
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
   async function deleteSession(id: string) {
@@ -285,10 +312,28 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
 
             {sefariaOpen && (
               <div className="p-4 space-y-4" style={{ background: 'rgba(245,158,11,0.03)' }}>
-                {/* Text search */}
+                {/* Text search + scanner */}
                 <div className="space-y-2">
                   <p className="text-xs text-white/40 text-right">חיפוש מראה מקום</p>
                   <div className="flex gap-2">
+                    {/* Hidden camera input */}
+                    <input
+                      ref={scanInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleScan}
+                    />
+                    <button
+                      onClick={() => scanInputRef.current?.click()}
+                      disabled={scanning}
+                      className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-opacity disabled:opacity-50"
+                      style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}
+                      title="סרוק טקסט מתמונה"
+                    >
+                      {scanning ? <Loader2 size={15} className="animate-spin" /> : <Camera size={15} />}
+                    </button>
                     <button
                       onClick={searchSefaria}
                       disabled={sefariaLoading || !sefariaQuery.trim()}
