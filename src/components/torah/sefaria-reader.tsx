@@ -48,7 +48,7 @@ export function SefariaReader({ initialRef, userId, onClose, onStartSession }: P
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-2.5 shrink-0"
-        style={{ borderBottom: '1px solid rgba(245,158,11,0.18)', background: 'oklch(0.08 0.035 240)' }}
+        style={{ borderBottom: '1px solid rgba(245,158,11,0.18)', background: 'var(--c-surface)' }}
       >
         {/* Start session */}
         <button

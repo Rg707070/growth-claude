@@ -72,7 +72,7 @@ export function TorahSummaryPanel({ userId, defaultTitle }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full" dir="rtl" style={{ background: 'oklch(0.10 0.035 240)' }}>
+    <div className="flex flex-col h-full" dir="rtl" style={{ background: 'var(--c-surface)' }}>
       {/* Title bar */}
       <div className="px-4 pt-3 pb-2.5 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <input

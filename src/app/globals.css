@@ -200,6 +200,8 @@ html.light .text-white\/35    { color: oklch(0.09 0 0 / 0.36) !important; }
 html.light .text-white\/30    { color: oklch(0.09 0 0 / 0.30) !important; }
 html.light .text-white\/25    { color: oklch(0.09 0 0 / 0.25) !important; }
 html.light .text-white\/20    { color: oklch(0.09 0 0 / 0.20) !important; }
+html.light .text-white\/15    { color: oklch(0.09 0 0 / 0.16) !important; }
+html.light .text-white\/10    { color: oklch(0.09 0 0 / 0.11) !important; }
 
 html.light .bg-white\/3       { background-color: oklch(0.09 0 0 / 0.04) !important; }
 html.light .bg-white\/5       { background-color: oklch(0.09 0 0 / 0.05) !important; }

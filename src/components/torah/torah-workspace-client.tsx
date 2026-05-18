@@ -103,7 +103,7 @@ export function TorahWorkspaceClient({
       {/* Internal tab bar */}
       <div
         className="flex overflow-x-auto scrollbar-hide px-3 py-2 gap-1 sticky top-0 z-10"
-        style={{ background: 'oklch(0.08 0.035 240)', borderBottom: `1px solid ${TORAH_TINT}` }}
+        style={{ background: 'var(--c-surface)', borderBottom: `1px solid ${TORAH_TINT}` }}
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id

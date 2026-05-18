@@ -115,7 +115,7 @@ export function DailyPlan({ habits, completedIds, streak }: DailyPlanProps) {
                 <div
                   key={i}
                   className="h-14 rounded-xl animate-pulse"
-                  style={{ background: 'oklch(0.18 0.05 238)' }}
+                  style={{ background: 'var(--c-surface-2)' }}
                 />
               ))}
             </div>
@@ -134,7 +134,7 @@ export function DailyPlan({ habits, completedIds, streak }: DailyPlanProps) {
                     key={i}
                     className="rounded-xl p-3 flex items-start gap-3"
                     style={{
-                      background: domain ? `${domain.color}12` : 'oklch(0.18 0.05 238)',
+                      background: domain ? `${domain.color}12` : 'var(--c-surface-2)',
                       border: `1px solid ${domain ? `${domain.color}25` : 'transparent'}`,
                       direction: isRTL ? 'rtl' : 'ltr',
                     }}

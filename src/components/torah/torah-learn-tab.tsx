@@ -266,7 +266,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
               {showCatPicker && (
                 <div
                   className="absolute top-8 right-0 z-20 rounded-xl p-2 flex flex-col gap-1 min-w-32"
-                  style={{ background: 'oklch(0.14 0.04 238)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
                 >
                   {CATEGORIES.map((c) => (
                     <button
