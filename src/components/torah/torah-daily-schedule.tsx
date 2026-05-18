@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Check, Edit2, X, Save } from 'lucide-react'
+import { Plus, Check, Edit2, X, Save, BookOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { DailyTrack } from '@/types'
 
@@ -87,82 +87,84 @@ export function TorahDailySchedule({ userId, initialTracks, onOpenReader }: Prop
         return (
           <div
             key={track.id}
-            className="rounded-xl p-3 transition-all"
+            className="rounded-xl overflow-hidden transition-all"
             style={{
               background: done ? 'rgba(245,158,11,0.07)' : 'rgba(255,255,255,0.03)',
               border: `1px solid ${done ? 'rgba(245,158,11,0.22)' : 'rgba(255,255,255,0.07)'}`,
             }}
           >
-            <div className="flex items-start gap-2">
+            {/* Main tappable area → opens reader */}
+            {editingId === track.id ? (
+              <div className="p-3 flex gap-1.5 items-center" dir="rtl">
+                <button onClick={() => saveEdit(track.id)} className="shrink-0 text-amber-400/60 hover:text-amber-400 transition-colors">
+                  <Save size={14} />
+                </button>
+                <input
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(track.id) }}
+                  autoFocus
+                  className="flex-1 bg-transparent text-sm text-white outline-none border-b text-right"
+                  style={{ borderColor: 'rgba(245,158,11,0.3)' }}
+                />
+              </div>
+            ) : (
               <button
-                onClick={() => removeTrack(track.id)}
-                className="mt-0.5 shrink-0 text-white/15 hover:text-red-400/50 transition-colors"
+                onClick={() => onOpenReader && onOpenReader(track.content)}
+                disabled={!onOpenReader}
+                className="w-full p-3 text-right flex items-center justify-between gap-3 transition-colors active:bg-white/5"
+                dir="rtl"
               >
-                <X size={11} />
-              </button>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => toggleDone(track.id, done)}
-                    className="shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all"
-                    style={{
-                      borderColor: done ? '#f59e0b' : 'rgba(255,255,255,0.2)',
-                      background: done ? '#f59e0b' : 'transparent',
-                    }}
-                  >
-                    {done && <Check size={11} color="#000" strokeWidth={3} />}
-                  </button>
-                  <p className="text-xs font-medium" style={{ color: done ? 'rgba(245,158,11,0.6)' : 'rgba(255,255,255,0.45)' }}>
+                <BookOpen
+                  size={15}
+                  style={{ color: done ? 'rgba(245,158,11,0.3)' : 'rgba(245,158,11,0.6)', flexShrink: 0 }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium mb-0.5" style={{ color: done ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.4)' }}>
                     {track.name}
                   </p>
+                  <p
+                    className="text-sm leading-snug"
+                    style={{
+                      color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+                      textDecoration: done ? 'line-through' : 'none',
+                    }}
+                  >
+                    {track.content}
+                  </p>
                 </div>
+              </button>
+            )}
 
-                {editingId === track.id ? (
-                  <div className="flex gap-1.5 mt-1.5 items-center">
-                    <button onClick={() => saveEdit(track.id)} className="shrink-0 text-amber-400/60 hover:text-amber-400 transition-colors">
-                      <Save size={13} />
-                    </button>
-                    <input
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(track.id) }}
-                      autoFocus
-                      className="flex-1 bg-transparent text-sm text-white outline-none border-b text-right"
-                      style={{ borderColor: 'rgba(245,158,11,0.3)' }}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between mt-1 gap-2">
-                    <button
-                      onClick={() => { setEditingId(track.id); setEditContent(track.content) }}
-                      className="shrink-0 text-white/15 hover:text-amber-400/50 transition-colors"
-                    >
-                      <Edit2 size={11} />
-                    </button>
-                    {onOpenReader ? (
-                      <button
-                        onClick={() => onOpenReader(track.content)}
-                        className="text-sm text-right leading-snug flex-1 transition-opacity hover:opacity-70"
-                        style={{
-                          color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.78)',
-                          textDecoration: done ? 'line-through' : 'none',
-                        }}
-                      >
-                        {track.content}
-                      </button>
-                    ) : (
-                      <p
-                        className="text-sm text-right leading-snug flex-1"
-                        style={{
-                          color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.78)',
-                          textDecoration: done ? 'line-through' : 'none',
-                        }}
-                      >
-                        {track.content}
-                      </p>
-                    )}
-                  </div>
-                )}
+            {/* Action bar */}
+            <div
+              className="flex items-center justify-between px-3 py-1.5"
+              style={{ borderTop: `1px solid ${done ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.05)'}` }}
+            >
+              <button
+                onClick={() => removeTrack(track.id)}
+                className="text-white/15 hover:text-red-400/50 transition-colors"
+              >
+                <X size={12} />
+              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { setEditingId(track.id); setEditContent(track.content) }}
+                  className="text-white/15 hover:text-amber-400/50 transition-colors"
+                >
+                  <Edit2 size={12} />
+                </button>
+                <button
+                  onClick={() => toggleDone(track.id, done)}
+                  className="flex items-center gap-1.5 text-xs font-medium transition-all px-2 py-0.5 rounded-full"
+                  style={{
+                    background: done ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.06)',
+                    color: done ? '#f59e0b' : 'rgba(255,255,255,0.35)',
+                  }}
+                >
+                  {done ? <Check size={11} strokeWidth={3} /> : <Check size={11} />}
+                  {done ? 'בוצע' : 'סמן כבוצע'}
+                </button>
               </div>
             </div>
           </div>
