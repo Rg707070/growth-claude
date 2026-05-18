@@ -5,6 +5,7 @@ import { Play, Square, Plus, BookOpen, MessageSquare, HelpCircle, ChevronDown, C
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
 import { TorahDailySchedule } from './torah-daily-schedule'
+import { SefariaReader } from './sefaria-reader'
 import type { LearningSession, LearningNote, TextCategory, DailyTrack } from '@/types'
 
 const TORAH_COLOR = '#0f766e'
@@ -79,6 +80,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
   const [sefariaQuery, setSefariaQuery] = useState('')
   const [sefariaLoading, setSefariaLoading] = useState(false)
   const [sefariaResult, setSefariaResult] = useState<{ ref: string; heTitle: string; verses: string[] } | null>(null)
+  const [readerRef, setReaderRef] = useState<string | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number>(0)
@@ -177,6 +179,11 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
     setSefariaLoading(false)
   }
 
+  function openReaderAndStartSession(ref: string) {
+    setTextTitle(ref)
+    setReaderRef(null)
+  }
+
   async function deleteSession(id: string) {
     setDeletingId(id)
     await supabase.from('learning_notes').delete().eq('session_id', id)
@@ -187,6 +194,16 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
 
   const visibleNotes = notes.filter((n) => (noteTab === 'notes' ? n.type === 'note' : n.type === 'question'))
   const selectedCat = CATEGORIES.find((c) => c.value === category)
+
+  if (readerRef) {
+    return (
+      <SefariaReader
+        initialRef={readerRef}
+        onClose={() => setReaderRef(null)}
+        onStartSession={openReaderAndStartSession}
+      />
+    )
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -309,26 +326,21 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                         </button>
                         <p className="text-amber-400 text-xs font-semibold">{sefariaResult.heTitle}</p>
                       </div>
-                      <div className="max-h-52 overflow-y-auto space-y-1.5" dir="rtl">
-                        {sefariaResult.verses.length > 0 ? (
-                          sefariaResult.verses.map((v, i) => (
-                            <p
-                              key={i}
-                              className="text-white/80 text-sm leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: v }}
-                            />
-                          ))
-                        ) : (
-                          <p className="text-white/30 text-xs py-2">לא נמצא טקסט</p>
-                        )}
-                      </div>
+                      <button
+                        onClick={() => setReaderRef(sefariaResult.ref)}
+                        className="w-full text-xs py-2.5 rounded-lg font-medium transition-opacity hover:opacity-80"
+                        style={{ background: 'rgba(245,158,11,0.18)', color: '#f59e0b' }}
+                        dir="rtl"
+                      >
+                        📖 פתח בקורא
+                      </button>
                       <button
                         onClick={() => { setTextTitle(sefariaResult.ref); setSefariaResult(null) }}
                         className="w-full text-xs py-2 rounded-lg transition-opacity hover:opacity-80"
-                        style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}
+                        style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}
                         dir="rtl"
                       >
-                        התחל שיעור על טקסט זה ←
+                        התחל שיעור בלי לקרוא ←
                       </button>
                     </div>
                   )}
@@ -337,7 +349,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                 <div style={{ borderTop: '1px solid rgba(245,158,11,0.1)' }} />
 
                 {/* Personal daily schedule */}
-                <TorahDailySchedule userId={userId} initialTracks={initialTracks} />
+                <TorahDailySchedule userId={userId} initialTracks={initialTracks} onOpenReader={setReaderRef} />
               </div>
             )}
           </div>

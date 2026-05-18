@@ -8,13 +8,14 @@ import type { DailyTrack } from '@/types'
 interface Props {
   userId: string
   initialTracks: DailyTrack[]
+  onOpenReader?: (ref: string) => void
 }
 
 function todayStr() {
   return new Date().toISOString().split('T')[0]
 }
 
-export function TorahDailySchedule({ userId, initialTracks }: Props) {
+export function TorahDailySchedule({ userId, initialTracks, onOpenReader }: Props) {
   const supabase = createClient()
   const [tracks, setTracks] = useState<DailyTrack[]>(initialTracks)
   const [adding, setAdding] = useState(false)
@@ -138,15 +139,28 @@ export function TorahDailySchedule({ userId, initialTracks }: Props) {
                     >
                       <Edit2 size={11} />
                     </button>
-                    <p
-                      className="text-sm text-right leading-snug"
-                      style={{
-                        color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.78)',
-                        textDecoration: done ? 'line-through' : 'none',
-                      }}
-                    >
-                      {track.content}
-                    </p>
+                    {onOpenReader ? (
+                      <button
+                        onClick={() => onOpenReader(track.content)}
+                        className="text-sm text-right leading-snug flex-1 transition-opacity hover:opacity-70"
+                        style={{
+                          color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.78)',
+                          textDecoration: done ? 'line-through' : 'none',
+                        }}
+                      >
+                        {track.content}
+                      </button>
+                    ) : (
+                      <p
+                        className="text-sm text-right leading-snug flex-1"
+                        style={{
+                          color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.78)',
+                          textDecoration: done ? 'line-through' : 'none',
+                        }}
+                      >
+                        {track.content}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
