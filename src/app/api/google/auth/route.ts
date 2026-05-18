@@ -21,6 +21,11 @@ export async function GET(req: NextRequest) {
     state: user.id,
   })
 
+  // DEBUG — remove after testing
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    return NextResponse.json({ error: 'GOOGLE_CLIENT_ID is missing', vars: Object.keys(process.env).filter(k => k.startsWith('GOOGLE')) })
+  }
+
   return NextResponse.redirect(
     `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   )
