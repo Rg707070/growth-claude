@@ -29,8 +29,9 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+  const isGoogleRoute = pathname.startsWith('/api/google/')
 
-  if (!user && !isAuthPage && pathname !== '/') {
+  if (!user && !isAuthPage && !isGoogleRoute && pathname !== '/') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
