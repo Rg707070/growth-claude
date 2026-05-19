@@ -2,17 +2,16 @@
 
 import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Grid3X3, BarChart2, CalendarDays, Settings, Bot } from 'lucide-react'
+import { Home, Grid3X3, CalendarDays, Settings, Bot } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { AiChatPanel } from '@/components/ai-chat'
 import type { Profile } from '@/types'
 
 const navItems = [
-  { icon: Home,         href: '/dashboard', labelHe: 'בית',     labelEn: 'Home'     },
-  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',  labelEn: 'Domains'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',     labelEn: 'Schedule' },
-  { icon: BarChart2,    href: '/progress',  labelHe: 'התקדמות', labelEn: 'Progress' },
-  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',  labelEn: 'Settings' },
+  { icon: Home,         href: '/dashboard', labelHe: 'בית',    labelEn: 'Home'     },
+  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים', labelEn: 'Domains'  },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',    labelEn: 'Schedule' },
+  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות', labelEn: 'Settings' },
 ]
 
 export function BottomNav({ profile }: { profile: Profile }) {
