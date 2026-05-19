@@ -5,6 +5,7 @@ import { FAB } from '@/components/fab'
 import { NightCheckIn } from '@/components/night-checkin'
 import { DashboardMain } from '@/components/dashboard-main'
 import { Sidebar } from '@/components/sidebar'
+import { AiChat } from '@/components/ai-chat'
 import type { Profile } from '@/types'
 
 export default async function DashboardLayout({
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
       <DashboardMain>{children}</DashboardMain>
       <BottomNav />
       <FAB />
+      <AiChat profile={profile} />
       <NightCheckIn />
     </div>
   )
