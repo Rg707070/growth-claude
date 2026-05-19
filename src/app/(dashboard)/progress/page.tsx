@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProgressClient } from './progress-client'
 import { DOMAINS } from '@/lib/domains'
+import { getTodaySchedule } from '@/lib/schedule'
 import type { Profile, Habit, HabitLog } from '@/types'
 
 export default async function ProgressPage() {
@@ -89,6 +90,53 @@ export default async function ProgressPage() {
   const habitXpMap = new Map(habits.map((h) => [h.id, h.xp_reward]))
   const weekXP = weekLogs.reduce((sum, log) => sum + (habitXpMap.get(log.habit_id) ?? 0), 0)
 
+  // Schedule adherence data
+  const todayDate = new Date().toISOString().split('T')[0]
+  const todayDay = new Date().getDay()
+  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+
+  const [todayScheduleRes, activityChecksRes] = await Promise.all([
+    supabase
+      .from('user_schedule')
+      .select('time, label, type')
+      .eq('user_id', user.id)
+      .eq('day_of_week', todayDay)
+      .is('specific_date', null)
+      .order('time'),
+    supabase
+      .from('activity_checks')
+      .select('date, time')
+      .eq('user_id', user.id)
+      .gte('date', sevenDaysAgo),
+  ])
+
+  const rawChecks = (activityChecksRes.data ?? []) as { date: string; time: string }[]
+  const rawScheduleItems = (todayScheduleRes.data ?? []) as { time: string; label: string; type: string }[]
+
+  const todayCheckSet = new Set(rawChecks.filter((c) => c.date === todayDate).map((c) => c.time))
+  let todayScheduleItems = rawScheduleItems.map((item) => ({
+    time: item.time,
+    label: item.label,
+    type: item.type,
+    checked: todayCheckSet.has(item.time),
+  }))
+  if (todayScheduleItems.length === 0) {
+    todayScheduleItems = getTodaySchedule().map((item) => ({
+      time: item.time, label: item.label, type: item.type, checked: false,
+    }))
+  }
+
+  const activityChecksByDay: Record<string, number> = {}
+  for (const c of rawChecks) {
+    activityChecksByDay[c.date] = (activityChecksByDay[c.date] ?? 0) + 1
+  }
+  const weeklyScheduleChecks = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    const date = d.toISOString().split('T')[0]
+    return { date, count: activityChecksByDay[date] ?? 0 }
+  })
+
   return (
     <ProgressClient
       profile={profile}
@@ -109,6 +157,8 @@ export default async function ProgressPage() {
         topDomainSlug,
         habitsCompleted: habitsCompletedThisWeek,
       }}
+      todaySchedule={todayScheduleItems}
+      weeklyScheduleChecks={weeklyScheduleChecks}
     />
   )
 }
