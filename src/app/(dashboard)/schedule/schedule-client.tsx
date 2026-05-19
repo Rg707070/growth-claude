@@ -6,6 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
 import { Check, MessageSquare, Pencil, Trash2, X } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
+import { HeatMap } from '@/components/heat-map'
+import { WeeklyChart } from '@/components/weekly-chart'
+import { WeeklySummary } from '@/components/weekly-summary'
+import { FridaySummary } from '@/components/friday-summary'
+import { AIInsights } from '@/components/ai-insights'
+import { AchievementsDisplay } from '@/components/achievements-display'
+import { ACHIEVEMENTS, getUnlockedIds } from '@/lib/achievements'
+import type { AchievementData } from '@/lib/achievements'
 
 // ─── Design ───────────────────────────────────────────────────────────────────
 function col(type: string, isDark: boolean) {
@@ -64,12 +72,27 @@ interface AllItem { id: string; day_of_week: number; label: string; time: string
 interface Reflection { date: string; notes: string }
 interface CheckRow   { time: string; note: string | null }
 
+interface WeekSummary {
+  bestDomain:     string
+  streak:         number
+  completionPct:  number
+  habitCount:     number
+  topDomainSlug:  string
+  habitsCompleted: number
+}
+
 interface Props {
-  userId:      string
-  reflections: Reflection[]
-  userItems:   Record<number, ScheduleItem[]>
-  allItems:    AllItem[]
-  todayChecks: CheckRow[]
+  userId:               string
+  reflections:          Reflection[]
+  userItems:            Record<number, ScheduleItem[]>
+  allItems:             AllItem[]
+  todayChecks:          CheckRow[]
+  heatMapDays:          { date: string; pct: number }[]
+  weeklyActivity:       { date: string; count: number }[]
+  weekXP:               number
+  achievementData:      AchievementData
+  weekSummary:          WeekSummary
+  weeklyScheduleChecks: { date: string; count: number }[]
 }
 
 // ─── Save scope modal ─────────────────────────────────────────────────────────
@@ -287,7 +310,7 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
 // ─── Main Component ───────────────────────────────────────────────────────────
 const DAYS = [0, 1, 2, 3, 4, 5]
 
-export function SchedulePageClient({ userId, reflections, userItems, allItems, todayChecks }: Props) {
+export function SchedulePageClient({ userId, reflections, userItems, allItems, todayChecks, heatMapDays, weeklyActivity, weekXP, achievementData, weekSummary, weeklyScheduleChecks }: Props) {
   const { isDark } = useTheme()
 
   const todayDay  = new Date().getDay()
@@ -625,6 +648,80 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
           )
         })}
       </div>
+
+      {/* ── Progress section ────────────────────────────────────────────────── */}
+      <ProgressSection
+        heatMapDays={heatMapDays}
+        weeklyActivity={weeklyActivity}
+        weekXP={weekXP}
+        achievementData={achievementData}
+        weekSummary={weekSummary}
+        weeklyScheduleChecks={weeklyScheduleChecks}
+      />
+    </div>
+  )
+}
+
+// ─── Progress Section ─────────────────────────────────────────────────────────
+interface ProgressSectionProps {
+  heatMapDays:          { date: string; pct: number }[]
+  weeklyActivity:       { date: string; count: number }[]
+  weekXP:               number
+  achievementData:      AchievementData
+  weekSummary:          WeekSummary
+  weeklyScheduleChecks: { date: string; count: number }[]
+}
+
+function ProgressSection({ heatMapDays, weeklyActivity, weekXP, achievementData, weekSummary, weeklyScheduleChecks }: ProgressSectionProps) {
+  const unlockedIds = getUnlockedIds(achievementData)
+
+  return (
+    <div className="px-4 md:px-0 mt-8 space-y-6">
+      {/* Divider */}
+      <div className="flex items-center gap-3" dir="rtl">
+        <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+        <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted-foreground)' }}>
+          התקדמות
+        </span>
+        <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+      </div>
+
+      <WeeklySummary
+        habitsCompleted={weekSummary.habitsCompleted}
+        bestDomain={weekSummary.bestDomain}
+        streak={weekSummary.streak}
+        completionPct={weekSummary.completionPct}
+      />
+
+      <FridaySummary
+        streak={weekSummary.streak}
+        habitsCompleted={weekSummary.habitsCompleted}
+      />
+
+      <WeeklyChart days={weeklyActivity} scheduleChecks={weeklyScheduleChecks} />
+
+      <HeatMap days={heatMapDays} />
+
+      <div>
+        <div className="flex items-center gap-2 mb-3" dir="rtl">
+          <span className="text-lg">🏅</span>
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+            הישגים
+          </h2>
+          <span className="text-xs mr-auto" style={{ color: 'var(--primary)' }}>
+            {unlockedIds.length}/{ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <AchievementsDisplay unlockedIds={unlockedIds} />
+      </div>
+
+      <AIInsights
+        weekXP={weekXP}
+        streak={weekSummary.streak}
+        topDomain={weekSummary.bestDomain}
+        completionPct={weekSummary.completionPct}
+        habitCount={weekSummary.habitCount}
+      />
     </div>
   )
 }

@@ -1,14 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { WEEKLY_SCHEDULE } from '@/lib/schedule'
+import { DOMAINS } from '@/lib/domains'
 import { SchedulePageClient } from './schedule-client'
+import type { Profile, Habit } from '@/types'
 
-// Returns the actual calendar date for a given day-of-week in the current week
 function getWeekDate(dayOfWeek: number): string {
   const today = new Date()
-  const diff  = dayOfWeek - today.getDay()
   const d     = new Date(today)
-  d.setDate(today.getDate() + diff)
+  d.setDate(today.getDate() + (dayOfWeek - today.getDay()))
   return d.toISOString().split('T')[0]
 }
 
@@ -41,50 +41,108 @@ export default async function SchedulePage() {
     await supabase.from('user_schedule').insert(seedRows)
   }
 
-  // Build date strings for each day of current week (for one-time items)
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map(getWeekDate)
 
-  const [{ data: reflections }, { data: scheduleRows }, { data: checkRows }] = await Promise.all([
-    supabase
-      .from('schedule_reflections')
-      .select('date, notes')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(60),
-    supabase
-      .from('user_schedule')
-      .select('id, day_of_week, time, label, type, specific_date')
-      .eq('user_id', user.id)
-      .or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`)
-      .order('time'),
-    supabase
-      .from('activity_checks')
-      .select('time, note')
-      .eq('user_id', user.id)
-      .eq('date', todayDate),
+  const heatMapStartDate = new Date()
+  heatMapStartDate.setDate(heatMapStartDate.getDate() - 83)
+  const heatMapStart = heatMapStartDate.toISOString().split('T')[0]
+  const weekStart    = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+
+  const [
+    { data: reflections },
+    { data: scheduleRows },
+    { data: checkRows },
+    profileRes,
+    habitsRes,
+    logsRes,
+    weekLogsRes,
+    activityChecksRes,
+  ] = await Promise.all([
+    supabase.from('schedule_reflections').select('date, notes').eq('user_id', user.id).order('date', { ascending: false }).limit(60),
+    supabase.from('user_schedule').select('id, day_of_week, time, label, type, specific_date').eq('user_id', user.id).or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`).order('time'),
+    supabase.from('activity_checks').select('time, note').eq('user_id', user.id).eq('date', todayDate),
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
+    supabase.from('habit_logs').select('completed_at, habit_id').eq('user_id', user.id).gte('completed_at', heatMapStart),
+    supabase.from('habit_logs').select('completed_at, habit_id').eq('user_id', user.id).gte('completed_at', weekStart),
+    supabase.from('activity_checks').select('date, time').eq('user_id', user.id).gte('date', weekStart),
   ])
 
-  // Group by day: recurring (specific_date=null) keyed by day_of_week,
-  // one-time items keyed by their day_of_week derived from specific_date
+  // Group schedule items by day
   const userItems: Record<number, { id: string; time: string; label: string; type: string; specificDate: string | null }[]> = {}
-
   for (const row of scheduleRows ?? []) {
-    let d: number
-    if (row.specific_date) {
-      // Map specific_date back to day-of-week for display
-      d = new Date(row.specific_date + 'T12:00:00').getDay()
-    } else {
-      d = row.day_of_week as number
-    }
+    const d = row.specific_date
+      ? new Date(row.specific_date + 'T12:00:00').getDay()
+      : (row.day_of_week as number)
     if (!userItems[d]) userItems[d] = []
-    userItems[d].push({
-      id:           row.id,
-      time:         row.time,
-      label:        row.label,
-      type:         row.type,
-      specificDate: row.specific_date ?? null,
-    })
+    userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, specificDate: row.specific_date ?? null })
   }
+
+  // Progress data
+  const profile = (profileRes.data as Profile) ?? {
+    id: user.id, full_name: null, xp: 0, current_streak: 0, longest_streak: 0, last_activity_date: null, created_at: new Date().toISOString(),
+  }
+  const habits  = (habitsRes.data  as Habit[]) ?? []
+  const allLogs = (logsRes.data    as { completed_at: string; habit_id: string }[]) ?? []
+  const weekLogs = (weekLogsRes.data as { completed_at: string; habit_id: string }[]) ?? []
+
+  // Heat map: 84 days
+  const logsByDay: Record<string, Set<string>> = {}
+  for (const log of allLogs) {
+    if (!logsByDay[log.completed_at]) logsByDay[log.completed_at] = new Set()
+    logsByDay[log.completed_at].add(log.habit_id)
+  }
+  const totalHabits = habits.length || 1
+  const heatMapDays = Array.from({ length: 84 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (83 - i))
+    const date = d.toISOString().split('T')[0]
+    return { date, pct: Math.round(((logsByDay[date]?.size ?? 0) / totalHabits) * 100) }
+  })
+
+  // Weekly activity
+  const countByDay: Record<string, number> = {}
+  for (const log of weekLogs) countByDay[log.completed_at] = (countByDay[log.completed_at] ?? 0) + 1
+  const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    const date = d.toISOString().split('T')[0]
+    return { date, count: countByDay[date] ?? 0 }
+  })
+
+  // Achievements
+  const domainSlugsWithHabits = [...new Set(habits.map((h) => h.domain_slug))]
+  const torahHabits = habits.filter((h) => h.domain_slug === 'torah').map((h) => h.id)
+  let torahStreak = 0
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i)
+    const date = d.toISOString().split('T')[0]
+    const done = logsByDay[date]
+    if (torahHabits.length > 0 && torahHabits.every((id) => done?.has(id))) torahStreak++
+    else break
+  }
+
+  // Best domain this week
+  const domainCount: Record<string, number> = {}
+  for (const log of weekLogs) {
+    const h = habits.find((hab) => hab.id === log.habit_id)
+    if (h) domainCount[h.domain_slug] = (domainCount[h.domain_slug] ?? 0) + 1
+  }
+  const topDomainSlug = Object.entries(domainCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+  const topDomain     = DOMAINS.find((d) => d.slug === topDomainSlug)?.nameHe ?? ''
+
+  const uniqueDays    = new Set(weekLogs.map((l) => l.completed_at)).size
+  const completionPct = Math.round((uniqueDays / 7) * 100)
+  const habitXpMap    = new Map(habits.map((h) => [h.id, h.xp_reward]))
+  const weekXP        = weekLogs.reduce((sum, log) => sum + (habitXpMap.get(log.habit_id) ?? 0), 0)
+
+  // Weekly schedule checks
+  const rawActivityChecks = (activityChecksRes.data ?? []) as { date: string; time: string }[]
+  const activityChecksByDay: Record<string, number> = {}
+  for (const c of rawActivityChecks) activityChecksByDay[c.date] = (activityChecksByDay[c.date] ?? 0) + 1
+  const weeklyScheduleChecks = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    const date = d.toISOString().split('T')[0]
+    return { date, count: activityChecksByDay[date] ?? 0 }
+  })
 
   return (
     <SchedulePageClient
@@ -92,7 +150,20 @@ export default async function SchedulePage() {
       reflections={reflections ?? []}
       userItems={userItems}
       allItems={scheduleRows ?? []}
-      todayChecks={(checkRows ?? []).map((r) => ({ time: r.time, note: r.note }))}
+      todayChecks={(checkRows ?? []).map((r: { time: string; note: string | null }) => ({ time: r.time, note: r.note }))}
+      heatMapDays={heatMapDays}
+      weeklyActivity={weeklyActivity}
+      weekXP={weekXP}
+      achievementData={{ streak: profile.current_streak, habitCount: habits.length, domainSlugsWithHabits, torahStreak }}
+      weekSummary={{
+        bestDomain: topDomain,
+        streak: profile.current_streak,
+        completionPct,
+        habitCount: habits.length,
+        topDomainSlug,
+        habitsCompleted: weekLogs.length,
+      }}
+      weeklyScheduleChecks={weeklyScheduleChecks}
     />
   )
 }
