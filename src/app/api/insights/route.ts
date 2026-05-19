@@ -1,34 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const client = new Anthropic()
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { weekXP, streak, topDomain, completionPct, habitCount } = body
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 256,
-      system:
-        'אתה מאמן אישי מעודד ותומך. תן 2-3 תובנות קצרות בעברית על הנתונים של המשתמש. כל תובנה בשורה נפרדת עם • בהתחלה. היה מעודד, ספציפי, ותעזור לו לצמוח.',
-      messages: [
-        {
-          role: 'user',
-          content: `נתוני השבוע שלי:
+    const prompt = `אתה מאמן אישי מעודד ותומך. תן 2-3 תובנות קצרות בעברית על הנתונים של המשתמש. כל תובנה בשורה נפרדת עם • בהתחלה. היה מעודד, ספציפי, ותעזור לו לצמוח.
+
+נתוני השבוע שלי:
 - XP השבוע: ${weekXP}
 - רצף ימים: ${streak}
 - תחום מוביל: ${topDomain}
 - אחוז השלמה: ${completionPct}%
 - מספר הרגלים פעילים: ${habitCount}
 
-תן לי תובנות מעודדות ומעשיות.`,
-        },
-      ],
-    })
+תן לי תובנות מעודדות ומעשיות.`
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : ''
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
+
     const insights = text
       .split('\n')
       .filter((line) => line.trim().startsWith('•'))

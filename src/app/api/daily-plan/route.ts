@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { WEEKLY_SCHEDULE } from '@/lib/schedule'
 
-const client = new Anthropic()
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
 interface HabitInput {
   name: string
@@ -70,33 +71,24 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const scheduleText = schedule
-      .map((s) => `${s.time} — ${s.label}`)
-      .join('\n')
-
+    const scheduleText = schedule.map((s) => `${s.time} — ${s.label}`).join('\n')
     const windowsText = freeWindows
       .map((w) => `${w.start}–${w.end} (${w.minutes} דקות פנויות)`)
       .join('\n')
-
     const habitsText = pendingHabits
       .map((h) => `• ${h.name} (תחום: ${h.domain_slug}, ${h.xp_reward} XP)`)
       .join('\n')
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      system: `אתה מתזמן יום חכם לרותם, בחור ישיבה.
+    const prompt = `אתה מתזמן יום חכם לרותם, בחור ישיבה.
 המטרה: לשבץ את ההרגלים הפנדיינג שלו לתוך החלונות הפנויים בלוח הזמנים.
 החזר JSON בלבד, ללא טקסט נוסף. הפורמט:
 [{"time": "HH:MM", "habit": "שם ההרגל", "domain": "domain_slug", "duration": 20, "tip": "טיפ קצר בעברית"}]
 כללים:
 - שבץ רק הרגלים שמתאימים לחלון הזמן (לא לשבץ ספורט בחלון של 10 דקות)
 - עד 3 המלצות
-- הטיפ צריך להיות קצר ומעשי (לא יותר מ-8 מילים)`,
-      messages: [
-        {
-          role: 'user',
-          content: `לוח הזמנים היום:
+- הטיפ צריך להיות קצר ומעשי (לא יותר מ-8 מילים)
+
+לוח הזמנים היום:
 ${scheduleText}
 
 חלונות פנויים:
@@ -107,12 +99,10 @@ ${habitsText}
 
 רצף ימים: ${streak}
 
-שבץ את ההרגלים לחלונות הפנויים.`,
-        },
-      ],
-    })
+שבץ את ההרגלים לחלונות הפנויים.`
 
-    const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]'
+    const result = await model.generateContent(prompt)
+    const raw = result.response.text().trim()
 
     let plan: { time: string; habit: string; domain: string; duration: number; tip: string }[] = []
     try {
