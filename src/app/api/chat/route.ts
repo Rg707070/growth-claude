@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
     const result = await chat.sendMessage(messages[messages.length - 1].content)
 
     return NextResponse.json({ reply: result.response.text() })
-  } catch {
-    return NextResponse.json({ reply: null }, { status: 500 })
+  } catch (e) {
+    const error = e instanceof Error ? e.message : 'unknown error'
+    return NextResponse.json({ reply: null, error }, { status: 500 })
   }
 }
