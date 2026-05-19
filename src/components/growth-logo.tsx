@@ -15,20 +15,39 @@ export function GrowthLogo({
   className = '',
   monochrome = false,
 }: GrowthLogoProps) {
-  const gradId = useId()
-  const leafId = useId()
+  const orbId = useId()
+  const leafLightId = useId()
+  const leafDarkId = useId()
+  const arrowId = useId()
+  const highlightId = useId()
 
-  const mainGrad = monochrome === 'light'
+  const orbFill = monochrome === 'light'
     ? '#FFFFFF'
     : monochrome === 'dark'
       ? '#0B2447'
-      : `url(#${gradId})`
+      : `url(#${orbId})`
 
-  const leafGrad = monochrome === 'light'
+  const leafFill = monochrome === 'light'
     ? '#FFFFFF'
     : monochrome === 'dark'
       ? '#0B2447'
-      : `url(#${leafId})`
+      : `url(#${leafLightId})`
+
+  const leafDarkFill = monochrome === 'light'
+    ? '#FFFFFF'
+    : monochrome === 'dark'
+      ? '#0B2447'
+      : `url(#${leafDarkId})`
+
+  const arrowStroke = monochrome === 'light'
+    ? '#FFFFFF'
+    : monochrome === 'dark'
+      ? '#0B2447'
+      : `url(#${arrowId})`
+
+  const textColor = monochrome === 'light'
+    ? '#FFFFFF'
+    : '#1F5430'
 
   const Icon = (
     <svg
@@ -39,66 +58,79 @@ export function GrowthLogo({
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id={gradId} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#0B2447" />
-          <stop offset="35%" stopColor="#1E5F8C" />
-          <stop offset="70%" stopColor="#0E9F6E" />
-          <stop offset="100%" stopColor="#84CC16" />
+        <radialGradient id={orbId} cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#BFD8EE" />
+          <stop offset="55%" stopColor="#5288B8" />
+          <stop offset="100%" stopColor="#1F3F66" />
+        </radialGradient>
+        <linearGradient id={leafLightId} x1="20%" y1="100%" x2="80%" y2="0%">
+          <stop offset="0%" stopColor="#2D7032" />
+          <stop offset="55%" stopColor="#5BA84A" />
+          <stop offset="100%" stopColor="#A8D86B" />
         </linearGradient>
-        <linearGradient id={leafId} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#0E9F6E" />
-          <stop offset="100%" stopColor="#A3E635" />
+        <linearGradient id={leafDarkId} x1="20%" y1="100%" x2="80%" y2="0%">
+          <stop offset="0%" stopColor="#1F4D22" />
+          <stop offset="100%" stopColor="#4A8F3F" />
         </linearGradient>
+        <linearGradient id={arrowId} x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#2D7A2D" />
+          <stop offset="100%" stopColor="#8FC846" />
+        </linearGradient>
+        <radialGradient id={highlightId} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
+      <circle cx="50" cy="50" r="40" fill={orbFill} />
+
+      {!monochrome && (
+        <>
+          <ellipse cx="36" cy="30" rx="16" ry="10" fill={`url(#${highlightId})`} />
+          <ellipse cx="60" cy="72" rx="22" ry="5" fill="#0A1F38" opacity="0.22" />
+        </>
+      )}
+
       <path
-        d="M 10 88 Q 32 78 50 56 Q 66 36 78 20"
-        stroke={mainGrad}
-        strokeWidth="11"
-        fill="none"
-        strokeLinecap="round"
+        d="M 50 62 Q 24 60 22 38 Q 30 32 42 38 Q 50 48 50 62 Z"
+        fill={leafDarkFill}
       />
       <path
-        d="M 22 90 Q 40 82 54 66 Q 66 52 72 38"
-        stroke={mainGrad}
-        strokeWidth="7"
-        fill="none"
-        strokeLinecap="round"
-        opacity="0.7"
+        d="M 50 58 Q 30 56 28 36 Q 38 32 46 40 Q 50 50 50 58 Z"
+        fill={leafFill}
       />
       <path
-        d="M 34 92 Q 46 86 56 76 Q 64 66 68 56"
-        stroke={mainGrad}
-        strokeWidth="4"
-        fill="none"
-        strokeLinecap="round"
-        opacity="0.45"
+        d="M 50 62 Q 66 64 72 48 Q 66 44 58 50 Q 52 56 50 62 Z"
+        fill={leafFill}
+        opacity="0.92"
+      />
+      <path
+        d="M 47 44 Q 41 32 48 24 Q 55 32 50 44 Z"
+        fill={leafFill}
       />
 
       <path
-        d="M 64 18 L 82 16 L 80 36"
-        stroke={mainGrad}
+        d="M 30 70 Q 46 58 58 40 L 70 24"
+        stroke={arrowStroke}
+        strokeWidth="6"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 58 24 L 73 22 L 71 36"
+        stroke={arrowStroke}
         strokeWidth="6"
         fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
-      <path
-        d="M 78 14 L 78 6"
-        stroke={monochrome ? mainGrad : '#0E9F6E'}
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M 78 12 C 72 11 70 5 75 4 C 80 5 80 11 78 12 Z"
-        fill={leafGrad}
-      />
-      <path
-        d="M 78 9 C 84 8 86 3 81 2 C 76 3 76 9 78 9 Z"
-        fill={leafGrad}
-      />
+      {!monochrome && (
+        <g transform="translate(76 18)">
+          <path d="M 0 -4.5 L 0 4.5 M -4.5 0 L 4.5 0" stroke="#FFFFFF" strokeWidth="1.1" strokeLinecap="round" />
+          <circle cx="0" cy="0" r="1.4" fill="#FFFFFF" />
+        </g>
+      )}
     </svg>
   )
 
@@ -112,13 +144,8 @@ export function GrowthLogo({
         className={`font-black tracking-tight leading-none ${className}`}
         style={{
           fontSize: size,
-          background: monochrome
-            ? monochrome === 'light' ? '#FFFFFF' : '#0B2447'
-            : 'linear-gradient(135deg, #0B2447 0%, #1E5F8C 40%, #0E9F6E 75%, #84CC16 100%)',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.02em',
+          color: textColor,
+          letterSpacing: '0.02em',
         }}
       >
         GROWTH
@@ -133,13 +160,8 @@ export function GrowthLogo({
         className="font-black tracking-tight leading-none"
         style={{
           fontSize: size * 0.62,
-          background: monochrome
-            ? monochrome === 'light' ? '#FFFFFF' : '#0B2447'
-            : 'linear-gradient(135deg, #0B2447 0%, #1E5F8C 40%, #0E9F6E 75%, #84CC16 100%)',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.02em',
+          color: textColor,
+          letterSpacing: '0.02em',
         }}
       >
         GROWTH
