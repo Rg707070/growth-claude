@@ -83,9 +83,9 @@ export function DailyPlan({ habits, completedIds, streak }: DailyPlanProps) {
       >
         <div
           className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0"
-          style={{ background: 'oklch(0.75 0.17 205 / 15%)' }}
+          style={{ background: 'var(--c-primary-glow)' }}
         >
-          <Sparkles size={16} style={{ color: 'oklch(0.75 0.17 205)' }} />
+          <Sparkles size={16} style={{ color: 'var(--primary)' }} />
         </div>
         <div className="flex-1 text-start">
           <p className="text-sm font-semibold text-white/90">
@@ -146,7 +146,7 @@ export function DailyPlan({ habits, completedIds, streak }: DailyPlanProps) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
                           className="text-xs font-bold font-mono"
-                          style={{ color: domain?.color ?? 'oklch(0.75 0.17 205)' }}
+                          style={{ color: domain?.color ?? 'var(--primary)' }}
                         >
                           {item.time}
                         </span>

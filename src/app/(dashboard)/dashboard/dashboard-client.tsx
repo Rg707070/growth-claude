@@ -72,29 +72,58 @@ export function DashboardClient({
       <div className="px-4 pt-12 pb-32 space-y-6 md:px-0 md:pt-8 md:pb-12 md:space-y-8">
         {/* Header hero card */}
         <div
-          className="rounded-2xl p-5 md:p-7 relative overflow-hidden"
+          className="rounded-3xl p-5 md:p-7 relative overflow-hidden animate-fade-up"
           style={{
-            background: 'linear-gradient(135deg, var(--c-hero-start), var(--c-hero-end))',
+            background: 'linear-gradient(135deg, var(--c-hero-start) 0%, var(--c-hero-mid) 45%, var(--c-hero-end) 100%)',
             border: '1px solid var(--c-hero-border)',
+            boxShadow: '0 10px 40px var(--c-hero-shadow)',
           }}
         >
-          <div className="flex items-start justify-between mb-4">
+          {/* Glow blobs */}
+          <div
+            aria-hidden
+            className="absolute -top-20 -end-20 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none"
+            style={{ background: '#A3E635' }}
+          />
+          <div
+            aria-hidden
+            className="absolute -bottom-24 -start-24 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+            style={{ background: '#0EA5E9' }}
+          />
+
+          <div className="relative flex items-start justify-between mb-4">
             <div>
-              <p className="text-white/60 text-xs font-medium mb-1">
+              <p className="text-xs font-medium mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>
                 {new Date().toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',
                 })}
               </p>
-              <h1 className="text-xl md:text-2xl font-bold text-white leading-tight">{greeting}</h1>
+              <h1 className="text-xl md:text-2xl font-bold leading-tight" style={{ color: '#FFFFFF' }}>{greeting}</h1>
             </div>
             <LangToggle />
           </div>
 
-          <div className="flex items-center justify-end mt-1">
+          {/* Stats row */}
+          <div className="relative flex items-center gap-4 mt-4">
+            <div className="flex-1">
+              <div className="flex items-center justify-between text-[11px] mb-1.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                <span className="font-semibold uppercase tracking-wider">{isRTL ? 'התקדמות יומית' : 'Today'}</span>
+                <span className="tabular-nums font-bold">{completedToday}/{totalToday}</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.18)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width: totalToday > 0 ? `${(completedToday / totalToday) * 100}%` : '0%',
+                    background: 'linear-gradient(90deg, #A3E635, #0EA5E9)',
+                  }}
+                />
+              </div>
+            </div>
             {profile.current_streak > 0 && (
-              <StreakBadge streak={profile.current_streak} />
+              <StreakBadge streak={profile.current_streak} size="sm" />
             )}
           </div>
         </div>

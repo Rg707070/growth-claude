@@ -10,7 +10,6 @@ const CHALLENGES: { he: string; en: string; target: number }[] = [
   { he: '5 ימים ברצף ללא דילוג',              en: '5 days streak without skipping',        target: 5 },
 ]
 
-// Export so the dashboard page can know which challenge index is active
 export const CHALLENGE_COUNT = CHALLENGES.length
 
 interface WeeklyChallengeProps {
@@ -25,31 +24,56 @@ export function WeeklyChallenge({ challengeProgress }: WeeklyChallengeProps) {
   const done = challengeProgress >= challenge.target
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 border border-emerald-500/20 shadow-[0_0_16px_rgba(52,211,153,0.1)]">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">{done ? '✅' : '🎯'}</span>
-        <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">
-          {isRTL ? 'אתגר השבוע' : 'Weekly Challenge'}
-        </span>
-        {done && (
-          <span className="ms-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300">
-            {isRTL ? 'הושלם!' : 'Done!'}
+    <div
+      className="p-4 rounded-2xl relative overflow-hidden"
+      style={{
+        background: 'var(--card)',
+        border: '1px solid var(--c-border)',
+        boxShadow: '0 1px 3px var(--c-shadow)',
+      }}
+    >
+      {done && (
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-50 pointer-events-none"
+          style={{ background: 'var(--brand-gradient-soft-bg)' }}
+        />
+      )}
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg leading-none">{done ? '✅' : '🎯'}</span>
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'אתגר השבוע' : 'Weekly Challenge'}
           </span>
-        )}
-      </div>
-      <p className="text-white text-sm font-medium mb-3">
-        {isRTL ? challenge.he : challenge.en}
-      </p>
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full transition-all duration-700"
-            style={{ width: `${pct}%` }}
-          />
+          {done && (
+            <span
+              className="ms-auto text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+              style={{ background: 'var(--brand-gradient)' }}
+            >
+              {isRTL ? 'הושלם!' : 'Done!'}
+            </span>
+          )}
         </div>
-        <span className="text-xs text-emerald-300/70 font-mono flex-shrink-0">
-          {challengeProgress}/{challenge.target}
-        </span>
+        <p className="text-sm font-medium mb-3 leading-snug" style={{ color: 'var(--foreground)' }}>
+          {isRTL ? challenge.he : challenge.en}
+        </p>
+        <div className="flex items-center gap-3">
+          <div
+            className="flex-1 h-2 rounded-full overflow-hidden"
+            style={{ background: 'var(--c-surface-2)' }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${pct}%`, background: 'var(--brand-gradient)' }}
+            />
+          </div>
+          <span
+            className="text-xs font-mono tabular-nums flex-shrink-0"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            {challengeProgress}/{challenge.target}
+          </span>
+        </div>
       </div>
     </div>
   )

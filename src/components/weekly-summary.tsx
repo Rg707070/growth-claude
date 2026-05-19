@@ -15,35 +15,55 @@ export function WeeklySummary({ habitsCompleted, bestDomain, streak, completionP
   if (!isSunday) return null
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-teal-600/5 border border-emerald-500/25 shadow-[0_0_20px_rgba(52,211,153,0.12)]">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">🏆</span>
-        <span className="text-emerald-300 text-sm font-bold">
-          {isRTL ? 'סיכום השבוע' : 'Weekly Summary'}
-        </span>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-white">{habitsCompleted}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'הרגלים' : 'habits done'}</p>
+    <div
+      className="p-4 rounded-2xl relative overflow-hidden"
+      style={{
+        background: 'var(--card)',
+        border: '1px solid var(--c-border)',
+        boxShadow: '0 1px 3px var(--c-shadow), 0 8px 24px var(--c-shadow)',
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-40 pointer-events-none"
+        style={{ background: 'var(--brand-gradient-soft-bg)' }}
+      />
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl leading-none">🏆</span>
+          <span className="text-sm font-bold brand-gradient-text">
+            {isRTL ? 'סיכום השבוע' : 'Weekly Summary'}
+          </span>
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-white">{streak}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'ימים ברצף' : 'day streak'}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center">
+            <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{habitsCompleted}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'הרגלים' : 'habits done'}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{streak}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'ימים ברצף' : 'day streak'}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{completionPct}%</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'השלמה' : 'completion'}
+            </p>
+          </div>
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-white">{completionPct}%</p>
-          <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'השלמה' : 'completion'}</p>
-        </div>
-      </div>
-      {bestDomain && (
-        <p className="text-xs text-emerald-300/70 mt-3 text-center">
-          {isRTL ? `התחום הטוב ביותר: ${bestDomain} 🌟` : `Best domain: ${bestDomain} 🌟`}
+        {bestDomain && (
+          <p className="text-xs mt-3 text-center" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? `התחום הטוב ביותר: ${bestDomain} 🌟` : `Best domain: ${bestDomain} 🌟`}
+          </p>
+        )}
+        <p className="text-xs text-center mt-1.5" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'המשך ככה, אתה עושה עבודה מדהימה! 💙' : 'Keep it up, you\'re doing amazing! 💙'}
         </p>
-      )}
-      <p className="text-xs text-white/30 text-center mt-2">
-        {isRTL ? 'המשך ככה, אתה עושה עבודה מדהימה! 💙' : 'Keep it up, you\'re doing amazing! 💙'}
-      </p>
+      </div>
     </div>
   )
 }

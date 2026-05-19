@@ -14,6 +14,8 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
+import { GrowthLogo } from '@/components/growth-logo'
+import { XpBar } from '@/components/xp-bar'
 import type { Profile } from '@/types'
 
 const navItems = [
@@ -115,27 +117,14 @@ export function Sidebar({ profile }: SidebarProps) {
         }}
       >
         {/* Logo */}
-        <div className="px-6 pt-8 pb-6">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
-              style={{
-                background: 'linear-gradient(135deg, var(--c-hero-start), var(--c-hero-end))',
-                color: 'white',
-              }}
-            >
-              G
-            </div>
-            <span className="text-base font-black" style={{ color: 'var(--foreground)' }}>
-              GROWTH
-            </span>
-          </div>
+        <div className="px-6 pt-7 pb-5">
+          <GrowthLogo size={34} />
         </div>
 
         {/* Profile card */}
         <div className="px-4 pb-4">
           <div
-            className="rounded-xl p-3"
+            className="rounded-2xl p-3.5"
             style={{
               background: 'var(--c-surface-2)',
               border: '1px solid var(--c-border)',
@@ -144,16 +133,25 @@ export function Sidebar({ profile }: SidebarProps) {
             <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
               {displayName}
             </p>
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5 mt-1 mb-2.5">
               <span className="text-sm leading-none">{level.emoji}</span>
-              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              <span className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
                 {isRTL ? level.he : level.en}
               </span>
             </div>
-            <div className="flex items-center justify-between mt-2 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              <span>{profile.xp} XP</span>
+            <XpBar
+              xp={profile.xp}
+              emoji={level.emoji}
+              levelLabel={isRTL ? level.he : level.en}
+              showLabel={false}
+            />
+            <div className="flex items-center justify-between mt-2 text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+              <span className="tabular-nums">{profile.xp} XP</span>
               {profile.current_streak > 0 && (
-                <span>🔥 {profile.current_streak}</span>
+                <span className="inline-flex items-center gap-0.5 font-semibold">
+                  <span className="animate-flame leading-none">🔥</span>
+                  <span className="tabular-nums">{profile.current_streak}</span>
+                </span>
               )}
             </div>
           </div>
@@ -193,13 +191,13 @@ export function Sidebar({ profile }: SidebarProps) {
         <div className="px-4 pb-6">
           <button
             onClick={() => setAddOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold text-sm text-white transition-all hover:opacity-95 hover:shadow-lg active:scale-[0.97]"
             style={{
-              background: 'var(--primary)',
-              color: 'var(--primary-foreground)',
+              background: 'var(--brand-gradient)',
+              boxShadow: '0 4px 14px var(--c-hero-shadow)',
             }}
           >
-            <Plus size={16} strokeWidth={2.5} />
+            <Plus size={16} strokeWidth={2.6} />
             <span>{isRTL ? 'הוסף הרגל' : 'Add habit'}</span>
           </button>
         </div>
@@ -238,14 +236,14 @@ export function Sidebar({ profile }: SidebarProps) {
                   <button
                     key={d.slug}
                     onClick={() => { setSelectedSlug(d.slug); setStep('name') }}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl active:scale-95 transition-all"
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl active:scale-95 transition-all hover:-translate-y-0.5"
                     style={{
-                      background: 'var(--secondary)',
-                      border: '1px solid var(--border)',
+                      background: `linear-gradient(135deg, ${d.color}10, ${d.color}05)`,
+                      border: `1px solid ${d.color}25`,
                     }}
                   >
                     <span className="text-2xl">{d.icon}</span>
-                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--muted-foreground)' }}>
+                    <span className="text-[10px] text-center leading-tight font-medium" style={{ color: 'var(--foreground)' }}>
                       {isRTL ? d.nameHe : d.nameEn}
                     </span>
                   </button>
@@ -295,8 +293,11 @@ export function Sidebar({ profile }: SidebarProps) {
                   <button
                     onClick={saveHabit}
                     disabled={!habitName.trim() || saving}
-                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
-                    style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-50 active:scale-[0.97]"
+                    style={{
+                      background: 'var(--brand-gradient)',
+                      boxShadow: '0 4px 12px var(--c-hero-shadow)',
+                    }}
                   >
                     {saving ? '...' : isRTL ? 'שמור' : 'Save'}
                   </button>

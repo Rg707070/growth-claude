@@ -46,13 +46,20 @@ export function PomodoroTimer() {
     ? ((BREAK_SECONDS - seconds) / BREAK_SECONDS) * 100
     : ((WORK_SECONDS - seconds) / WORK_SECONDS) * 100
 
-  const accentColor = onBreak ? '#34D399' : '#10b981'
+  const accentColor = onBreak ? '#0EA5E9' : '#0E9F6E'
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
+    <div
+      className="p-4 rounded-2xl"
+      style={{
+        background: 'var(--card)',
+        border: '1px solid var(--c-border)',
+        boxShadow: '0 1px 3px var(--c-shadow)',
+      }}
+    >
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">⏱</span>
-        <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">
+        <span className="text-lg leading-none">⏱</span>
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
           {isRTL
             ? onBreak ? 'הפסקה' : 'פומודורו'
             : onBreak ? 'Break' : 'Pomodoro'}
@@ -63,7 +70,7 @@ export function PomodoroTimer() {
       <div className="flex items-center justify-center mb-4">
         <div className="relative w-28 h-28">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+            <circle cx="50" cy="50" r="44" fill="none" stroke="var(--c-surface-2)" strokeWidth="8" />
             <circle
               cx="50" cy="50" r="44"
               fill="none"
@@ -72,11 +79,11 @@ export function PomodoroTimer() {
               strokeDasharray={`${2 * Math.PI * 44}`}
               strokeDashoffset={`${2 * Math.PI * 44 * (1 - pct / 100)}`}
               strokeLinecap="round"
-              style={{ transition: 'stroke-dashoffset 1s linear', filter: `drop-shadow(0 0 6px ${accentColor})` }}
+              style={{ transition: 'stroke-dashoffset 1s linear', filter: `drop-shadow(0 0 6px ${accentColor}88)` }}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl font-mono font-bold text-white">
+            <span className="text-2xl font-mono font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
               {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
             </span>
           </div>
@@ -87,8 +94,8 @@ export function PomodoroTimer() {
       <div className="flex gap-2 justify-center">
         <button
           onClick={() => setRunning((r) => !r)}
-          className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
-          style={{ background: accentColor, color: '#0a1628' }}
+          className="px-5 py-2 rounded-full text-sm font-semibold text-white transition-all active:scale-95 hover:shadow-lg"
+          style={{ background: 'var(--brand-gradient)' }}
         >
           {running
             ? isRTL ? 'השהה' : 'Pause'
@@ -96,7 +103,12 @@ export function PomodoroTimer() {
         </button>
         <button
           onClick={reset}
-          className="px-4 py-2 rounded-full text-sm font-medium bg-white/8 text-white/60 hover:bg-white/15 transition-colors"
+          className="px-4 py-2 rounded-full text-sm font-medium transition-colors active:scale-95"
+          style={{
+            background: 'var(--secondary)',
+            color: 'var(--muted-foreground)',
+            border: '1px solid var(--c-border)',
+          }}
         >
           {isRTL ? 'אפס' : 'Reset'}
         </button>
