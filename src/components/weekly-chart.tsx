@@ -20,10 +20,17 @@ export function WeeklyChart({ days }: WeeklyChartProps) {
   const today = new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-600/10 to-emerald-500/5 border border-emerald-500/20 shadow-[0_0_16px_rgba(52,211,153,0.1)]">
+    <div
+      className="p-4 rounded-2xl"
+      style={{
+        background: 'var(--card)',
+        border: '1px solid var(--c-border)',
+        boxShadow: '0 1px 3px var(--c-shadow)',
+      }}
+    >
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">📊</span>
-        <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">
+        <span className="text-lg leading-none">📊</span>
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
           {isRTL ? 'פעילות שבועית' : 'Weekly Activity'}
         </span>
       </div>
@@ -33,22 +40,36 @@ export function WeeklyChart({ days }: WeeklyChartProps) {
           const isToday = d.date === today
           const dayOfWeek = new Date(d.date + 'T12:00:00').getDay()
           const label = isRTL ? DAY_NAMES_HE[dayOfWeek] : DAY_NAMES_EN[dayOfWeek]
+          const hasActivity = d.count > 0
           return (
             <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-[9px] text-white/40 font-mono">{d.count > 0 ? d.count : ''}</span>
+              <span
+                className="text-[9px] font-mono tabular-nums"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
+                {d.count > 0 ? d.count : ''}
+              </span>
               <div className="w-full flex items-end" style={{ height: '52px' }}>
                 <div
-                  className={`w-full rounded-t-md transition-all duration-700 ${
-                    isToday
-                      ? 'bg-gradient-to-t from-emerald-500 to-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-                      : d.count > 0
-                      ? 'bg-gradient-to-t from-emerald-700 to-emerald-500'
-                      : 'bg-white/8'
-                  }`}
-                  style={{ height: `${Math.max(pct, d.count > 0 ? 8 : 3)}%` }}
+                  className="w-full rounded-t-md transition-all duration-700 ease-out"
+                  style={{
+                    height: `${Math.max(pct, hasActivity ? 8 : 3)}%`,
+                    background: isToday
+                      ? 'var(--brand-gradient)'
+                      : hasActivity
+                        ? 'linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%)'
+                        : 'var(--c-surface-2)',
+                    boxShadow: isToday ? '0 4px 12px var(--c-shadow-md)' : 'none',
+                  }}
                 />
               </div>
-              <span className={`text-[10px] font-medium ${isToday ? 'text-emerald-300' : 'text-white/40'}`}>
+              <span
+                className="text-[10px] font-medium"
+                style={{
+                  color: isToday ? 'var(--primary)' : 'var(--muted-foreground)',
+                  fontWeight: isToday ? 700 : 500,
+                }}
+              >
                 {label}
               </span>
             </div>

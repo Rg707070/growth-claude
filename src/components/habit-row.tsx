@@ -82,13 +82,16 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       disabled={loading}
-      className={`relative w-full flex items-center gap-3 rounded-xl active:scale-[0.98] transition-all text-start disabled:opacity-50 overflow-hidden ${
+      className={`relative w-full flex items-center gap-3 rounded-2xl active:scale-[0.98] transition-all text-start disabled:opacity-50 overflow-hidden ${
         swiped ? 'animate-swipe-done' : ''
       }`}
       style={{
-        background: done ? `${accentColor}0d` : 'var(--card)',
-        border: `1px solid ${done ? `${accentColor}25` : 'var(--border)'}`,
-        padding: '0.75rem',
+        background: done
+          ? `linear-gradient(90deg, ${accentColor}14 0%, ${accentColor}06 100%)`
+          : 'var(--card)',
+        border: `1px solid ${done ? `${accentColor}33` : 'var(--c-border)'}`,
+        padding: '0.85rem 1rem',
+        boxShadow: done ? 'none' : '0 1px 2px var(--c-shadow)',
       }}
     >
       {/* Checkbox */}
@@ -97,9 +100,10 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         style={{
           borderColor: accentColor,
           backgroundColor: done ? accentColor : 'transparent',
+          boxShadow: done ? `0 0 0 4px ${accentColor}1a` : 'none',
         }}
       >
-        {done && <Check size={12} className="text-white" strokeWidth={3} />}
+        {done && <Check size={12} className="text-white" strokeWidth={3.5} />}
       </div>
 
       {/* Name */}

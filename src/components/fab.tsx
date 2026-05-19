@@ -78,10 +78,14 @@ export function FAB() {
 
       {/* Slide-up sheet */}
       {open && (
-        <div className="fixed bottom-20 left-0 right-0 z-50 px-4 md:hidden">
+        <div className="fixed bottom-20 left-0 right-0 z-50 px-4 md:hidden animate-fade-up">
           <div
-            className="rounded-2xl p-5 shadow-xl"
-            style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}
+            className="rounded-3xl p-5 shadow-2xl"
+            style={{
+              background: 'var(--c-fab-sheet)',
+              border: '1px solid var(--c-border)',
+              boxShadow: '0 20px 60px var(--c-shadow-lg)',
+            }}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -105,14 +109,14 @@ export function FAB() {
                   <button
                     key={d.slug}
                     onClick={() => pickDomain(d.slug)}
-                    className="flex flex-col items-center gap-1 p-2 rounded-xl active:scale-95 transition-all"
+                    className="flex flex-col items-center gap-1 p-2.5 rounded-2xl active:scale-95 transition-all hover:-translate-y-0.5"
                     style={{
-                      background: 'var(--secondary)',
-                      border: '1px solid var(--border)',
+                      background: `linear-gradient(135deg, ${d.color}10, ${d.color}05)`,
+                      border: `1px solid ${d.color}25`,
                     }}
                   >
                     <span className="text-xl">{d.icon}</span>
-                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--muted-foreground)' }}>
+                    <span className="text-[10px] text-center leading-tight font-medium" style={{ color: 'var(--foreground)' }}>
                       {isRTL ? d.nameHe : d.nameEn}
                     </span>
                   </button>
@@ -162,8 +166,11 @@ export function FAB() {
                   <button
                     onClick={save}
                     disabled={!habitName.trim() || saving}
-                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
-                    style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-50 active:scale-[0.97]"
+                    style={{
+                      background: 'var(--brand-gradient)',
+                      boxShadow: '0 4px 12px var(--c-hero-shadow)',
+                    }}
                   >
                     {saving ? '...' : isRTL ? 'שמור' : 'Save'}
                   </button>
@@ -177,15 +184,15 @@ export function FAB() {
       {/* FAB button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform md:hidden"
+        className="fixed bottom-24 z-50 w-14 h-14 rounded-2xl flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-all md:hidden"
         style={{
-          background: 'var(--primary)',
-          color: 'var(--primary-foreground)',
-          boxShadow: '0 4px 12px var(--c-shadow-lg)',
+          insetInlineEnd: '1.25rem',
+          background: 'var(--brand-gradient)',
+          boxShadow: '0 6px 20px var(--c-hero-shadow), 0 2px 6px var(--c-shadow-md)',
         }}
         aria-label={isRTL ? 'הוסף הרגל' : 'Add habit'}
       >
-        <Plus size={24} strokeWidth={2.5} />
+        <Plus size={24} strokeWidth={2.6} />
       </button>
     </>
   )

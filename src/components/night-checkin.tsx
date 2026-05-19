@@ -64,12 +64,22 @@ export function NightCheckIn() {
   const allAnswered = questions.every((q) => answers[q.id])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl p-6 shadow-2xl" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center p-4 animate-fade-in"
+      style={{ background: 'rgba(11,36,71,0.55)', backdropFilter: 'blur(10px)' }}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl p-6 animate-fade-up"
+        style={{
+          background: 'var(--c-fab-sheet)',
+          border: '1px solid var(--c-border)',
+          boxShadow: '0 20px 60px var(--c-shadow-lg)',
+        }}
+      >
         {submitted ? (
           <div className="text-center py-4">
             <p className="text-4xl mb-2">🌙</p>
-            <p className="text-white font-semibold">
+            <p className="font-semibold" style={{ color: 'var(--foreground)' }}>
               {isRTL ? 'לילה טוב! המשך כך 💙' : 'Good night! Keep it up 💙'}
             </p>
           </div>
@@ -77,32 +87,49 @@ export function NightCheckIn() {
           <>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🌙</span>
-                <span className="text-white font-semibold text-sm">
+                <span className="text-xl leading-none">🌙</span>
+                <span className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
                   {isRTL ? 'צ\'ק-אין לילי' : 'Night Check-In'}
                 </span>
               </div>
-              <button onClick={dismiss} className="text-white/30 hover:text-white/70 text-lg">×</button>
+              <button
+                onClick={dismiss}
+                className="text-lg transition-colors"
+                style={{ color: 'var(--muted-foreground)' }}
+              >×</button>
             </div>
 
             <div className="space-y-4">
               {questions.map((q) => (
                 <div key={q.id}>
-                  <p className="text-white/70 text-xs mb-2" dir={isRTL ? 'rtl' : 'ltr'}>{q.text}</p>
+                  <p className="text-xs mb-2" dir={isRTL ? 'rtl' : 'ltr'} style={{ color: 'var(--muted-foreground)' }}>
+                    {q.text}
+                  </p>
                   <div className="flex gap-2 justify-center">
-                    {q.options.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
-                        className={`text-2xl w-10 h-10 rounded-xl transition-all ${
-                          answers[q.id] === opt
-                            ? 'bg-emerald-500/20 ring-2 ring-emerald-500 scale-110'
-                            : 'bg-black/5 hover:bg-black/10 dark:bg-white/8 dark:hover:bg-white/15'
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
+                    {q.options.map((opt) => {
+                      const isSelected = answers[q.id] === opt
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
+                          className="text-2xl w-10 h-10 rounded-xl transition-all active:scale-95"
+                          style={
+                            isSelected
+                              ? {
+                                  background: 'var(--c-primary-glow)',
+                                  outline: '2px solid var(--primary)',
+                                  transform: 'scale(1.1)',
+                                }
+                              : {
+                                  background: 'var(--c-surface-2)',
+                                  border: '1px solid var(--c-border)',
+                                }
+                          }
+                        >
+                          {opt}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               ))}
@@ -111,7 +138,11 @@ export function NightCheckIn() {
             <button
               onClick={submit}
               disabled={!allAnswered}
-              className="mt-5 w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm disabled:opacity-40 hover:opacity-90 transition-opacity"
+              className="mt-5 w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-40 transition-all active:scale-[0.97] hover:shadow-lg"
+              style={{
+                background: 'var(--brand-gradient)',
+                boxShadow: '0 4px 14px var(--c-hero-shadow)',
+              }}
             >
               {isRTL ? 'שמור ✓' : 'Save ✓'}
             </button>
