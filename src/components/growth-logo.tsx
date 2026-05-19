@@ -16,19 +16,19 @@ export function GrowthLogo({
   monochrome = false,
 }: GrowthLogoProps) {
   const gradId = useId()
-  const accentId = useId()
+  const leafId = useId()
 
-  const stops = monochrome
-    ? [
-        { offset: '0%', color: monochrome === 'light' ? '#FFFFFF' : '#0B2447' },
-        { offset: '100%', color: monochrome === 'light' ? '#FFFFFF' : '#0B2447' },
-      ]
-    : [
-        { offset: '0%', color: '#0B2447' },
-        { offset: '32%', color: '#1E5F74' },
-        { offset: '62%', color: '#0E9F6E' },
-        { offset: '100%', color: '#A3E635' },
-      ]
+  const mainGrad = monochrome === 'light'
+    ? '#FFFFFF'
+    : monochrome === 'dark'
+      ? '#0B2447'
+      : `url(#${gradId})`
+
+  const leafGrad = monochrome === 'light'
+    ? '#FFFFFF'
+    : monochrome === 'dark'
+      ? '#0B2447'
+      : `url(#${leafId})`
 
   const Icon = (
     <svg
@@ -39,61 +39,65 @@ export function GrowthLogo({
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id={gradId} x1="50%" y1="100%" x2="50%" y2="0%">
-          {stops.map((s, i) => (
-            <stop key={i} offset={s.offset} stopColor={s.color} />
-          ))}
+        <linearGradient id={gradId} x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#0B2447" />
+          <stop offset="35%" stopColor="#1E5F8C" />
+          <stop offset="70%" stopColor="#0E9F6E" />
+          <stop offset="100%" stopColor="#84CC16" />
         </linearGradient>
-        <linearGradient id={accentId} x1="50%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%" stopColor="#0E9F6E" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#A3E635" stopOpacity="0.95" />
+        <linearGradient id={leafId} x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#0E9F6E" />
+          <stop offset="100%" stopColor="#A3E635" />
         </linearGradient>
       </defs>
 
-      {/* Bottom-left leaf */}
       <path
-        d="M 28 82 Q 14 68 22 48 Q 38 58 36 76 Q 34 82 28 82 Z"
-        fill={`url(#${gradId})`}
-        opacity="0.78"
-      />
-      {/* Bottom-right leaf */}
-      <path
-        d="M 72 82 Q 86 68 78 48 Q 62 58 64 76 Q 66 82 72 82 Z"
-        fill={`url(#${gradId})`}
-        opacity="0.78"
-      />
-      {/* Mid-left leaf */}
-      <path
-        d="M 22 56 Q 10 42 20 22 Q 36 32 34 52 Q 32 58 22 56 Z"
-        fill={`url(#${gradId})`}
-        opacity="0.9"
-      />
-      {/* Mid-right leaf */}
-      <path
-        d="M 78 56 Q 90 42 80 22 Q 64 32 66 52 Q 68 58 78 56 Z"
-        fill={`url(#${gradId})`}
-        opacity="0.9"
-      />
-      {/* Top leaf (the apex) */}
-      <path
-        d="M 50 8 Q 38 22 42 44 Q 50 52 58 44 Q 62 22 50 8 Z"
-        fill={`url(#${accentId})`}
-      />
-      {/* Trunk + ascending arrow */}
-      <path
-        d="M 50 94 L 50 60"
-        stroke={`url(#${gradId})`}
-        strokeWidth="6"
-        strokeLinecap="round"
+        d="M 10 88 Q 32 78 50 56 Q 66 36 78 20"
+        stroke={mainGrad}
+        strokeWidth="11"
         fill="none"
+        strokeLinecap="round"
       />
       <path
-        d="M 41 70 L 50 60 L 59 70"
-        stroke={`url(#${gradId})`}
-        strokeWidth="5"
+        d="M 22 90 Q 40 82 54 66 Q 66 52 72 38"
+        stroke={mainGrad}
+        strokeWidth="7"
+        fill="none"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
+      <path
+        d="M 34 92 Q 46 86 56 76 Q 64 66 68 56"
+        stroke={mainGrad}
+        strokeWidth="4"
+        fill="none"
+        strokeLinecap="round"
+        opacity="0.45"
+      />
+
+      <path
+        d="M 64 18 L 82 16 L 80 36"
+        stroke={mainGrad}
+        strokeWidth="6"
+        fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+
+      <path
+        d="M 78 14 L 78 6"
+        stroke={monochrome ? mainGrad : '#0E9F6E'}
+        strokeWidth="2"
         fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 78 12 C 72 11 70 5 75 4 C 80 5 80 11 78 12 Z"
+        fill={leafGrad}
+      />
+      <path
+        d="M 78 9 C 84 8 86 3 81 2 C 76 3 76 9 78 9 Z"
+        fill={leafGrad}
       />
     </svg>
   )
@@ -110,7 +114,7 @@ export function GrowthLogo({
           fontSize: size,
           background: monochrome
             ? monochrome === 'light' ? '#FFFFFF' : '#0B2447'
-            : 'linear-gradient(135deg, #0B2447 0%, #1E5F74 35%, #0E9F6E 75%, #65A30D 100%)',
+            : 'linear-gradient(135deg, #0B2447 0%, #1E5F8C 40%, #0E9F6E 75%, #84CC16 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -131,7 +135,7 @@ export function GrowthLogo({
           fontSize: size * 0.62,
           background: monochrome
             ? monochrome === 'light' ? '#FFFFFF' : '#0B2447'
-            : 'linear-gradient(135deg, #0B2447 0%, #1E5F74 35%, #0E9F6E 75%, #65A30D 100%)',
+            : 'linear-gradient(135deg, #0B2447 0%, #1E5F8C 40%, #0E9F6E 75%, #84CC16 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           WebkitTextFillColor: 'transparent',

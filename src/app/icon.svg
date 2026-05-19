@@ -1,22 +1,22 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="50%" y1="100%" x2="50%" y2="0%">
+    <linearGradient id="g" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#0B2447"/>
-      <stop offset="32%" stop-color="#1E5F74"/>
-      <stop offset="62%" stop-color="#0E9F6E"/>
-      <stop offset="100%" stop-color="#A3E635"/>
+      <stop offset="35%" stop-color="#1E5F8C"/>
+      <stop offset="70%" stop-color="#0E9F6E"/>
+      <stop offset="100%" stop-color="#84CC16"/>
     </linearGradient>
-    <linearGradient id="a" x1="50%" y1="100%" x2="50%" y2="0%">
-      <stop offset="0%" stop-color="#0E9F6E" stop-opacity="0.9"/>
+    <linearGradient id="l" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0E9F6E"/>
       <stop offset="100%" stop-color="#A3E635"/>
     </linearGradient>
   </defs>
   <rect width="100" height="100" rx="22" fill="#FAFCFD"/>
-  <path d="M 28 82 Q 14 68 22 48 Q 38 58 36 76 Q 34 82 28 82 Z" fill="url(#g)" opacity="0.78"/>
-  <path d="M 72 82 Q 86 68 78 48 Q 62 58 64 76 Q 66 82 72 82 Z" fill="url(#g)" opacity="0.78"/>
-  <path d="M 22 56 Q 10 42 20 22 Q 36 32 34 52 Q 32 58 22 56 Z" fill="url(#g)" opacity="0.9"/>
-  <path d="M 78 56 Q 90 42 80 22 Q 64 32 66 52 Q 68 58 78 56 Z" fill="url(#g)" opacity="0.9"/>
-  <path d="M 50 8 Q 38 22 42 44 Q 50 52 58 44 Q 62 22 50 8 Z" fill="url(#a)"/>
-  <path d="M 50 94 L 50 60" stroke="url(#g)" stroke-width="6" stroke-linecap="round" fill="none"/>
-  <path d="M 41 70 L 50 60 L 59 70" stroke="url(#g)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M 10 88 Q 32 78 50 56 Q 66 36 78 20" stroke="url(#g)" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <path d="M 22 90 Q 40 82 54 66 Q 66 52 72 38" stroke="url(#g)" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 34 92 Q 46 86 56 76 Q 64 66 68 56" stroke="url(#g)" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.45"/>
+  <path d="M 64 18 L 82 16 L 80 36" stroke="url(#g)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 78 14 L 78 6" stroke="#0E9F6E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 78 12 C 72 11 70 5 75 4 C 80 5 80 11 78 12 Z" fill="url(#l)"/>
+  <path d="M 78 9 C 84 8 86 3 81 2 C 76 3 76 9 78 9 Z" fill="url(#l)"/>
 </svg>
