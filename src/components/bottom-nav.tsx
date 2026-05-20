@@ -10,7 +10,7 @@ import type { Profile } from '@/types'
 const navItems = [
   { icon: Home,         href: '/dashboard', labelHe: 'בית',    labelEn: 'Home'     },
   { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים', labelEn: 'Domains'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',    labelEn: 'Schedule' },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוח שנה', labelEn: 'Calendar' },
   { icon: Settings,     href: '/settings',  labelHe: 'הגדרות', labelEn: 'Settings' },
 ]
 

@@ -59,7 +59,7 @@ export default async function SchedulePage() {
     activityChecksRes,
   ] = await Promise.all([
     supabase.from('schedule_reflections').select('date, notes').eq('user_id', user.id).order('date', { ascending: false }).limit(60),
-    supabase.from('user_schedule').select('id, day_of_week, time, label, type, specific_date').eq('user_id', user.id).or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`).order('time'),
+    supabase.from('user_schedule').select('id, day_of_week, time, label, type, color, specific_date').eq('user_id', user.id).or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`).order('time'),
     supabase.from('activity_checks').select('time, note').eq('user_id', user.id).eq('date', todayDate),
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
@@ -69,13 +69,13 @@ export default async function SchedulePage() {
   ])
 
   // Group schedule items by day
-  const userItems: Record<number, { id: string; time: string; label: string; type: string; specificDate: string | null }[]> = {}
+  const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null }[]> = {}
   for (const row of scheduleRows ?? []) {
     const d = row.specific_date
       ? new Date(row.specific_date + 'T12:00:00').getDay()
       : (row.day_of_week as number)
     if (!userItems[d]) userItems[d] = []
-    userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, specificDate: row.specific_date ?? null })
+    userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, color: (row.color as string | null) ?? null, specificDate: row.specific_date ?? null })
   }
 
   // Progress data

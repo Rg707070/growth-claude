@@ -171,6 +171,9 @@ create policy "Users can delete own schedule"
 -- Add specific_date for one-time overrides (NULL = recurring weekly)
 alter table public.user_schedule add column if not exists specific_date date;
 
+-- Add user-chosen color per activity (NULL = use type-based default)
+alter table public.user_schedule add column if not exists color text;
+
 -- ============================================================
 -- SCHEDULE REFLECTIONS (what actually happened vs the plan)
 -- ============================================================
