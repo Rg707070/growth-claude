@@ -107,26 +107,47 @@ function ScopeModal({ label, matchCount, onSelect, onCancel }: {
   onSelect: (scope: 'single' | 'all' | 'once') => void; onCancel: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 px-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-3xl p-5 animate-fade-in" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
-        <p className="text-sm font-semibold text-white mb-1">שינוי &quot;{label}&quot;</p>
-        <p className="text-[11px] text-white/35 mb-4">נמצא ב-{matchCount} ימים נוספים. לשנות איפה?</p>
-        <div className="flex flex-col gap-2">
-          <button onClick={() => onSelect('single')} className="w-full text-right px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors">
-            <p className="text-sm font-medium text-white">רק ביום זה</p>
-            <p className="text-[10px] text-white/35 mt-0.5">שינוי קבוע ליום הזה בלבד</p>
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6" dir="rtl">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative w-full max-w-sm animate-fade-in" style={{ background: 'var(--card)', border: '1px solid var(--c-border)', borderRadius: '24px', overflow: 'hidden' }}>
+        <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: 'var(--c-border)' }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>שינוי &quot;{label}&quot;</p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>קיים ב-{matchCount} ימים נוספים</p>
+            </div>
+            <button onClick={onCancel} className="p-1 rounded-lg" style={{ color: 'var(--muted-foreground)' }}><X size={16} /></button>
+          </div>
+        </div>
+        <div className="p-3 flex flex-col gap-2">
+          <button onClick={() => onSelect('single')} className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-2xl transition-all" style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)' }}>
+              <span className="text-base">📌</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>רק ביום זה</p>
+              <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>שינוי קבוע ליום זה בלבד</p>
+            </div>
           </button>
-          <button onClick={() => onSelect('all')} className="w-full text-right px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors">
-            <p className="text-sm font-medium text-white">בכל הימים ({matchCount + 1})</p>
-            <p className="text-[10px] text-white/35 mt-0.5">שינוי קבוע בכל הימים</p>
+          <button onClick={() => onSelect('all')} className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-2xl transition-all" style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,211,238,0.12)' }}>
+              <span className="text-base">🔄</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>כל הימים ({matchCount + 1})</p>
+              <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>שינוי קבוע בכל הימים</p>
+            </div>
           </button>
-          <button onClick={() => onSelect('once')} className="w-full text-right px-4 py-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.10] transition-colors">
-            <p className="text-sm font-medium text-emerald-300">חד פעמי</p>
-            <p className="text-[10px] text-emerald-300/50 mt-0.5">רק השבוע, הלוז הקבוע לא ישתנה</p>
+          <button onClick={() => onSelect('once')} className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-2xl transition-all" style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.20)' }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(52,211,153,0.15)' }}>
+              <span className="text-base">⚡</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ color: '#34d399' }}>חד פעמי</p>
+              <p className="text-[10px]" style={{ color: 'rgba(52,211,153,0.6)' }}>רק השבוע, הלוז הקבוע לא ישתנה</p>
+            </div>
           </button>
         </div>
-        <button onClick={onCancel} className="absolute top-4 left-4 text-white/20 hover:text-white/50"><X size={16} /></button>
       </div>
     </div>
   )
@@ -165,10 +186,15 @@ function EditSheet({ item, dayOfWeek, note, getDuplicateCount, onSave, onDelete,
       {showScope && <ScopeModal label={item.label} matchCount={getDuplicateCount(item.label, dayOfWeek)} onSelect={confirmSave} onCancel={() => setShowScope(false)} />}
       <div className="fixed inset-0 z-40 flex items-end" dir="rtl">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative w-full rounded-t-3xl p-5 pb-8 animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-          <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mb-5" />
-          <p className="text-sm font-semibold text-white mb-4">{item.label}</p>
-          <div className="flex flex-col gap-3">
+        <div className="relative w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4" />
+          {/* Save/delete row at TOP so keyboard cannot cover it */}
+          <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b" style={{ borderColor: 'var(--c-border)' }}>
+            <button onClick={handleSave} disabled={busy || !editLabel.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30" style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}>{busy ? '...' : 'שמור'}</button>
+            <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm" style={{ color: 'var(--muted-foreground)' }}>ביטול</button>
+            <button onClick={handleDelete} disabled={busy} className="p-2.5 rounded-xl border disabled:opacity-30" style={{ color: 'rgba(248,113,113,0.7)', borderColor: 'rgba(248,113,113,0.2)' }}><Trash2 size={16} /></button>
+          </div>
+          <div className="p-5 pb-8 flex flex-col gap-3">
             <div className="flex gap-2">
               <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
               <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
@@ -177,10 +203,6 @@ function EditSheet({ item, dayOfWeek, note, getDuplicateCount, onSave, onDelete,
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <input value={noteText} onChange={e => setNoteText(e.target.value)} onBlur={() => { if (noteText !== note) onNote(item.time, noteText) }} placeholder="הוסף הערה..." className="rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30 placeholder:text-white/20" />
-          </div>
-          <div className="flex gap-2 mt-4 items-center">
-            <button onClick={handleSave} disabled={busy || !editLabel.trim()} className="flex-1 py-2.5 rounded-xl bg-cyan-400/15 text-cyan-300 text-sm font-semibold border border-cyan-400/20 disabled:opacity-30">{busy ? '...' : 'שמור'}</button>
-            <button onClick={handleDelete} disabled={busy} className="p-2.5 rounded-xl text-red-400/50 hover:text-red-400/80 border border-red-400/15 transition-colors disabled:opacity-30"><Trash2 size={16} /></button>
           </div>
         </div>
       </div>
