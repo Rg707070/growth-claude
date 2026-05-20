@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash-latest',
       systemInstruction: `אתה מאמן אישי של ${context.name ?? 'רותם'}, בחור ישיבה שמשתמש באפליקציית GROWTH לעקוב אחר הרגלים ב-8 תחומי חיים: משפחה, חברים, תורה, חול, ספורט, מסחר, פיננסים, מוזיקה.
 סטטוס נוכחי: ${context.xp} XP, רצף של ${context.streak} ימים.
 תן תמיכה, עידוד, ועצות מעשיות. ענה תמיד בעברית. היה קצר, ישיר, ואנושי.`,
