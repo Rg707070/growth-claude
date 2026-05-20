@@ -26,6 +26,7 @@ export function TradingViewWidget() {
 
     const widgetDiv = document.createElement('div')
     widgetDiv.className = 'tradingview-widget-container__widget'
+    widgetDiv.style.height = '100%'
     containerRef.current.appendChild(widgetDiv)
 
     const script = document.createElement('script')
@@ -42,7 +43,7 @@ export function TradingViewWidget() {
       showSymbolLogo: true,
       showFloatingTooltip: false,
       width: '100%',
-      height: '420',
+      height: '520',
       tabs: [
         {
           title: 'תיק שלי',
@@ -56,8 +57,9 @@ export function TradingViewWidget() {
 
   return (
     <div
-      className="tradingview-widget-container rounded-xl overflow-hidden"
       ref={containerRef}
+      className="tradingview-widget-container rounded-xl overflow-hidden w-full"
+      style={{ minHeight: 520 }}
     />
   )
 }

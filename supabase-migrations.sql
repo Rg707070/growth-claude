@@ -66,3 +66,12 @@ CREATE POLICY "Users manage own positions"
 -- Index for fast per-user queries
 CREATE INDEX IF NOT EXISTS portfolio_positions_user_idx
   ON public.portfolio_positions (user_id, sort_order);
+
+
+-- ─── 3. Watchlist multiple lists support ─────────────────────
+ALTER TABLE public.watchlist ADD COLUMN IF NOT EXISTS list_name text NOT NULL DEFAULT 'ברירת מחדל';
+
+-- Allow same ticker in different lists
+ALTER TABLE public.watchlist DROP CONSTRAINT IF EXISTS watchlist_user_id_ticker_exchange_key;
+CREATE UNIQUE INDEX IF NOT EXISTS watchlist_user_ticker_exchange_list_key
+  ON public.watchlist (user_id, ticker, exchange, list_name);

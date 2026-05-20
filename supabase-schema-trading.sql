@@ -64,9 +64,10 @@ create table if not exists public.watchlist (
   ticker text not null,
   exchange text default 'NASDAQ' not null,
   note text,
+  list_name text default 'ברירת מחדל' not null,
   sort_order integer default 0 not null,
   added_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique(user_id, ticker, exchange)
+  unique(user_id, ticker, exchange, list_name)
 );
 
 create index if not exists watchlist_user_sort_idx on public.watchlist(user_id, sort_order);
