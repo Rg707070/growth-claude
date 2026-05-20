@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { LangToggle } from '@/components/lang-toggle'
 import { DomainCard } from '@/components/domain-card'
@@ -48,6 +49,7 @@ export function DashboardClient({
   challengeProgress,
 }: DashboardClientProps) {
   const { t, isRTL } = useLang()
+  const router = useRouter()
   const completedSet = new Set(completedIds)
   const activeDomainsProgress = domainProgress.filter((d) => d.totalHabits > 0)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')
@@ -132,6 +134,24 @@ export function DashboardClient({
         <div className="md:hidden space-y-6">
           <WeeklyChart days={weeklyActivity} />
           <WeeklyChallenge challengeProgress={challengeProgress} />
+
+          {/* Journal shortcut */}
+          <button
+            onClick={() => router.push('/journal')}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
+            style={{ background: 'var(--c-card)', border: '1px solid var(--c-card-border)' }}
+          >
+            <span className="text-2xl">✍️</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                {isRTL ? 'יומן' : 'Journal'}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
+              </p>
+            </div>
+            <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
+          </button>
 
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
