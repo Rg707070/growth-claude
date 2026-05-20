@@ -443,3 +443,38 @@ input:-webkit-autofill {
 
 /* Selection */
 ::selection { background: var(--primary); color: var(--primary-foreground); }
+
+/* Tiptap writing editor */
+.tiptap-writing {
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+.tiptap-writing p { margin-bottom: 0.75rem; }
+.tiptap-writing h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+.tiptap-writing h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; margin-top: 1.25rem; }
+.tiptap-writing ul, .tiptap-writing ol { padding-inline-start: 1.5rem; margin-bottom: 0.75rem; }
+.tiptap-writing li { margin-bottom: 0.25rem; }
+.tiptap-writing blockquote {
+  border-inline-start: 3px solid var(--primary);
+  padding-inline-start: 1rem;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin-bottom: 0.75rem;
+}
+.tiptap-writing strong { font-weight: 700; }
+.tiptap-writing em { font-style: italic; }
+.tiptap-writing code {
+  background: var(--c-card);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+.tiptap-writing p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  opacity: 0.5;
+  pointer-events: none;
+  float: inline-start;
+  height: 0;
+}
