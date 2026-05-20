@@ -42,3 +42,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply: null, error }, { status: 500 })
   }
 }
+// gemini-2.5-flash
