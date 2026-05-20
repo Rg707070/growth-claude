@@ -105,39 +105,68 @@ interface ScopeModalProps {
 
 function ScopeModal({ label, matchCount, onSelect, onCancel }: ScopeModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 px-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-3xl p-5 animate-fade-in" style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)' }}>
-        <p className="text-sm font-semibold text-white mb-1">שינוי "{label}"</p>
-        <p className="text-[11px] text-white/35 mb-4">
-          נמצא ב-{matchCount} ימים נוספים. לשנות איפה?
-        </p>
-        <div className="flex flex-col gap-2">
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6" dir="rtl">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative w-full max-w-sm animate-fade-in" style={{ background: 'var(--card)', border: '1px solid var(--c-border)', borderRadius: '24px', overflow: 'hidden' }}>
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: 'var(--c-border)' }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>שינוי "{label}"</p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                קיים ב-{matchCount} ימים נוספים
+              </p>
+            </div>
+            <button onClick={onCancel} className="p-1 rounded-lg transition-colors" style={{ color: 'var(--muted-foreground)' }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Options */}
+        <div className="p-3 flex flex-col gap-2">
           <button
             onClick={() => onSelect('single')}
-            className="w-full text-right px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+            className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-2xl transition-all active:scale-98"
+            style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
           >
-            <p className="text-sm font-medium text-white">רק ביום זה</p>
-            <p className="text-[10px] text-white/35 mt-0.5">שינוי קבוע ליום הזה בלבד בלוז</p>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)' }}>
+              <span className="text-base">📌</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>רק ביום זה</p>
+              <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>שינוי קבוע ליום זה בלבד</p>
+            </div>
           </button>
+
           <button
             onClick={() => onSelect('all')}
-            className="w-full text-right px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+            className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-2xl transition-all active:scale-98"
+            style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
           >
-            <p className="text-sm font-medium text-white">בכל הימים ({matchCount + 1})</p>
-            <p className="text-[10px] text-white/35 mt-0.5">שינוי קבוע בכל הימים שיש את הפעילות</p>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,211,238,0.12)' }}>
+              <span className="text-base">🔄</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>כל הימים ({matchCount + 1})</p>
+              <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>שינוי קבוע בכל הימים</p>
+            </div>
           </button>
+
           <button
             onClick={() => onSelect('once')}
-            className="w-full text-right px-4 py-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.10] transition-colors"
+            className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-2xl transition-all active:scale-98"
+            style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.20)' }}
           >
-            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-300">חד פעמי</p>
-            <p className="text-[10px] text-emerald-600/50 dark:text-emerald-300/50 mt-0.5">רק השבוע, הלוז הקבוע לא ישתנה</p>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(52,211,153,0.15)' }}>
+              <span className="text-base">⚡</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: '#34d399' }}>חד פעמי</p>
+              <p className="text-[10px]" style={{ color: 'rgba(52,211,153,0.6)' }}>רק השבוע, הלוז הקבוע לא ישתנה</p>
+            </div>
           </button>
         </div>
-        <button onClick={onCancel} className="absolute top-4 left-4 text-white/20 hover:text-white/50">
-          <X size={16} />
-        </button>
       </div>
     </div>
   )
@@ -161,14 +190,15 @@ interface CardProps {
 
 function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showCheck, onToggle, onNote, onSave, onDelete, getDuplicateCount }: CardProps) {
   const { isDark } = useTheme()
-  const [noteOpen, setNoteOpen]   = useState(!!note)
-  const [noteText, setNoteText]   = useState(note)
-  const [editMode, setEditMode]   = useState(false)
-  const [editTime, setEditTime]   = useState(item.time)
-  const [editLabel, setEditLabel] = useState(item.label)
-  const [editType, setEditType]   = useState(item.type)
-  const [showScope, setShowScope] = useState(false)
-  const [busy, setBusy]           = useState(false)
+  const [noteOpen, setNoteOpen]       = useState(!!note)
+  const [noteText, setNoteText]       = useState(note)
+  const [editMode, setEditMode]       = useState(false)
+  const [editTime, setEditTime]       = useState(item.time)
+  const [editLabel, setEditLabel]     = useState(item.label)
+  const [editType, setEditType]       = useState(item.type)
+  const [showScope, setShowScope]     = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [busy, setBusy]               = useState(false)
 
   const c = col(item.type, isDark)
   const opacity = checked ? 0.45 : isPast ? 0.55 : 1
@@ -208,7 +238,30 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
             onCancel={() => setShowScope(false)}
           />
         )}
-        <div className="rounded-2xl border border-white/12 bg-white/[0.04] overflow-hidden animate-fade-in" dir="rtl">
+        <div className="rounded-2xl border overflow-hidden animate-fade-in" style={{ borderColor: 'rgba(34,211,238,0.25)', background: 'rgba(34,211,238,0.04)' }} dir="rtl">
+          {/* Save/cancel row — at top so keyboard doesn't hide it */}
+          <div className="flex items-center gap-2 px-3 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <button onClick={handleSaveClick} disabled={busy || !editLabel.trim()}
+              className="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-30"
+              style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}
+            >
+              {busy ? '...' : 'שמור'}
+            </button>
+            <button
+              onClick={() => { setEditMode(false); setEditLabel(item.label); setEditTime(item.time); setEditType(item.type) }}
+              className="px-3 py-1.5 text-sm"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              ביטול
+            </button>
+            <button onClick={handleDelete} disabled={busy}
+              className="mr-auto p-1.5 rounded-lg transition-colors disabled:opacity-30"
+              style={{ color: 'rgba(248,113,113,0.6)' }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+          {/* Inputs */}
           <div className="p-3 flex flex-col gap-2">
             <div className="flex gap-2">
               <input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)}
@@ -223,24 +276,6 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
             >
               {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <div className="flex gap-2 items-center">
-              <button onClick={handleSaveClick} disabled={busy || !editLabel.trim()}
-                className="px-4 py-1.5 rounded-lg bg-cyan-400/15 text-cyan-300 text-sm font-medium border border-cyan-400/20 disabled:opacity-30"
-              >
-                {busy ? '...' : 'שמור'}
-              </button>
-              <button
-                onClick={() => { setEditMode(false); setEditLabel(item.label); setEditTime(item.time); setEditType(item.type) }}
-                className="px-3 py-1.5 text-white/25 text-sm"
-              >
-                ביטול
-              </button>
-              <button onClick={handleDelete} disabled={busy}
-                className="mr-auto p-1.5 text-red-400/50 hover:text-red-400/80 transition-colors disabled:opacity-30"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
           </div>
         </div>
       </>
@@ -253,11 +288,27 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
       className="rounded-2xl border overflow-hidden transition-all duration-200 animate-fade-in"
       style={{
         background:  checked ? 'rgba(52,211,153,0.05)' : isCurrent ? c.bg.replace('0.08', '0.16') : c.bg,
-        borderColor: checked ? 'rgba(52,211,153,0.25)'  : isCurrent ? c.border : c.border.replace('0.25', '0.10'),
+        borderColor: confirmDelete ? 'rgba(248,113,113,0.4)' : checked ? 'rgba(52,211,153,0.25)' : isCurrent ? c.border : c.border.replace('0.25', '0.10'),
         opacity,
         boxShadow:   isCurrent ? `0 0 20px ${c.border.replace('0.25', '0.12')}` : 'none',
       }}
     >
+      {confirmDelete ? (
+        <div className="flex items-center justify-between px-4 py-3" dir="rtl">
+          <span className="text-sm" style={{ color: 'rgba(248,113,113,0.9)' }}>למחוק את "{item.label}"?</span>
+          <div className="flex gap-2">
+            <button onClick={handleDelete} disabled={busy}
+              className="px-3 py-1 rounded-lg text-sm font-semibold disabled:opacity-40"
+              style={{ background: 'rgba(248,113,113,0.15)', color: 'rgba(248,113,113,0.9)', border: '1px solid rgba(248,113,113,0.25)' }}
+            >
+              {busy ? '...' : 'מחק'}
+            </button>
+            <button onClick={() => setConfirmDelete(false)} className="px-3 py-1 rounded-lg text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              ביטול
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="flex items-center gap-3 px-4 py-3" dir="rtl">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -273,6 +324,9 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
           <p className="text-[10px] text-white/20 mt-0.5 font-mono">{item.time}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button onClick={() => setConfirmDelete(true)} className="text-white/15 hover:text-red-400/50 transition-colors">
+            <Trash2 size={12} />
+          </button>
           <button onClick={() => setEditMode(true)} className="text-white/15 hover:text-white/40 transition-colors">
             <Pencil size={12} />
           </button>
@@ -294,6 +348,7 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
           )}
         </div>
       </div>
+      )}
       {noteOpen && showCheck && (
         <div className="px-4 pb-3" dir="rtl">
           <input value={noteText} onChange={(e) => setNoteText(e.target.value)}
