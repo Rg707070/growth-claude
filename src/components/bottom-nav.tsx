@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Grid3X3, CalendarDays, Settings, Bot } from 'lucide-react'
+import { Home, Grid3X3, CalendarDays, Settings, Bot, PenLine } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { AiChatPanel } from '@/components/ai-chat'
 import type { Profile } from '@/types'
@@ -10,6 +10,7 @@ import type { Profile } from '@/types'
 const navItems = [
   { icon: Home,         href: '/dashboard', labelHe: 'בית',    labelEn: 'Home'     },
   { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים', labelEn: 'Domains'  },
+  { icon: PenLine,      href: '/journal',   labelHe: 'יומן',   labelEn: 'Journal'  },
   { icon: CalendarDays, href: '/schedule',  labelHe: 'לוח שנה', labelEn: 'Calendar' },
   { icon: Settings,     href: '/settings',  labelHe: 'הגדרות', labelEn: 'Settings' },
 ]
