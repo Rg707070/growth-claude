@@ -50,6 +50,7 @@ export interface WatchlistItem {
   ticker: string
   exchange: string
   note: string | null
+  list_name: string
   sort_order: number
   added_at: string
 }

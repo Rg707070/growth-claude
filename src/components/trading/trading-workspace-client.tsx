@@ -169,7 +169,7 @@ export function TradingWorkspaceClient({ userId, account, trades, watchlist }: P
 
         {tab === 'dashboard' && (
           <>
-            <AdvancedChart symbol={symbol} className="h-[70vh] min-h-[480px]" />
+            <AdvancedChart symbol={symbol} className="h-[45vh] min-h-[300px]" />
             {entryForm}
           </>
         )}
