@@ -287,7 +287,6 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
           )}
         </div>
       </div>
-      )}
       {noteOpen && showCheck && (
         <div className="px-4 pb-3" dir="rtl">
           <input value={noteText} onChange={e => setNoteText(e.target.value)} onBlur={() => { if (noteText !== note) onNote(noteText) }} placeholder="הוסף הערה..." className="w-full text-[12px] text-white/60 bg-white/5 border border-white/8 rounded-lg px-3 py-1.5 focus:outline-none placeholder:text-white/20" />
