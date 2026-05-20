@@ -44,7 +44,7 @@ export default async function SchedulePage() {
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map(getWeekDate)
 
   const heatMapStartDate = new Date()
-  heatMapStartDate.setDate(heatMapStartDate.getDate() - 83)
+  heatMapStartDate.setDate(heatMapStartDate.getDate() - 364)
   const heatMapStart = heatMapStartDate.toISOString().split('T')[0]
   const weekStart    = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
 
@@ -93,8 +93,8 @@ export default async function SchedulePage() {
     logsByDay[log.completed_at].add(log.habit_id)
   }
   const totalHabits = habits.length || 1
-  const heatMapDays = Array.from({ length: 84 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (83 - i))
+  const heatMapDays = Array.from({ length: 365 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (364 - i))
     const date = d.toISOString().split('T')[0]
     return { date, pct: Math.round(((logsByDay[date]?.size ?? 0) / totalHabits) * 100) }
   })
