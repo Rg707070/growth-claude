@@ -54,6 +54,16 @@ const SCALE_LABELS: Record<TimeScale, string> = { hour: 'שעה', day: 'יום',
 function withAlpha(rgba: string, alpha: number): string {
   return rgba.replace(/[\d.]+\)$/, `${alpha})`)
 }
+function w(a: number, dk: boolean): string {
+  return dk ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${Math.min(0.75, a * 2)})`
+}
+function cToday(dk: boolean): string { return dk ? 'rgb(103,232,249)' : 'rgb(8,145,178)' }
+function cDone(a: number, dk: boolean): string {
+  return dk ? `rgba(52,211,153,${a})` : `rgba(5,150,105,${a})`
+}
+function cSel(a: number, dk: boolean): string {
+  return dk ? `rgba(34,211,238,${a})` : `rgba(8,145,178,${a})`
+}
 function toMin(t: string) {
   const [h, m] = t.split(':').map(Number)
   return h * 60 + m
@@ -242,7 +252,7 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
     }}>
       <div className="flex items-center gap-3 px-4 py-3" dir="rtl">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-snug" style={{ color: checked ? 'rgba(255,255,255,0.35)' : c.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.label}</p>
+          <p className="text-sm font-medium leading-snug" style={{ color: checked ? w(0.35, isDark) : c.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.label}</p>
           <p className="text-[10px] text-white/20 mt-0.5 font-mono">{item.time}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -266,13 +276,14 @@ function ActivityCard({ item, dayOfWeek, checked, note, isCurrent, isPast, showC
 
 // ─── PctRing ──────────────────────────────────────────────────────────────────
 function PctRing({ pct, isToday, size = 44 }: { pct: number; isToday: boolean; size?: number }) {
+  const { isDark } = useTheme()
   const r    = size / 2 - 4
   const circ = 2 * Math.PI * r
   const dash = circ * (1 - Math.min(100, pct) / 100)
-  const clr  = isToday ? 'rgb(103,232,249)' : 'rgba(52,211,153,0.8)'
+  const clr  = isToday ? cToday(isDark) : cDone(0.8, isDark)
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={3} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={w(0.07, isDark)} strokeWidth={3} />
       {pct > 0 && (
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={clr} strokeWidth={3}
           strokeDasharray={circ} strokeDashoffset={dash} strokeLinecap="round"
@@ -281,7 +292,7 @@ function PctRing({ pct, isToday, size = 44 }: { pct: number; isToday: boolean; s
         />
       )}
       <text x={size / 2} y={size / 2 + 4} textAnchor="middle" fontSize={9} fontWeight="bold"
-        fill={pct > 0 ? clr : 'rgba(255,255,255,0.18)'}>
+        fill={pct > 0 ? clr : w(0.18, isDark)}>
         {pct > 0 ? `${pct}` : '—'}
       </text>
     </svg>
@@ -331,7 +342,7 @@ function HourView({ items, isToday, checked, onToggle }: {
         }}>
           {hh}:{mm}
         </p>
-        <p className="font-mono text-2xl mt-0.5" style={{ color: 'rgba(255,255,255,0.12)' }}>:{ss}</p>
+        <p className="font-mono text-2xl mt-0.5" style={{ color: w(0.12, isDark) }}>:{ss}</p>
       </div>
 
       {current ? (
@@ -346,18 +357,18 @@ function HourView({ items, isToday, checked, onToggle }: {
                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: c.border, boxShadow: `0 0 8px ${withAlpha(c.border, 0.6)}` }} />
                 <span className="text-[10px] tracking-widest uppercase" style={{ color: c.text, opacity: 0.55 }}>{TYPE_LABELS[current.type] ?? current.type}</span>
               </div>
-              <span className="font-mono text-xs" style={{ color: 'rgba(255,255,255,0.22)' }}>{current.time}</span>
+              <span className="font-mono text-xs" style={{ color: w(0.22, isDark) }}>{current.time}</span>
             </div>
             <p className="text-[2.1rem] font-black leading-tight mb-4" style={{
-              color: isChecked ? 'rgba(255,255,255,0.28)' : c.text,
+              color: isChecked ? w(0.28, isDark) : c.text,
               textDecoration: isChecked ? 'line-through' : 'none',
             }}>{current.label}</p>
             {next && (
               <div className="mb-2">
                 <div className="h-1.5 rounded-full overflow-hidden" style={{ background: withAlpha(c.border, 0.14) }}>
-                  <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${progress * 100}%`, background: isChecked ? 'rgba(52,211,153,0.7)' : c.border }} />
+                  <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${progress * 100}%`, background: isChecked ? cDone(0.7, isDark) : c.border }} />
                 </div>
-                <p className="text-[11px] mt-1.5" style={{ color: 'rgba(255,255,255,0.22)' }}>
+                <p className="text-[11px] mt-1.5" style={{ color: w(0.22, isDark) }}>
                   {remainingMin > 0 ? `נשארו ${formatRemaining(remainingMin)}` : 'הסתיים'} · עד {next.time}
                 </p>
               </div>
@@ -365,18 +376,18 @@ function HourView({ items, isToday, checked, onToggle }: {
           </div>
           {isToday && (
             <button onClick={() => onToggle(current.time)} className="w-full py-3.5 rounded-2xl font-bold text-base transition-all duration-200 active:scale-95" style={{
-              background: isChecked ? 'rgba(52,211,153,0.15)' : withAlpha(c.bg, 0.22),
-              border: `2px solid ${isChecked ? 'rgba(52,211,153,0.5)' : c.border}`,
-              color: isChecked ? 'rgb(52,211,153)' : c.text,
-              boxShadow: isChecked ? '0 0 24px rgba(52,211,153,0.18)' : `0 0 24px ${withAlpha(c.border, 0.12)}`,
+              background: isChecked ? cDone(0.15, isDark) : withAlpha(c.bg, 0.22),
+              border: `2px solid ${isChecked ? cDone(0.5, isDark) : c.border}`,
+              color: isChecked ? cDone(1, isDark) : c.text,
+              boxShadow: isChecked ? `0 0 24px ${cDone(0.18, isDark)}` : `0 0 24px ${withAlpha(c.border, 0.12)}`,
             }}>{isChecked ? '✓ סיימתי' : 'סיימתי'}</button>
           )}
           {next && (
-            <div className="rounded-2xl px-4 py-3 border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-              <p className="text-[9px] text-white/22 mb-0.5 uppercase tracking-widest">הבא</p>
+            <div className="rounded-2xl px-4 py-3 border" style={{ background: w(0.02, isDark), borderColor: w(0.06, isDark) }}>
+              <p className="text-[9px] mb-0.5 uppercase tracking-widest" style={{ color: w(0.22, isDark) }}>הבא</p>
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white/55">{next.label}</p>
-                <span className="font-mono text-xs text-white/22">{next.time}</span>
+                <p className="text-sm font-semibold" style={{ color: w(0.55, isDark) }}>{next.label}</p>
+                <span className="font-mono text-xs" style={{ color: w(0.22, isDark) }}>{next.time}</span>
               </div>
             </div>
           )}
@@ -444,7 +455,7 @@ function DrumWheel({ items, dayOfWeek, isToday, checked, notes, currentItemTime,
         })}
       </div>
       <div className="flex items-center gap-3 mb-2 mt-2">
-        <span className="text-white/20 text-[11px]">{activeIdx + 1} / {items.length}</span>
+        <span className="text-[11px]" style={{ color: w(0.20, isDark) }}>{activeIdx + 1} / {items.length}</span>
         <span className="font-mono text-sm font-bold" style={{ color: c.text }}>{active.time}</span>
       </div>
       <div className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing" style={{
@@ -476,16 +487,16 @@ function DrumWheel({ items, dayOfWeek, isToday, checked, notes, currentItemTime,
                       <div className="w-2 h-2 rounded-full" style={{ background: ic.border, boxShadow: `0 0 8px ${withAlpha(ic.border, 0.6)}` }} />
                       <span className="text-[10px] tracking-widest uppercase" style={{ color: ic.text, opacity: 0.6 }}>{TYPE_LABELS[item.type] ?? item.type}</span>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); setEditItem(item) }} className="text-white/20 hover:text-white/55 p-1"><Pencil size={13} /></button>
+                    <button onClick={e => { e.stopPropagation(); setEditItem(item) }} style={{ color: w(0.20, isDark) }} className="hover:opacity-70 transition-opacity p-1"><Pencil size={13} /></button>
                   </div>
-                  <p className="text-[27px] font-black leading-tight mb-4" style={{ color: ick ? 'rgba(255,255,255,0.28)' : ic.text, textDecoration: ick ? 'line-through' : 'none' }}>{item.label}</p>
-                  {items[activeIdx + 1] && <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.22)' }}>הבא · {items[activeIdx + 1].label} · {items[activeIdx + 1].time}</p>}
+                  <p className="text-[27px] font-black leading-tight mb-4" style={{ color: ick ? w(0.28, isDark) : ic.text, textDecoration: ick ? 'line-through' : 'none' }}>{item.label}</p>
+                  {items[activeIdx + 1] && <p className="text-[11px]" style={{ color: w(0.22, isDark) }}>הבא · {items[activeIdx + 1].label} · {items[activeIdx + 1].time}</p>}
                 </div>
               ) : (
-                <div className="rounded-2xl px-4 py-3 border cursor-pointer" style={{ background: ick ? 'rgba(52,211,153,0.04)' : ic.bg, borderColor: withAlpha(ic.border, 0.14) }}>
+                <div className="rounded-2xl px-4 py-3 border cursor-pointer" style={{ background: ick ? cDone(0.04, isDark) : ic.bg, borderColor: withAlpha(ic.border, 0.14) }}>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-white/25 flex-shrink-0 w-10">{item.time}</span>
-                    <p className="text-sm font-semibold flex-1 truncate" style={{ color: ick ? 'rgba(255,255,255,0.22)' : ic.text, textDecoration: ick ? 'line-through' : 'none' }}>{item.label}</p>
+                    <span className="text-[10px] font-mono flex-shrink-0 w-10" style={{ color: w(0.25, isDark) }}>{item.time}</span>
+                    <p className="text-sm font-semibold flex-1 truncate" style={{ color: ick ? w(0.22, isDark) : ic.text, textDecoration: ick ? 'line-through' : 'none' }}>{item.label}</p>
                     {ick && <Check size={10} className="text-emerald-400/50 flex-shrink-0" />}
                   </div>
                 </div>
@@ -496,10 +507,10 @@ function DrumWheel({ items, dayOfWeek, isToday, checked, notes, currentItemTime,
       </div>
       {isToday && (
         <button onClick={() => onToggle(active.time)} className="mt-1 px-10 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 active:scale-95" style={{
-          background: isChecked ? 'rgba(52,211,153,0.15)' : withAlpha(c.bg, 0.22),
-          border: `2px solid ${isChecked ? 'rgba(52,211,153,0.5)' : c.border}`,
-          color: isChecked ? 'rgb(52,211,153)' : c.text,
-          boxShadow: isChecked ? '0 0 24px rgba(52,211,153,0.18)' : `0 0 24px ${withAlpha(c.border, 0.12)}`,
+          background: isChecked ? cDone(0.15, isDark) : withAlpha(c.bg, 0.22),
+          border: `2px solid ${isChecked ? cDone(0.5, isDark) : c.border}`,
+          color: isChecked ? cDone(1, isDark) : c.text,
+          boxShadow: isChecked ? `0 0 24px ${cDone(0.18, isDark)}` : `0 0 24px ${withAlpha(c.border, 0.12)}`,
         }}>{isChecked ? '✓ סיימתי' : 'סיימתי'}</button>
       )}
       {editItem && <EditSheet item={editItem} dayOfWeek={dayOfWeek} note={notes[editItem.time] ?? ''} getDuplicateCount={getDuplicateCount} onSave={onSave} onDelete={onDelete} onNote={onNote} onClose={() => setEditItem(null)} />}
@@ -514,6 +525,7 @@ function WeekView({ heatMapDays, weekOffset, setWeekOffset, userItems, checked, 
   userItems: Record<number, ScheduleItem[]>; checked: Set<string>
   onSelectDay: (dow: number) => void
 }) {
+  const { isDark } = useTheme()
   const today    = useMemo(() => new Date(), [])
   const todayStr = today.toISOString().split('T')[0]
   const pctMap   = useMemo(() => Object.fromEntries(heatMapDays.map(d => [d.date, d.pct])), [heatMapDays])
@@ -547,15 +559,15 @@ function WeekView({ heatMapDays, weekOffset, setWeekOffset, userItems, checked, 
           <button key={dateStr} onClick={() => { if (isCurrentWeek && !isFuture) onSelectDay(dow) }}
             className="rounded-2xl p-3 border flex flex-col items-center gap-1.5 transition-all active:scale-95"
             style={{
-              background: isToday ? 'rgba(34,211,238,0.07)' : 'rgba(255,255,255,0.03)',
-              borderColor: isToday ? 'rgba(34,211,238,0.28)' : 'rgba(255,255,255,0.08)',
+              background: isToday ? cSel(0.07, isDark) : w(0.03, isDark),
+              borderColor: isToday ? cSel(0.28, isDark) : w(0.08, isDark),
               opacity: isFuture ? 0.28 : 1,
               cursor: isCurrentWeek && !isFuture ? 'pointer' : 'default',
             }}>
-            <p className="text-[12px] font-bold" style={{ color: isToday ? 'rgb(103,232,249)' : 'rgba(255,255,255,0.5)' }}>{DAY_NAMES_HE[dow]}</p>
-            <p className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.22)' }}>{dayDate.getDate()}/{dayDate.getMonth() + 1}</p>
+            <p className="text-[12px] font-bold" style={{ color: isToday ? cToday(isDark) : w(0.5, isDark) }}>{DAY_NAMES_HE[dow]}</p>
+            <p className="text-[10px] font-mono" style={{ color: w(0.22, isDark) }}>{dayDate.getDate()}/{dayDate.getMonth() + 1}</p>
             <PctRing pct={isFuture ? 0 : pct} isToday={isToday} />
-            {!isFuture && <p className="text-[9px]" style={{ color: isToday ? 'rgba(103,232,249,0.6)' : 'rgba(255,255,255,0.2)' }}>
+            {!isFuture && <p className="text-[9px]" style={{ color: isToday ? cSel(0.75, isDark) : w(0.2, isDark) }}>
               {isCurrentWeek && isToday ? `${checked.size}/${userItems[dow]?.length ?? 0}` : `${pct}%`}
             </p>}
           </button>
@@ -567,6 +579,7 @@ function WeekView({ heatMapDays, weekOffset, setWeekOffset, userItems, checked, 
 
 // ─── YearView ─────────────────────────────────────────────────────────────────
 function YearView({ heatMapDays }: { heatMapDays: { date: string; pct: number }[] }) {
+  const { isDark } = useTheme()
   const today    = useMemo(() => new Date(), [])
   const todayStr = today.toISOString().split('T')[0]
   const pctMap   = useMemo(() => Object.fromEntries(heatMapDays.map(d => [d.date, d.pct])), [heatMapDays])
@@ -593,12 +606,12 @@ function YearView({ heatMapDays }: { heatMapDays: { date: string; pct: number }[
   }, [startSunday, todayStr, pctMap])
 
   function pctColor(pct: number, future: boolean) {
-    if (future) return 'rgba(255,255,255,0.03)'
-    if (pct === 0) return 'rgba(255,255,255,0.06)'
-    if (pct < 25)  return 'rgba(52,211,153,0.18)'
-    if (pct < 50)  return 'rgba(52,211,153,0.38)'
-    if (pct < 75)  return 'rgba(52,211,153,0.60)'
-    return 'rgba(52,211,153,0.88)'
+    if (future) return w(0.03, isDark)
+    if (pct === 0) return w(0.06, isDark)
+    if (pct < 25)  return cDone(0.18, isDark)
+    if (pct < 50)  return cDone(0.38, isDark)
+    if (pct < 75)  return cDone(0.60, isDark)
+    return cDone(0.88, isDark)
   }
 
   const CELL = 11
@@ -609,7 +622,7 @@ function YearView({ heatMapDays }: { heatMapDays: { date: string; pct: number }[
         <div style={{ width: weeks.length * 13 }}>
           <div className="relative h-5 mb-1" style={{ width: weeks.length * 13 }}>
             {monthLabels.map(({ weekIdx, label }: { weekIdx: number; label: string }) => (
-              <span key={`${weekIdx}-${label}`} className="absolute text-[9px] font-semibold" style={{ left: weekIdx * 13, color: 'rgba(255,255,255,0.28)', top: 0 }}>{label}</span>
+              <span key={`${weekIdx}-${label}`} className="absolute text-[9px] font-semibold" style={{ left: weekIdx * 13, color: w(0.28, isDark), top: 0 }}>{label}</span>
             ))}
           </div>
           <div className="flex gap-[2px]">
@@ -639,9 +652,9 @@ function YearView({ heatMapDays }: { heatMapDays: { date: string; pct: number }[
           { label: 'ממוצע שבועי', value: Math.round(heatMapDays.filter(d => d.pct > 0).length / 52) },
           { label: 'ימי 100%', value: heatMapDays.filter(d => d.pct >= 100).length },
         ].map(s => (
-          <div key={s.label} className="rounded-2xl p-3 border text-center" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
-            <p className="text-xl font-black text-white/80">{s.value}</p>
-            <p className="text-[9px] text-white/30 mt-0.5 leading-tight">{s.label}</p>
+          <div key={s.label} className="rounded-2xl p-3 border text-center" style={{ background: w(0.03, isDark), borderColor: w(0.08, isDark) }}>
+            <p className="text-xl font-black" style={{ color: w(0.80, isDark) }}>{s.value}</p>
+            <p className="text-[9px] mt-0.5 leading-tight" style={{ color: w(0.30, isDark) }}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -730,12 +743,12 @@ export function SchedulePageClient({ userId, reflections, userItems, allItems, t
 
         {/* Scale switcher */}
         <div className="px-4 mb-3">
-          <div className="flex rounded-2xl p-1" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="flex rounded-2xl p-1" style={{ background: w(0.05, isDark) }}>
             {(['hour', 'day', 'week', 'year'] as TimeScale[]).map(scale => (
               <button key={scale} onClick={() => setTimeScale(scale)} className="flex-1 py-2 rounded-xl text-[12px] font-bold transition-all duration-200" style={{
-                background: timeScale === scale ? 'rgba(34,211,238,0.18)' : 'transparent',
-                color:      timeScale === scale ? 'rgb(103,232,249)' : 'rgba(255,255,255,0.28)',
-                boxShadow:  timeScale === scale ? '0 0 12px rgba(34,211,238,0.15)' : 'none',
+                background: timeScale === scale ? cSel(0.18, isDark) : 'transparent',
+                color:      timeScale === scale ? cToday(isDark) : w(0.28, isDark),
+                boxShadow:  timeScale === scale ? `0 0 12px ${cSel(0.15, isDark)}` : 'none',
               }}>{SCALE_LABELS[scale]}</button>
             ))}
           </div>
