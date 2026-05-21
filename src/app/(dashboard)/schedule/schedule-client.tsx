@@ -162,9 +162,9 @@ function ColorPicker({ value, onChange }: { value: string | null; onChange: (c: 
         onClick={() => onChange(null)}
         className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[11px]"
         style={{
-          background:  'rgba(255,255,255,0.05)',
-          borderColor: value === null ? 'rgb(103,232,249)' : 'rgba(255,255,255,0.15)',
-          color:       'rgba(255,255,255,0.4)',
+          background:  'var(--muted)',
+          borderColor: value === null ? 'rgb(103,232,249)' : 'var(--c-border)',
+          color:       'var(--muted-foreground)',
         }}
       >∅</button>
       {PRESET_COLORS.map(c => (
@@ -245,7 +245,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <div>
-              <p className="text-[11px] mb-2" style={{ color: 'rgba(255,255,255,0.30)' }}>צבע</p>
+              <p className="text-[11px] mb-2" style={{ color: 'var(--muted-foreground)' }}>צבע</p>
               <ColorPicker value={editColor} onChange={setEditColor} />
             </div>
           </div>
@@ -295,7 +295,7 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
             {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <div>
-            <p className="text-[11px] mb-2" style={{ color: 'rgba(255,255,255,0.30)' }}>צבע</p>
+            <p className="text-[11px] mb-2" style={{ color: 'var(--muted-foreground)' }}>צבע</p>
             <ColorPicker value={color} onChange={setColor} />
           </div>
         </div>
@@ -324,8 +324,8 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
     >
       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: clr }} />
       <button onClick={onEdit} className="flex-1 min-w-0 text-right">
-        <p className="text-sm font-semibold truncate" style={{ color: isChecked ? 'rgba(255,255,255,0.30)' : clr, textDecoration: isChecked ? 'line-through' : 'none' }}>{item.label}</p>
-        <p className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.22)' }}>{item.time}</p>
+        <p className="text-sm font-semibold truncate" style={{ color: isChecked ? 'var(--muted-foreground)' : clr, textDecoration: isChecked ? 'line-through' : 'none' }}>{item.label}</p>
+        <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{item.time}</p>
       </button>
       {isToday && (
         <button
@@ -333,7 +333,7 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
           className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
           style={{
             background:  isChecked ? 'rgba(52,211,153,0.20)' : 'transparent',
-            borderColor: isChecked ? 'rgba(52,211,153,0.60)' : 'rgba(255,255,255,0.15)',
+            borderColor: isChecked ? 'rgba(52,211,153,0.60)' : 'var(--c-border)',
           }}
         >
           {isChecked && <Check size={10} className="text-emerald-400" />}
@@ -416,9 +416,9 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
                 onClick={() => onSelectDay(d)}
                 className="flex-1 py-1.5 rounded-xl text-[11px] font-bold transition-all"
                 style={{
-                  background:  active ? 'rgba(34,211,238,0.15)' : isTd ? 'rgba(255,255,255,0.05)' : 'transparent',
-                  color:       active ? 'rgb(103,232,249)' : isTd ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.20)',
-                  border:      active ? '1px solid rgba(34,211,238,0.30)' : isTd ? '1px solid rgba(255,255,255,0.10)' : '1px solid transparent',
+                  background:  active ? 'rgba(34,211,238,0.15)' : isTd ? w(0.06, isDark) : 'transparent',
+                  color:       active ? 'rgb(103,232,249)' : isTd ? w(0.55, isDark) : w(0.28, isDark),
+                  border:      active ? '1px solid rgba(34,211,238,0.30)' : isTd ? `1px solid ${w(0.12, isDark)}` : '1px solid transparent',
                 }}
               >{DAY_NAMES_HE[d]}</button>
             )
@@ -558,6 +558,7 @@ export function SchedulePageClient({
   userId, userItems, allItems, todayChecks,
   heatMapDays, weeklyActivity, weekXP, achievementData, weekSummary, weeklyScheduleChecks,
 }: Props) {
+  const { isDark }  = useTheme()
   const todayDay  = new Date().getDay()
   const todayDate = new Date().toISOString().split('T')[0]
   const [tab,      setTab]      = useState<TabId>('schedule')
@@ -611,7 +612,7 @@ export function SchedulePageClient({
   }
 
   const tabBar = (
-    <div className="flex rounded-2xl p-1" style={{ background: 'rgba(255,255,255,0.05)' }}>
+    <div className="flex rounded-2xl p-1" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)' }}>
       {TABS.map(({ id, label }) => (
         <button
           key={id}
@@ -619,7 +620,7 @@ export function SchedulePageClient({
           className="flex-1 py-2 rounded-xl text-[12px] font-bold transition-all duration-200"
           style={{
             background: tab === id ? 'rgba(34,211,238,0.15)' : 'transparent',
-            color:      tab === id ? 'rgb(103,232,249)' : 'rgba(255,255,255,0.30)',
+            color:      tab === id ? 'rgb(103,232,249)' : 'var(--muted-foreground)',
             border:     tab === id ? '1px solid rgba(34,211,238,0.25)' : '1px solid transparent',
           }}
         >{label}</button>
