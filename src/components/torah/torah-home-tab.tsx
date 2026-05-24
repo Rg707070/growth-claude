@@ -68,7 +68,6 @@ export function TorahHomeTab({
       await supabase
         .from('habit_logs')
         .insert({ user_id: userId, habit_id: habit.id, completed_at: today })
-      await supabase.rpc('update_profile_xp', { uid: userId, xp_delta: habit.xp_reward })
       setCompleted((prev) => new Set([...prev, habit.id]))
     }
     router.refresh()
@@ -175,7 +174,7 @@ export function TorahHomeTab({
                   </span>
                   {isDone && (
                     <span className="text-xs font-semibold shrink-0" style={{ color: GREEN_LIGHT }}>
-                      +{habit.xp_reward} XP
+                      ✓
                     </span>
                   )}
                 </button>

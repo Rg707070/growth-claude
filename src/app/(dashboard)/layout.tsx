@@ -25,9 +25,6 @@ export default async function DashboardLayout({
   const profile: Profile = (profileData as Profile) ?? {
     id: user.id,
     full_name: user.user_metadata?.full_name ?? null,
-    xp: 0,
-    current_streak: 0,
-    longest_streak: 0,
     last_activity_date: null,
     created_at: new Date().toISOString(),
   }

@@ -15,7 +15,6 @@ import { createClient } from '@/lib/supabase/client'
 import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
 import { GrowthLogo } from '@/components/growth-logo'
-import { XpBar } from '@/components/xp-bar'
 import type { Profile } from '@/types'
 
 const navItems = [
@@ -25,24 +24,6 @@ const navItems = [
   { icon: BarChart2,    href: '/progress',  labelHe: 'התקדמות', labelEn: 'Progress' },
   { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',  labelEn: 'Settings' },
 ]
-
-const LEVELS: { min: number; emoji: string; he: string; en: string }[] = [
-  { min: 0,    emoji: '👁️', he: 'זהירות',    en: 'Watchfulness' },
-  { min: 100,  emoji: '⚡', he: 'זריזות',    en: 'Alacrity'     },
-  { min: 250,  emoji: '✨', he: 'נקיות',     en: 'Cleanliness'  },
-  { min: 500,  emoji: '🌿', he: 'פרישות',    en: 'Separation'   },
-  { min: 800,  emoji: '💧', he: 'טהרה',      en: 'Purity'       },
-  { min: 1200, emoji: '❤️', he: 'חסידות',    en: 'Piety'        },
-  { min: 1700, emoji: '🕊️', he: 'ענווה',     en: 'Humility'     },
-  { min: 2300, emoji: '🌟', he: 'יראת חטא',  en: 'Fear of Sin'  },
-  { min: 3000, emoji: '👑', he: 'קדושה',     en: 'Holiness'     },
-]
-
-function getLevel(xp: number) {
-  let level = LEVELS[0]
-  for (const l of LEVELS) if (xp >= l.min) level = l
-  return level
-}
 
 interface SidebarProps {
   profile: Profile
@@ -59,7 +40,6 @@ export function Sidebar({ profile }: SidebarProps) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const level = getLevel(profile.xp)
   const displayName = profile.full_name?.split(' ')[0] ?? (isRTL ? 'משתמש' : 'User')
 
   const resetAdd = () => {
@@ -87,7 +67,6 @@ export function Sidebar({ profile }: SidebarProps) {
         domain_slug: selectedSlug,
         name: habitName.trim(),
         frequency: 'daily',
-        xp_reward: 10,
         is_active: true,
       })
       if (error) {
@@ -133,27 +112,6 @@ export function Sidebar({ profile }: SidebarProps) {
             <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
               {displayName}
             </p>
-            <div className="flex items-center gap-1.5 mt-1 mb-2.5">
-              <span className="text-sm leading-none">{level.emoji}</span>
-              <span className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-                {isRTL ? level.he : level.en}
-              </span>
-            </div>
-            <XpBar
-              xp={profile.xp}
-              emoji={level.emoji}
-              levelLabel={isRTL ? level.he : level.en}
-              showLabel={false}
-            />
-            <div className="flex items-center justify-between mt-2 text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
-              <span className="tabular-nums">{profile.xp} XP</span>
-              {profile.current_streak > 0 && (
-                <span className="inline-flex items-center gap-0.5 font-semibold">
-                  <span className="animate-flame leading-none">🔥</span>
-                  <span className="tabular-nums">{profile.current_streak}</span>
-                </span>
-              )}
-            </div>
           </div>
         </div>
 

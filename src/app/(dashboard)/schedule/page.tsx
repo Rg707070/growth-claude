@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { WEEKLY_SCHEDULE } from '@/lib/schedule'
 import { DOMAINS } from '@/lib/domains'
 import { SchedulePageClient } from './schedule-client'
-import type { Profile, Habit } from '@/types'
+import type { Habit } from '@/types'
 
 function getWeekDate(dayOfWeek: number): string {
   const today = new Date()
@@ -61,8 +61,8 @@ export default async function SchedulePage() {
     supabase.from('schedule_reflections').select('date, notes').eq('user_id', user.id).order('date', { ascending: false }).limit(60),
     supabase.from('user_schedule').select('id, day_of_week, time, label, type, color, specific_date').eq('user_id', user.id).or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`).order('time'),
     supabase.from('activity_checks').select('time, note').eq('user_id', user.id).eq('date', todayDate),
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
+    supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+    supabase.from('habits').select('id, domain_slug, frequency, is_active').eq('user_id', user.id).eq('is_active', true),
     supabase.from('habit_logs').select('completed_at, habit_id').eq('user_id', user.id).gte('completed_at', heatMapStart),
     supabase.from('habit_logs').select('completed_at, habit_id').eq('user_id', user.id).gte('completed_at', weekStart),
     supabase.from('activity_checks').select('date, time').eq('user_id', user.id).gte('date', weekStart),
@@ -78,11 +78,7 @@ export default async function SchedulePage() {
     userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, color: (row.color as string | null) ?? null, specificDate: row.specific_date ?? null })
   }
 
-  // Progress data
-  const profile = (profileRes.data as Profile) ?? {
-    id: user.id, full_name: null, xp: 0, current_streak: 0, longest_streak: 0, last_activity_date: null, created_at: new Date().toISOString(),
-  }
-  const habits  = (habitsRes.data  as Habit[]) ?? []
+  const habits  = (habitsRes.data  as Pick<Habit, 'id' | 'domain_slug' | 'frequency' | 'is_active'>[]) ?? []
   const allLogs = (logsRes.data    as { completed_at: string; habit_id: string }[]) ?? []
   const weekLogs = (weekLogsRes.data as { completed_at: string; habit_id: string }[]) ?? []
 
@@ -108,18 +104,6 @@ export default async function SchedulePage() {
     return { date, count: countByDay[date] ?? 0 }
   })
 
-  // Achievements
-  const domainSlugsWithHabits = [...new Set(habits.map((h) => h.domain_slug))]
-  const torahHabits = habits.filter((h) => h.domain_slug === 'torah').map((h) => h.id)
-  let torahStreak = 0
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i)
-    const date = d.toISOString().split('T')[0]
-    const done = logsByDay[date]
-    if (torahHabits.length > 0 && torahHabits.every((id) => done?.has(id))) torahStreak++
-    else break
-  }
-
   // Best domain this week
   const domainCount: Record<string, number> = {}
   for (const log of weekLogs) {
@@ -131,8 +115,6 @@ export default async function SchedulePage() {
 
   const uniqueDays    = new Set(weekLogs.map((l) => l.completed_at)).size
   const completionPct = Math.round((uniqueDays / 7) * 100)
-  const habitXpMap    = new Map(habits.map((h) => [h.id, h.xp_reward]))
-  const weekXP        = weekLogs.reduce((sum, log) => sum + (habitXpMap.get(log.habit_id) ?? 0), 0)
 
   // Weekly schedule checks
   const rawActivityChecks = (activityChecksRes.data ?? []) as { date: string; time: string }[]
@@ -153,11 +135,8 @@ export default async function SchedulePage() {
       todayChecks={(checkRows ?? []).map((r: { time: string; note: string | null }) => ({ time: r.time, note: r.note }))}
       heatMapDays={heatMapDays}
       weeklyActivity={weeklyActivity}
-      weekXP={weekXP}
-      achievementData={{ streak: profile.current_streak, habitCount: habits.length, domainSlugsWithHabits, torahStreak }}
       weekSummary={{
         bestDomain: topDomain,
-        streak: profile.current_streak,
         completionPct,
         habitCount: habits.length,
         topDomainSlug,

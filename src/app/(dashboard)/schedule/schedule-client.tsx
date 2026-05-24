@@ -10,9 +10,6 @@ import { HeatMap } from '@/components/heat-map'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { WeeklySummary } from '@/components/weekly-summary'
 import { FridaySummary } from '@/components/friday-summary'
-import { AchievementsDisplay } from '@/components/achievements-display'
-import { ACHIEVEMENTS, getUnlockedIds } from '@/lib/achievements'
-import type { AchievementData } from '@/lib/achievements'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -94,7 +91,7 @@ interface AllItem {
 interface CheckRow { time: string; note: string | null }
 
 interface WeekSummary {
-  bestDomain: string; streak: number; completionPct: number
+  bestDomain: string; completionPct: number
   habitCount: number; topDomainSlug: string; habitsCompleted: number
 }
 
@@ -106,8 +103,6 @@ interface Props {
   todayChecks: CheckRow[]
   heatMapDays: { date: string; pct: number }[]
   weeklyActivity: { date: string; count: number }[]
-  weekXP: number
-  achievementData: AchievementData
   weekSummary: WeekSummary
   weeklyScheduleChecks: { date: string; count: number }[]
 }
@@ -517,29 +512,18 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
 }
 
 // ─── ProgressSection ──────────────────────────────────────────────────────────
-function ProgressSection({ heatMapDays, weeklyActivity, weekXP, achievementData, weekSummary, weeklyScheduleChecks }: {
+function ProgressSection({ heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks }: {
   heatMapDays: { date: string; pct: number }[]
   weeklyActivity: { date: string; count: number }[]
-  weekXP: number
-  achievementData: AchievementData
   weekSummary: WeekSummary
   weeklyScheduleChecks: { date: string; count: number }[]
 }) {
-  const unlockedIds = getUnlockedIds(achievementData)
   return (
     <div className="px-4 pb-8 space-y-6 mt-4">
-      <WeeklySummary habitsCompleted={weekSummary.habitsCompleted} bestDomain={weekSummary.bestDomain} streak={weekSummary.streak} completionPct={weekSummary.completionPct} />
-      <FridaySummary streak={weekSummary.streak} habitsCompleted={weekSummary.habitsCompleted} />
+      <WeeklySummary habitsCompleted={weekSummary.habitsCompleted} bestDomain={weekSummary.bestDomain} completionPct={weekSummary.completionPct} />
+      <FridaySummary habitsCompleted={weekSummary.habitsCompleted} />
       <WeeklyChart days={weeklyActivity} scheduleChecks={weeklyScheduleChecks} />
       <HeatMap days={heatMapDays} />
-      <div>
-        <div className="flex items-center gap-2 mb-3" dir="rtl">
-          <span className="text-lg">🏅</span>
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>הישגים</h2>
-          <span className="text-xs mr-auto" style={{ color: 'var(--primary)' }}>{unlockedIds.length}/{ACHIEVEMENTS.length}</span>
-        </div>
-        <AchievementsDisplay unlockedIds={unlockedIds} />
-      </div>
     </div>
   )
 }
@@ -554,7 +538,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export function SchedulePageClient({
   userId, userItems, allItems, todayChecks,
-  heatMapDays, weeklyActivity, weekXP, achievementData, weekSummary, weeklyScheduleChecks,
+  heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks,
 }: Props) {
   const { isDark }  = useTheme()
   const todayDay  = new Date().getDay()
@@ -643,8 +627,6 @@ export function SchedulePageClient({
     <ProgressSection
       heatMapDays={heatMapDays}
       weeklyActivity={weeklyActivity}
-      weekXP={weekXP}
-      achievementData={achievementData}
       weekSummary={weekSummary}
       weeklyScheduleChecks={weeklyScheduleChecks}
     />

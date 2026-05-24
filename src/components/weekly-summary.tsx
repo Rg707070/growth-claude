@@ -5,11 +5,10 @@ import { useLang } from '@/lib/lang'
 interface WeeklySummaryProps {
   habitsCompleted: number
   bestDomain: string
-  streak: number
   completionPct: number
 }
 
-export function WeeklySummary({ habitsCompleted, bestDomain, streak, completionPct }: WeeklySummaryProps) {
+export function WeeklySummary({ habitsCompleted, bestDomain, completionPct }: WeeklySummaryProps) {
   const { isRTL } = useLang()
   const isSunday = new Date().getDay() === 0
   if (!isSunday) return null
@@ -35,17 +34,11 @@ export function WeeklySummary({ habitsCompleted, bestDomain, streak, completionP
             {isRTL ? 'סיכום השבוע' : 'Weekly Summary'}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="text-center">
             <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{habitsCompleted}</p>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
               {isRTL ? 'הרגלים' : 'habits done'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{streak}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-              {isRTL ? 'ימים ברצף' : 'day streak'}
             </p>
           </div>
           <div className="text-center">

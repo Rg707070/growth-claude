@@ -82,7 +82,6 @@ export function DomainDetailClient({
           user_id: userId,
           domain_slug: domain.slug,
           name: newHabitName.trim(),
-          xp_reward: 10,
           frequency: 'daily',
         })
         .select()
