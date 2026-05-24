@@ -13,7 +13,6 @@ import { StreakBadge } from '@/components/streak-badge'
 import { WeeklyChallenge } from '@/components/weekly-challenge'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { triggerConfetti } from '@/components/confetti'
-import { DailyPlan } from '@/components/daily-plan'
 import type { Profile, Habit, DomainProgress } from '@/types'
 
 interface DashboardClientProps {
@@ -166,12 +165,6 @@ export function DashboardClient({
 
           <ScheduleToday />
 
-          <DailyPlan
-            habits={habits}
-            completedIds={completedIds}
-            streak={profile.current_streak}
-          />
-
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
               {t('todayHabits')}
@@ -236,11 +229,6 @@ export function DashboardClient({
             <WeeklyChart days={weeklyActivity} />
             <WeeklyChallenge challengeProgress={challengeProgress} />
             <ScheduleToday />
-            <DailyPlan
-              habits={habits}
-              completedIds={completedIds}
-              streak={profile.current_streak}
-            />
           </div>
         </div>
       </div>

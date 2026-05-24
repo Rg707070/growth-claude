@@ -10,7 +10,6 @@ import { HeatMap } from '@/components/heat-map'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { WeeklySummary } from '@/components/weekly-summary'
 import { FridaySummary } from '@/components/friday-summary'
-import { AIInsights } from '@/components/ai-insights'
 import { AchievementsDisplay } from '@/components/achievements-display'
 import { ACHIEVEMENTS, getUnlockedIds } from '@/lib/achievements'
 import type { AchievementData } from '@/lib/achievements'
@@ -541,7 +540,6 @@ function ProgressSection({ heatMapDays, weeklyActivity, weekXP, achievementData,
         </div>
         <AchievementsDisplay unlockedIds={unlockedIds} />
       </div>
-      <AIInsights weekXP={weekXP} streak={weekSummary.streak} topDomain={weekSummary.bestDomain} completionPct={weekSummary.completionPct} habitCount={weekSummary.habitCount} />
     </div>
   )
 }
