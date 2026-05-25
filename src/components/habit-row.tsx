@@ -90,20 +90,22 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     setShowReminderPicker((prev) => !prev)
   }
 
-  const saveReminder = (e: React.MouseEvent) => {
+  const saveReminder = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!pendingTime) return
     setHabitReminder(habit.id, pendingTime)
     setReminder(pendingTime)
     setShowReminderPicker(false)
+    await createClient().from('habits').update({ schedule_time: pendingTime }).eq('id', habit.id)
   }
 
-  const removeReminder = (e: React.MouseEvent) => {
+  const removeReminder = async (e: React.MouseEvent) => {
     e.stopPropagation()
     clearHabitReminder(habit.id)
     setReminder(null)
     setPendingTime('')
     setShowReminderPicker(false)
+    await createClient().from('habits').update({ schedule_time: null }).eq('id', habit.id)
   }
 
   const accentColor = domain?.color ?? '#6b7280'
