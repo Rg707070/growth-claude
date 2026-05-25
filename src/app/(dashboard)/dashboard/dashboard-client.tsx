@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { LangToggle } from '@/components/lang-toggle'
@@ -9,11 +8,7 @@ import { HabitRow } from '@/components/habit-row'
 import { ScheduleToday } from '@/components/schedule-today'
 import { TimeBackground } from '@/components/time-background'
 import { WaveAnimation } from '@/components/wave-animation'
-import { StreakBadge } from '@/components/streak-badge'
-import { WeeklyChallenge } from '@/components/weekly-challenge'
 import { WeeklyChart } from '@/components/weekly-chart'
-import { triggerConfetti } from '@/components/confetti'
-import { DailyPlan } from '@/components/daily-plan'
 import type { Profile, Habit, DomainProgress } from '@/types'
 
 interface DashboardClientProps {
@@ -22,8 +17,6 @@ interface DashboardClientProps {
   completedIds: string[]
   domainProgress: DomainProgress[]
   weeklyActivity: { date: string; count: number }[]
-  weekXP: number
-  challengeProgress: number
 }
 
 function getGreeting(nameHe: string, nameEn: string, name: string | null, isRTL: boolean) {
@@ -46,26 +39,17 @@ export function DashboardClient({
   completedIds,
   domainProgress,
   weeklyActivity,
-  challengeProgress,
 }: DashboardClientProps) {
   const { t, isRTL } = useLang()
   const router = useRouter()
   const completedSet = new Set(completedIds)
   const activeDomainsProgress = domainProgress.filter((d) => d.totalHabits > 0)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')
-  const confettiFired = useRef(false)
 
   const totalToday = todayHabits.length
   const completedToday = todayHabits.filter((h) => completedSet.has(h.id)).length
 
   const greeting = getGreeting('בוקר טוב', 'Good morning', profile.full_name, isRTL)
-
-  useEffect(() => {
-    if (totalToday > 0 && completedToday === totalToday && !confettiFired.current) {
-      confettiFired.current = true
-      triggerConfetti()
-    }
-  }, [completedToday, totalToday])
 
   const domainsToShow = activeDomainsProgress.length > 0 ? activeDomainsProgress : domainProgress
 
@@ -124,16 +108,12 @@ export function DashboardClient({
                 />
               </div>
             </div>
-            {profile.current_streak > 0 && (
-              <StreakBadge streak={profile.current_streak} size="sm" />
-            )}
           </div>
         </div>
 
         {/* Mobile: single column flow */}
         <div className="md:hidden space-y-6">
           <WeeklyChart days={weeklyActivity} />
-          <WeeklyChallenge challengeProgress={challengeProgress} />
 
           {/* Journal shortcut */}
           <button
@@ -165,12 +145,6 @@ export function DashboardClient({
           </div>
 
           <ScheduleToday />
-
-          <DailyPlan
-            habits={habits}
-            completedIds={completedIds}
-            streak={profile.current_streak}
-          />
 
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
@@ -234,13 +208,7 @@ export function DashboardClient({
           {/* Side column (1/3) */}
           <div className="md:col-span-1 space-y-6">
             <WeeklyChart days={weeklyActivity} />
-            <WeeklyChallenge challengeProgress={challengeProgress} />
             <ScheduleToday />
-            <DailyPlan
-              habits={habits}
-              completedIds={completedIds}
-              streak={profile.current_streak}
-            />
           </div>
         </div>
       </div>

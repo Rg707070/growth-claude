@@ -9,13 +9,11 @@ import { HabitRow } from '@/components/habit-row'
 import { ProgressRing } from '@/components/progress-ring'
 import { QuickLinks } from '@/components/integrations/quick-links'
 import { SefariaWidget } from '@/components/integrations/sefaria-widget'
-import { TradingViewWidget } from '@/components/integrations/tradingview-widget'
 import { ConnectPlaceholder } from '@/components/integrations/connect-placeholder'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PomodoroTimer } from '@/components/pomodoro-timer'
 import { DomainJournal } from '@/components/domain-journal'
-import { PortfolioTracker } from '@/components/portfolio-tracker'
 import { DOMAIN_INTEGRATIONS } from '@/lib/domain-integrations'
 import type { Domain, Habit } from '@/types'
 
@@ -28,7 +26,6 @@ interface Props {
 
 function DomainWidget({ slug }: { slug: string }) {
   if (slug === 'torah') return <SefariaWidget />
-  if (slug === 'trading') return <TradingViewWidget />
   if (slug === 'sports') {
     return (
       <ConnectPlaceholder
@@ -85,7 +82,6 @@ export function DomainDetailClient({
           user_id: userId,
           domain_slug: domain.slug,
           name: newHabitName.trim(),
-          xp_reward: 10,
           frequency: 'daily',
         })
         .select()
@@ -151,16 +147,12 @@ export function DomainDetailClient({
         <div className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
             {integration.widgetType === 'sefaria' && 'לימוד יומי'}
-            {integration.widgetType === 'tradingview' && 'שוק ההון'}
             {integration.widgetType === 'spotify' && 'מוזיקה'}
             {integration.widgetType === 'garmin' && 'פעילות גופנית'}
           </h2>
           <DomainWidget slug={domain.slug} />
         </div>
       )}
-
-      {/* Portfolio tracker — trading domain only */}
-      {domain.slug === 'trading' && <PortfolioTracker />}
 
       {/* Pomodoro timer */}
       <PomodoroTimer />

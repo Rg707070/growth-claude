@@ -38,7 +38,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           .delete()
           .match({ habit_id: habit.id, completed_at: today })
         if (error) throw error
-        await supabase.rpc('update_profile_xp', { uid: habit.user_id, xp_delta: -habit.xp_reward })
       } else {
         const { error } = await supabase.from('habit_logs').upsert({
           habit_id: habit.id,
@@ -46,10 +45,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           user_id: habit.user_id,
         })
         if (error) throw error
-        await supabase.rpc('update_profile_xp', { uid: habit.user_id, xp_delta: habit.xp_reward })
       }
 
-      supabase.rpc('compute_and_update_streak', { uid: habit.user_id })
       onToggle?.()
       router.refresh()
     } catch {

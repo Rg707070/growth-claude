@@ -47,15 +47,6 @@ export const DOMAINS: Domain[] = [
     glowColor: 'rgba(101,163,13,0.22)',
   },
   {
-    slug: 'trading',
-    nameHe: 'מסחר',
-    nameEn: 'Trading',
-    icon: '📈',
-    color: '#D97706',
-    gradient: 'from-amber-600/20 to-amber-700/5',
-    glowColor: 'rgba(217,119,6,0.22)',
-  },
-  {
     slug: 'finance',
     nameHe: 'כספים',
     nameEn: 'Finance',

@@ -12,7 +12,7 @@ interface DomainCardProps {
 export function DomainCard({ data }: DomainCardProps) {
   const router = useRouter()
   const { isRTL } = useLang()
-  const { domain, totalHabits, completedToday, streak } = data
+  const { domain, totalHabits, completedToday } = data
   const pct =
     totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
 
@@ -80,14 +80,7 @@ export function DomainCard({ data }: DomainCardProps) {
 
         {/* Bottom stats */}
         <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5" style={{ color: 'var(--muted-foreground)' }}>
-            {streak > 0 && (
-              <span className="inline-flex items-center gap-0.5 font-semibold">
-                <span className="animate-flame text-[0.95em] leading-none">🔥</span>
-                <span className="tabular-nums">{streak}</span>
-              </span>
-            )}
-          </div>
+          <div />
           {allDone ? (
             <span
               className="text-[10px] font-semibold px-2 py-0.5 rounded-full"

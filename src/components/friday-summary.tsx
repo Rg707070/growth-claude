@@ -3,7 +3,6 @@
 import { useLang } from '@/lib/lang'
 
 interface FridaySummaryProps {
-  streak: number
   habitsCompleted: number
 }
 
@@ -20,7 +19,7 @@ const MOTIVATIONAL_EN = [
   'A blessed Shabbat to you! 🕯️',
 ]
 
-export function FridaySummary({ streak, habitsCompleted }: FridaySummaryProps) {
+export function FridaySummary({ habitsCompleted }: FridaySummaryProps) {
   const { isRTL } = useLang()
   const isFriday = new Date().getDay() === 5
   if (!isFriday) return null
@@ -36,15 +35,9 @@ export function FridaySummary({ streak, habitsCompleted }: FridaySummaryProps) {
           {isRTL ? 'כניסת שבת' : 'Shabbat Summary'}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-white">{streak}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'ימים ברצף' : 'day streak'}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-white">{habitsCompleted}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'הרגלים השבוע' : 'habits this week'}</p>
-        </div>
+      <div className="mb-3 text-center">
+        <p className="text-2xl font-bold text-white">{habitsCompleted}</p>
+        <p className="text-[10px] text-white/40 mt-0.5">{isRTL ? 'הרגלים השבוע' : 'habits this week'}</p>
       </div>
       <p className="text-sm text-yellow-200/80 text-center font-medium">{quote}</p>
     </div>

@@ -47,7 +47,6 @@ export function FAB() {
         domain_slug: selectedSlug,
         name: habitName.trim(),
         frequency: 'daily',
-        xp_reward: 10,
         is_active: true,
       })
       if (error) {
