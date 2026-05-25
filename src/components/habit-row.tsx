@@ -163,7 +163,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         {/* Bell button */}
         <button
           onClick={openReminderPicker}
-          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault() }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
           className="flex-shrink-0 p-1.5 rounded-lg transition-all active:scale-90"
           style={{
             color: reminder ? accentColor : 'var(--muted-foreground)',
@@ -178,7 +179,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       {/* Reminder picker (inline) */}
       {showReminderPicker && (
         <div
-          className="flex items-center gap-2 px-4 pb-3"
+          className="flex items-center gap-2 px:4 pb-3"
           onClick={(e) => e.stopPropagation()}
         >
           <input
