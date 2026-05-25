@@ -115,7 +115,7 @@ export function TorahWorkspaceClient({
               style={
                 isActive
                   ? { background: TORAH_COLOR, color: '#fff' }
-                  : { background: 'transparent', color: 'rgba(255,255,255,0.5)' }
+                  : { background: 'transparent', color: 'var(--c-text-muted)' }
               }
             >
               {tab.icon}

@@ -63,7 +63,7 @@ export function TorahFeedTab({ userId, lessons, savedLessonIds, onSavedChange }:
             style={
               activeCategory === cat
                 ? { background: TORAH_COLOR, color: '#fff' }
-                : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)' }
+                : { background: 'rgba(255,255,255,0.05)', color: 'var(--c-text-muted)' }
             }
           >
             {cat}

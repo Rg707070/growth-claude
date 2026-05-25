@@ -142,6 +142,13 @@
   --c-streak-bg:      oklch(0.95 0.07 75 / 0.65);
   --c-streak-fg:      oklch(0.45 0.16 60);
   --c-streak-glow:    rgba(234,179,8,0.32);
+
+  /* Adaptive text — dark values for inline styles in light mode */
+  --c-text:           oklch(0.18 0.04 245);
+  --c-text-2:         oklch(0.30 0.04 245);
+  --c-text-muted:     oklch(0.46 0.025 245);
+  --c-text-subtle:    oklch(0.56 0.02 245);
+  --c-text-faint:     oklch(0.66 0.015 245);
 }
 
 /* Explicit light theme (when html.light is set) */
@@ -226,6 +233,13 @@ html.light {
   --c-streak-bg:      oklch(0.30 0.10 70 / 0.45);
   --c-streak-fg:      oklch(0.85 0.16 80);
   --c-streak-glow:    rgba(234,179,8,0.40);
+
+  /* Adaptive text — white values for inline styles in dark mode */
+  --c-text:           rgba(255, 255, 255, 0.90);
+  --c-text-2:         rgba(255, 255, 255, 0.70);
+  --c-text-muted:     rgba(255, 255, 255, 0.45);
+  --c-text-subtle:    rgba(255, 255, 255, 0.35);
+  --c-text-faint:     rgba(255, 255, 255, 0.22);
 }
 
 html.dark body { background: var(--background); color: var(--foreground); }
@@ -313,15 +327,19 @@ html.light .text-yellow-200\/80   { color: oklch(0.50 0.14 70 / 0.80) !important
 /* ── Light: missing text-white opacity fractions ── */
 html.light .text-white\/22        { color: oklch(0.18 0.04 245 / 0.22) !important; }
 html.light .text-white\/55        { color: oklch(0.18 0.04 245 / 0.55) !important; }
+html.light .text-white\/75        { color: oklch(0.18 0.04 245 / 0.78) !important; }
 
 /* ── Light: placeholder colours (separate utility class from text-white/*) ── */
 html.light .placeholder\:text-white\/20::placeholder { color: oklch(0.18 0.04 245 / 0.35) !important; }
 html.light .placeholder\:text-white\/25::placeholder { color: oklch(0.18 0.04 245 / 0.38) !important; }
+html.light .placeholder-white\/20::placeholder       { color: oklch(0.18 0.04 245 / 0.35) !important; }
+html.light .placeholder-white\/15::placeholder       { color: oklch(0.18 0.04 245 / 0.28) !important; }
 
 /* ── Light: hover text-white/* states ── */
-html.light .hover\:text-white\/70:hover { color: oklch(0.18 0.04 245 / 0.72) !important; }
-html.light .hover\:text-white\/60:hover { color: oklch(0.18 0.04 245 / 0.60) !important; }
-html.light .hover\:text-white\/50:hover { color: oklch(0.18 0.04 245 / 0.50) !important; }
+html.light .hover\:text-white:hover      { color: oklch(0.18 0.04 245) !important; }
+html.light .hover\:text-white\/70:hover  { color: oklch(0.18 0.04 245 / 0.72) !important; }
+html.light .hover\:text-white\/60:hover  { color: oklch(0.18 0.04 245 / 0.60) !important; }
+html.light .hover\:text-white\/50:hover  { color: oklch(0.18 0.04 245 / 0.50) !important; }
 
 /* ── Light: extra bg-white/* variants ── */
 html.light .bg-white\/4           { background-color: oklch(0.18 0.04 245 / 0.04) !important; }
