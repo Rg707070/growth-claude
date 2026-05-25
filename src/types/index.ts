@@ -17,6 +17,7 @@ export interface Habit {
   name: string
   description?: string
   frequency: 'daily' | 'weekly'
+  schedule_time?: string | null
   is_active: boolean
   created_at: string
 }

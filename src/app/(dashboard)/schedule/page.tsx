@@ -57,6 +57,8 @@ export default async function SchedulePage() {
     logsRes,
     weekLogsRes,
     activityChecksRes,
+    scheduledHabitsRes,
+    todayHabitLogsRes,
   ] = await Promise.all([
     supabase.from('schedule_reflections').select('date, notes').eq('user_id', user.id).order('date', { ascending: false }).limit(60),
     supabase.from('user_schedule').select('id, day_of_week, time, label, type, color, specific_date').eq('user_id', user.id).or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`).order('time'),
@@ -66,6 +68,8 @@ export default async function SchedulePage() {
     supabase.from('habit_logs').select('completed_at, habit_id').eq('user_id', user.id).gte('completed_at', heatMapStart),
     supabase.from('habit_logs').select('completed_at, habit_id').eq('user_id', user.id).gte('completed_at', weekStart),
     supabase.from('activity_checks').select('date, time').eq('user_id', user.id).gte('date', weekStart),
+    supabase.from('habits').select('id, name, domain_slug, schedule_time').eq('user_id', user.id).eq('is_active', true).not('schedule_time', 'is', null),
+    supabase.from('habit_logs').select('habit_id').eq('user_id', user.id).eq('completed_at', todayDate),
   ])
 
   // Group schedule items by day
@@ -126,6 +130,9 @@ export default async function SchedulePage() {
     return { date, count: activityChecksByDay[date] ?? 0 }
   })
 
+  const scheduledHabits = (scheduledHabitsRes.data ?? []) as { id: string; name: string; domain_slug: string; schedule_time: string }[]
+  const todayCompletedHabitIds: string[] = (todayHabitLogsRes.data ?? []).map((r: { habit_id: string }) => r.habit_id)
+
   return (
     <SchedulePageClient
       userId={user.id}
@@ -143,6 +150,8 @@ export default async function SchedulePage() {
         habitsCompleted: weekLogs.length,
       }}
       weeklyScheduleChecks={weeklyScheduleChecks}
+      scheduledHabits={scheduledHabits}
+      todayCompletedHabitIds={todayCompletedHabitIds}
     />
   )
 }

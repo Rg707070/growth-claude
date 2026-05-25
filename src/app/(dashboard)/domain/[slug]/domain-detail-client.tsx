@@ -64,6 +64,7 @@ export function DomainDetailClient({
   useHabitReminders(habits)
   const [adding, setAdding] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
+  const [newHabitTime, setNewHabitTime] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const completedSet = new Set(completedIds)
@@ -85,6 +86,7 @@ export function DomainDetailClient({
           domain_slug: domain.slug,
           name: newHabitName.trim(),
           frequency: 'daily',
+          schedule_time: newHabitTime || null,
         })
         .select()
         .single()
@@ -96,6 +98,7 @@ export function DomainDetailClient({
       }
       setHabits((prev) => [...prev, data as Habit])
       setNewHabitName('')
+      setNewHabitTime('')
       setAdding(false)
       setSaving(false)
       router.refresh()
@@ -206,12 +209,28 @@ export function DomainDetailClient({
               {t('save')}
             </Button>
             <button
-              onClick={() => { setAdding(false); setNewHabitName(''); setSaveError(null) }}
+              onClick={() => { setAdding(false); setNewHabitName(''); setNewHabitTime(''); setSaveError(null) }}
               className="p-2 rounded-xl transition-colors"
               style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
             >
               <X size={18} />
             </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={newHabitTime}
+              onChange={(e) => setNewHabitTime(e.target.value)}
+              className="w-28 rounded-xl text-sm px-3 py-2"
+              style={{
+                background: 'var(--c-input)',
+                border: '1px solid var(--c-input-border)',
+                color: newHabitTime ? 'var(--foreground)' : 'var(--muted-foreground)',
+              }}
+            />
+            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'שעה בלוז (אופציונלי)' : 'Schedule time (optional)'}
+            </span>
           </div>
           {saveError && (
             <p className="text-red-400 text-xs text-center">{saveError}</p>

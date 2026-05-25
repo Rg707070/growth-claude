@@ -75,3 +75,8 @@ ALTER TABLE public.watchlist ADD COLUMN IF NOT EXISTS list_name text NOT NULL DE
 ALTER TABLE public.watchlist DROP CONSTRAINT IF EXISTS watchlist_user_id_ticker_exchange_key;
 CREATE UNIQUE INDEX IF NOT EXISTS watchlist_user_ticker_exchange_list_key
   ON public.watchlist (user_id, ticker, exchange, list_name);
+
+
+-- ─── 4. Habits schedule_time — לוז מסונכרן ────────────────────
+-- Allows a habit to be pinned to a specific time in the daily schedule
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS schedule_time time DEFAULT NULL;

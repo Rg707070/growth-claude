@@ -153,6 +153,11 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           >
             {habit.name}
           </p>
+          {habit.schedule_time && (
+            <p className="text-[10px] mt-0.5" style={{ color: accentColor }}>
+              🕐 {habit.schedule_time.slice(0, 5)}
+            </p>
+          )}
           {reminder && (
             <p className="text-[10px] mt-0.5" style={{ color: accentColor }}>
               ⏰ {reminder}

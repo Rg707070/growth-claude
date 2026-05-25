@@ -10,6 +10,7 @@ import { HeatMap } from '@/components/heat-map'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { WeeklySummary } from '@/components/weekly-summary'
 import { FridaySummary } from '@/components/friday-summary'
+import { DOMAINS } from '@/lib/domains'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -95,6 +96,13 @@ interface WeekSummary {
   habitCount: number; topDomainSlug: string; habitsCompleted: number
 }
 
+interface ScheduledHabit {
+  id: string
+  name: string
+  domain_slug: string
+  schedule_time: string
+}
+
 interface Props {
   userId: string
   reflections: { date: string; notes: string }[]
@@ -105,6 +113,8 @@ interface Props {
   weeklyActivity: { date: string; count: number }[]
   weekSummary: WeekSummary
   weeklyScheduleChecks: { date: string; count: number }[]
+  scheduledHabits: ScheduledHabit[]
+  todayCompletedHabitIds: string[]
 }
 
 // ─── ScopeModal ───────────────────────────────────────────────────────────────
@@ -337,16 +347,56 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
   )
 }
 
+// ─── HabitBlock ───────────────────────────────────────────────────────────────
+function HabitBlock({ habit, isCompleted, onToggle }: {
+  habit: ScheduledHabit
+  isCompleted: boolean
+  onToggle: () => Promise<void>
+}) {
+  const domain = DOMAINS.find(d => d.slug === habit.domain_slug)
+  const clr = domain?.color ?? '#6366F1'
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all"
+      style={{
+        background:  isCompleted ? 'rgba(52,211,153,0.06)' : `${clr}18`,
+        borderColor: isCompleted ? 'rgba(52,211,153,0.25)' : `${clr}40`,
+        opacity:     isCompleted ? 0.55 : 1,
+      }}
+    >
+      <span className="text-sm flex-shrink-0">{domain?.icon ?? '✦'}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate" style={{ color: isCompleted ? 'var(--muted-foreground)' : clr, textDecoration: isCompleted ? 'line-through' : 'none' }}>{habit.name}</p>
+        <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{habit.schedule_time.slice(0, 5)}</p>
+      </div>
+      <button
+        onClick={onToggle}
+        className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
+        style={{
+          background:  isCompleted ? 'rgba(52,211,153,0.20)' : 'transparent',
+          borderColor: isCompleted ? 'rgba(52,211,153,0.60)' : `${clr}60`,
+        }}
+      >
+        {isCompleted && <Check size={10} className="text-emerald-400" />}
+      </button>
+    </div>
+  )
+}
+
 // ─── ScheduleTable ────────────────────────────────────────────────────────────
-function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit, onAdd, onToggle }: {
+function ScheduleTable({ items, habits, isToday, todayDate, completedHabitIds, checked, dayOfWeek, onSelectDay, onEdit, onAdd, onToggle, onToggleHabit }: {
   items: ScheduleItem[]
+  habits: ScheduledHabit[]
   dayOfWeek: number
   isToday: boolean
+  todayDate: string
+  completedHabitIds: Set<string>
   checked: Set<string>
   onSelectDay: (d: number) => void
   onEdit: (item: ScheduleItem) => void
   onAdd: (hour: number | null) => void
   onToggle: (time: string) => void
+  onToggleHabit: (habitId: string) => Promise<void>
 }) {
   const { isDark }  = useTheme()
   const scrollRef   = useRef<HTMLDivElement>(null)
@@ -385,6 +435,15 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
     if (h >= HOUR_START && h <= HOUR_END) {
       if (!itemsByHour[h]) itemsByHour[h] = []
       itemsByHour[h].push(item)
+    }
+  }
+
+  const habitsByHour: Record<number, ScheduledHabit[]> = {}
+  for (const habit of habits) {
+    const h = parseInt(habit.schedule_time.split(':')[0])
+    if (h >= HOUR_START && h <= HOUR_END) {
+      if (!habitsByHour[h]) habitsByHour[h] = []
+      habitsByHour[h].push(habit)
     }
   }
 
@@ -444,9 +503,11 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
         onTouchEnd={onTouchEnd}
       >
         {Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => {
-          const h         = HOUR_START + i
-          const hourItems = (itemsByHour[h] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
-          const isCurHour = isToday && h === nowH
+          const h          = HOUR_START + i
+          const hourItems  = (itemsByHour[h] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
+          const hourHabits = (habitsByHour[h] ?? []).sort((a, b) => toMin(a.schedule_time) - toMin(b.schedule_time))
+          const isCurHour  = isToday && h === nowH
+          const isEmpty    = hourItems.length === 0 && hourHabits.length === 0
 
           return (
             <div
@@ -473,12 +534,12 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
                 </span>
               </div>
 
-              {/* Activities — tap empty slot to add */}
+              {/* Activities + Habits — tap empty slot to add */}
               <div
                 className="flex-1 flex flex-col gap-1 py-1.5 px-2"
                 dir="rtl"
-                onClick={() => { if (hourItems.length === 0) onAdd(h) }}
-                style={{ cursor: hourItems.length === 0 ? 'pointer' : 'default' }}
+                onClick={() => { if (isEmpty) onAdd(h) }}
+                style={{ cursor: isEmpty ? 'pointer' : 'default' }}
               >
                 {hourItems.map(item => (
                   <ActivityBlock
@@ -488,6 +549,14 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
                     isChecked={isToday && checked.has(item.time)}
                     onEdit={() => onEdit(item)}
                     onToggle={() => onToggle(item.time)}
+                  />
+                ))}
+                {hourHabits.map(habit => (
+                  <HabitBlock
+                    key={habit.id}
+                    habit={habit}
+                    isCompleted={completedHabitIds.has(habit.id)}
+                    onToggle={() => onToggleHabit(habit.id)}
                   />
                 ))}
               </div>
@@ -539,6 +608,7 @@ const TABS: { id: TabId; label: string }[] = [
 export function SchedulePageClient({
   userId, userItems, allItems, todayChecks,
   heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks,
+  scheduledHabits, todayCompletedHabitIds,
 }: Props) {
   const { isDark }  = useTheme()
   const todayDay  = new Date().getDay()
@@ -548,6 +618,7 @@ export function SchedulePageClient({
   const [editItem, setEditItem] = useState<ScheduleItem | null>(null)
   const [addHour,  setAddHour]  = useState<number | null | false>(false)
   const [checked,  setChecked]  = useState<Set<string>>(new Set(todayChecks.map(c => c.time)))
+  const [completedHabitIds, setCompletedHabitIds] = useState<Set<string>>(new Set(todayCompletedHabitIds))
   const router = useRouter()
 
   const isToday = day === todayDay
@@ -593,6 +664,22 @@ export function SchedulePageClient({
     }
   }
 
+  async function toggleHabit(habitId: string) {
+    const sb = createClient()
+    if (completedHabitIds.has(habitId)) {
+      setCompletedHabitIds(p => { const n = new Set(p); n.delete(habitId); return n })
+      await sb.from('habit_logs').delete().eq('user_id', userId).eq('habit_id', habitId).eq('completed_at', todayDate)
+    } else {
+      setCompletedHabitIds(p => new Set([...p, habitId]))
+      await sb.from('habit_logs').upsert({ user_id: userId, habit_id: habitId, completed_at: todayDate })
+      await supabase_xp_update(sb, userId)
+    }
+  }
+
+  async function supabase_xp_update(sb: ReturnType<typeof createClient>, uid: string) {
+    await sb.rpc('update_profile_xp', { uid, xp_delta: 10 })
+  }
+
   const tabBar = (
     <div className="flex rounded-2xl p-1" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)' }}>
       {TABS.map(({ id, label }) => (
@@ -613,13 +700,17 @@ export function SchedulePageClient({
   const tableView = (
     <ScheduleTable
       items={items}
+      habits={scheduledHabits}
       dayOfWeek={day}
       isToday={isToday}
+      todayDate={todayDate}
+      completedHabitIds={completedHabitIds}
       checked={checked}
       onSelectDay={setDay}
       onEdit={setEditItem}
       onAdd={h => setAddHour(h ?? null)}
       onToggle={toggleCheck}
+      onToggleHabit={toggleHabit}
     />
   )
 
