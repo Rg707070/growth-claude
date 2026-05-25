@@ -318,24 +318,6 @@ export function DashboardClient({
 
         <ScheduleToday />
 
-        {/* JOURNAL SHORTCUT */}
-        <button
-          onClick={() => router.push('/journal')}
-          className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
-          style={{ background: 'var(--c-card)', border: '1px solid var(--c-card-border)' }}
-        >
-          <span className="text-2xl">✍️</span>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              {isRTL ? 'יומן' : 'Journal'}
-            </p>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
-            </p>
-          </div>
-          <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
-        </button>
-
         <WeeklyChart days={weeklyActivity} />
       </div>
 
