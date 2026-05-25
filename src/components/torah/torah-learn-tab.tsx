@@ -273,7 +273,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                       key={c.value}
                       onClick={() => { setCategory(c.value); setShowCatPicker(false) }}
                       className="text-sm text-right px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
-                      style={{ color: category === c.value ? TORAH_COLOR : 'rgba(255,255,255,0.7)' }}
+                      style={{ color: category === c.value ? TORAH_COLOR : 'var(--c-text-2)' }}
                     >
                       {c.labelHe}
                     </button>
@@ -383,7 +383,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                       <button
                         onClick={() => { setTextTitle(sefariaResult.ref); setSefariaResult(null) }}
                         className="w-full text-xs py-2 rounded-lg transition-opacity hover:opacity-80"
-                        style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}
+                        style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--c-text-muted)' }}
                         dir="rtl"
                       >
                         התחל שיעור בלי לקרוא ←
@@ -451,7 +451,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                   onClick={endSession}
                   disabled={saving}
                   className="px-3 py-1.5 rounded-full text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--c-text-2)' }}
                 >
                   {t('endSession')}
                 </button>
@@ -460,7 +460,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                 <p className="text-xs text-white/40 mb-0.5">{activeSession.text_title}</p>
                 <p
                   className="text-2xl font-mono font-bold tracking-wider"
-                  style={{ color: running ? TORAH_COLOR : 'rgba(255,255,255,0.4)' }}
+                  style={{ color: running ? TORAH_COLOR : 'var(--c-text-subtle)' }}
                 >
                   {formatTime(elapsed)}
                 </p>
@@ -482,7 +482,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                   className="flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                   style={{
                     background: noteTab === tab ? `${TORAH_COLOR}15` : 'transparent',
-                    color: noteTab === tab ? TORAH_COLOR : 'rgba(255,255,255,0.35)',
+                    color: noteTab === tab ? TORAH_COLOR : 'var(--c-text-subtle)',
                     borderBottom: noteTab === tab ? `2px solid ${TORAH_COLOR}` : '2px solid transparent',
                   }}
                 >
