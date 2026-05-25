@@ -6,7 +6,7 @@
 
 A mobile-first, gamified habit tracker for a yeshiva student (Rotem). Tracks 8 life domains (family, friends, torah, secular, sports, trading, finance, music) with XP + levels drawn from *Mesillat Yesharim*. Bilingual: Hebrew (RTL, default) + English.
 
-**Stack:** Next.js 16, TypeScript 5 (strict), Supabase (auth + Postgres + RLS), Tailwind CSS v4, shadcn/ui, Lucide icons, Anthropic SDK.
+**Stack:** Next.js 16, TypeScript 5 (strict), Supabase (auth + Postgres + RLS), Tailwind CSS v4, shadcn/ui, Lucide icons, Google Generative AI (Gemini).
 **Deployed:** Vercel ← GitHub (`Rg707070/growth-claude`, branch `main`).
 
 ---
@@ -99,8 +99,9 @@ Each domain in `src/lib/domains.ts` carries: `color` (hex, for inline styles), `
 The 8 slugs: `family`, `friends`, `torah`, `secular`, `sports`, `trading`, `finance`, `music`.
 
 Domain-specific extras in `domain-detail-client.tsx`:
-- `torah` → `MesillatQuote` + `SefariaWidget`
+- `torah` → `SefariaWidget`
 - `trading` → `PortfolioTracker` + `TradingViewWidget`
+- `sports` / `music` → `ConnectPlaceholder`
 
 ---
 
@@ -117,7 +118,7 @@ Schema is in `supabase-schema.sql`. Tables: `profiles`, `habits`, `habit_logs`, 
 ```
 NEXT_PUBLIC_SUPABASE_URL       — Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY  — "Publishable key" in newer Supabase dashboards (same thing)
-ANTHROPIC_API_KEY              — server-only, for /api/insights Claude Haiku call
+GOOGLE_AI_API_KEY              — server-only, for /api/insights, /api/chat, /api/daily-plan, /api/torah/scan Gemini calls
 ```
 
 Never commit `.env.local`. No `SUPABASE_SERVICE_ROLE_KEY` needed — all ops go through anon key + RLS.
