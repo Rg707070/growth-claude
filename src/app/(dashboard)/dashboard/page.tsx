@@ -4,12 +4,16 @@ import { DOMAINS } from '@/lib/domains'
 import { DashboardClient } from './dashboard-client'
 import type { Habit, HabitLog, DomainProgress, DomainStats } from '@/types'
 
-function computeDomainStats(completedDays: Set<string>): { streak: number; failingDays: number } {
+function computeDomainStats(
+  completedDays: Set<string>,
+  maxDays: number,
+): { streak: number; failingDays: number } {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
+  const limit = Math.min(maxDays, 14)
 
   let failingDays = 0
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < limit; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     if (completedDays.has(d.toISOString().split('T')[0])) break
@@ -18,7 +22,7 @@ function computeDomainStats(completedDays: Set<string>): { streak: number; faili
 
   const startFrom = completedDays.has(todayStr) ? 0 : 1
   let streak = 0
-  for (let i = startFrom; i < 14; i++) {
+  for (let i = startFrom; i < limit; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     if (completedDays.has(d.toISOString().split('T')[0])) streak++
@@ -42,9 +46,11 @@ export default async function DashboardPage() {
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13)
   const twoWeeksStart = fourteenDaysAgo.toISOString().split('T')[0]
 
-  const [profileRes, habitsRes, logsRes, allLogsRes] = await Promise.all([
+  const [profileRes, habitsRes, allHabitsRes, logsRes, allLogsRes] = await Promise.all([
     supabase.from('profiles').select('full_name, last_activity_date, created_at').eq('id', user.id).single(),
     supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
+    // All habits (incl. inactive) — needed to map old log entries to their domain
+    supabase.from('habits').select('id, domain_slug').eq('user_id', user.id),
     supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
     supabase
       .from('habit_logs')
@@ -59,13 +65,21 @@ export default async function DashboardPage() {
     created_at: new Date().toISOString(),
   }) as { full_name: string | null; last_activity_date: string | null; created_at: string }
 
+  // Cap failingDays to days since account creation so new users don't see false warnings
+  const accountAgeDays = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86_400_000),
+  )
+
   const habits = (habitsRes.data as Habit[]) ?? []
+  const allHabits = (allHabitsRes.data as Pick<Habit, 'id' | 'domain_slug'>[]) ?? []
   const todayLogs = (logsRes.data as HabitLog[]) ?? []
   const allLogs = (allLogsRes.data as { completed_at: string; habit_id: string }[]) ?? []
   const completedIds = new Set(todayLogs.map((l) => l.habit_id))
 
+  // Use ALL habits (including inactive) so historical logs still map to their domain
   const habitDomainMap: Record<string, string> = {}
-  for (const h of habits) {
+  for (const h of allHabits) {
     habitDomainMap[h.id] = h.domain_slug
   }
 
@@ -74,12 +88,14 @@ export default async function DashboardPage() {
   const allCompletedDays = new Set<string>()
 
   for (const log of allLogs) {
-    countByDay[log.completed_at] = (countByDay[log.completed_at] ?? 0) + 1
-    allCompletedDays.add(log.completed_at)
+    // Truncate to date string defensively (handles both date and timestamp formats)
+    const dateStr = log.completed_at.split('T')[0]
+    countByDay[dateStr] = (countByDay[dateStr] ?? 0) + 1
+    allCompletedDays.add(dateStr)
     const slug = habitDomainMap[log.habit_id]
     if (slug) {
       if (!domainCompletedDays[slug]) domainCompletedDays[slug] = new Set()
-      domainCompletedDays[slug].add(log.completed_at)
+      domainCompletedDays[slug].add(dateStr)
     }
   }
 
@@ -100,10 +116,10 @@ export default async function DashboardPage() {
     const domainHabits = habits.filter((h) => h.domain_slug === domain.slug)
     if (domainHabits.length === 0) return { slug: domain.slug, streak: 0, failingDays: 0 }
     const completed = domainCompletedDays[domain.slug] ?? new Set<string>()
-    return { slug: domain.slug, ...computeDomainStats(completed) }
+    return { slug: domain.slug, ...computeDomainStats(completed, accountAgeDays) }
   })
 
-  const { streak: overallStreak } = computeDomainStats(allCompletedDays)
+  const { streak: overallStreak } = computeDomainStats(allCompletedDays, accountAgeDays)
 
   return (
     <DashboardClient
