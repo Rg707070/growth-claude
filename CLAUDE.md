@@ -135,6 +135,9 @@ git push                   # auto-deploys to Vercel
 
 Commit message format: `"Add X"`, `"Fix Y"`, `"Update Z"` — imperative, lowercase after colon.
 
+**After creating a PR, always merge it to `main` and push so Vercel auto-deploys.**
+Steps: create PR from feature branch → merge to `main` → `git push origin main`.
+
 ---
 
 ## Full documentation
