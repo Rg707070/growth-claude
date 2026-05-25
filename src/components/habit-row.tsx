@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Bell, BellOff, X } from 'lucide-react'
+import { Check, Bell, BellOff, X, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getDomainBySlug } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
@@ -35,6 +35,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(habit.name)
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const startX = useRef(0)
   const startY = useRef(0)
@@ -107,6 +109,24 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const cancelEdit = () => {
     setEditing(false)
     setEditName(habit.name)
+    setConfirmDelete(false)
+  }
+
+  const deleteHabit = async () => {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('habits')
+        .update({ is_active: false })
+        .eq('id', habit.id)
+      if (error) throw error
+      router.refresh()
+    } catch {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
   }
 
   const openReminderPicker = () => {
@@ -222,6 +242,25 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         >
           {t('save')}
         </button>
+        {confirmDelete ? (
+          <button
+            onClick={deleteHabit}
+            disabled={deleting}
+            className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0 disabled:opacity-50 transition-opacity font-medium"
+            style={{ background: '#ef4444', color: '#fff' }}
+          >
+            {t('deleteConfirm')}
+          </button>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="p-1.5 rounded-lg flex-shrink-0 transition-all"
+            style={{ background: 'var(--secondary)', color: '#ef4444', border: '1px solid #ef444433' }}
+            aria-label={t('deleteHabit')}
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
         <button
           onClick={cancelEdit}
           className="p-1.5 rounded-lg flex-shrink-0"
