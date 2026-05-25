@@ -25,13 +25,20 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const [editName, setEditName] = useState(habit.name)
   const [saving, setSaving] = useState(false)
 
-  const touchStartX = useRef<number | null>(null)
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const didLongPress = useRef(false)
-  const blockNextClick = useRef(false)
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longFired = useRef(false)
 
   const domain = getDomainBySlug(habit.domain_slug)
   const accentColor = domain?.color ?? '#6b7280'
+
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }
 
   const toggle = async () => {
     if (loading) return
@@ -39,11 +46,9 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     const prevDone = done
     setDone(!done)
     navigator.vibrate?.(50)
-
     try {
       const supabase = createClient()
       const today = new Date().toISOString().split('T')[0]
-
       if (prevDone) {
         const { error } = await supabase
           .from('habit_logs')
@@ -58,7 +63,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         })
         if (error) throw error
       }
-
       onToggle?.()
       router.refresh()
     } catch {
@@ -93,50 +97,44 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX
-    didLongPress.current = false
-    longPressTimer.current = setTimeout(() => {
-      didLongPress.current = true
-      navigator.vibrate?.(60)
+    const t0 = e.touches[0]
+    startX.current = t0.clientX
+    startY.current = t0.clientY
+    longFired.current = false
+    clearTimer()
+    timerRef.current = setTimeout(() => {
+      longFired.current = true
+      navigator.vibrate?.(80)
       setEditing(true)
-    }, 500)
+    }, 550)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || !longPressTimer.current) return
-    const diff = Math.abs(e.touches[0].clientX - touchStartX.current)
-    if (diff > 10) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
+    if (!timerRef.current) return
+    const dx = Math.abs(e.touches[0].clientX - startX.current)
+    const dy = Math.abs(e.touches[0].clientY - startY.current)
+    if (dx > 8 || dy > 8) clearTimer()
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-    if (didLongPress.current) {
-      didLongPress.current = false
-      blockNextClick.current = true
+    clearTimer()
+    if (longFired.current) {
+      longFired.current = false
       return
     }
-    if (touchStartX.current === null) return
-    const diff = e.changedTouches[0].clientX - touchStartX.current
-    touchStartX.current = null
-    if (Math.abs(diff) > 80) {
+    const dx = e.changedTouches[0].clientX - startX.current
+    if (Math.abs(dx) > 80) {
       setSwiped(true)
       setTimeout(() => setSwiped(false), 400)
+      toggle()
+    } else {
       toggle()
     }
   }
 
-  const handleClick = () => {
-    if (blockNextClick.current) {
-      blockNextClick.current = false
-      return
-    }
-    toggle()
+  const handleTouchCancel = () => {
+    clearTimer()
+    longFired.current = false
   }
 
   if (editing) {
@@ -188,13 +186,13 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   }
 
   return (
-    <button
-      onClick={handleClick}
+    <div
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      disabled={loading}
-      className={`relative w-full flex items-center gap-3 rounded-2xl active:scale-[0.98] transition-all text-start disabled:opacity-50 overflow-hidden select-none ${
+      onTouchCancel={handleTouchCancel}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`relative w-full flex items-center gap-3 rounded-2xl transition-all overflow-hidden select-none ${
         swiped ? 'animate-swipe-done' : ''
       }`}
       style={{
@@ -204,6 +202,9 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         border: `1px solid ${done ? `${accentColor}33` : 'var(--c-border)'}`,
         padding: '0.85rem 1rem',
         boxShadow: done ? 'none' : '0 1px 2px var(--c-shadow)',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+        cursor: 'pointer',
       }}
     >
       {/* Checkbox */}
@@ -230,6 +231,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           {habit.name}
         </p>
       </div>
-    </button>
+    </div>
   )
 }
