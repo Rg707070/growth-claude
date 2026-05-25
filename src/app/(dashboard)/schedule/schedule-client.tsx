@@ -672,12 +672,7 @@ export function SchedulePageClient({
     } else {
       setCompletedHabitIds(p => new Set([...p, habitId]))
       await sb.from('habit_logs').upsert({ user_id: userId, habit_id: habitId, completed_at: todayDate })
-      await supabase_xp_update(sb, userId)
     }
-  }
-
-  async function supabase_xp_update(sb: ReturnType<typeof createClient>, uid: string) {
-    await sb.rpc('update_profile_xp', { uid, xp_delta: 10 })
   }
 
   const tabBar = (
