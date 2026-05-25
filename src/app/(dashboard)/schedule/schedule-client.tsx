@@ -4,13 +4,9 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
+import { DOMAINS } from '@/lib/domains'
 import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
-import { HeatMap } from '@/components/heat-map'
-import { WeeklyChart } from '@/components/weekly-chart'
-import { WeeklySummary } from '@/components/weekly-summary'
-import { FridaySummary } from '@/components/friday-summary'
-import { DOMAINS } from '@/lib/domains'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -91,11 +87,6 @@ interface AllItem {
 
 interface CheckRow { time: string; note: string | null }
 
-interface WeekSummary {
-  bestDomain: string; completionPct: number
-  habitCount: number; topDomainSlug: string; habitsCompleted: number
-}
-
 interface ScheduledHabit {
   id: string
   name: string
@@ -105,14 +96,9 @@ interface ScheduledHabit {
 
 interface Props {
   userId: string
-  reflections: { date: string; notes: string }[]
   userItems: Record<number, ScheduleItem[]>
   allItems: AllItem[]
   todayChecks: CheckRow[]
-  heatMapDays: { date: string; pct: number }[]
-  weeklyActivity: { date: string; count: number }[]
-  weekSummary: WeekSummary
-  weeklyScheduleChecks: { date: string; count: number }[]
   scheduledHabits: ScheduledHabit[]
   todayCompletedHabitIds: string[]
 }
@@ -387,13 +373,12 @@ function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
 }
 
 // ─── ScheduleTable ────────────────────────────────────────────────────────────
-function ScheduleTable({ items, habits, isToday, todayDate, completedHabitIds, checked, dayOfWeek, onSelectDay, onEdit, onAdd, onToggle, onToggleHabit }: {
+function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, checked, onSelectDay, onEdit, onAdd, onToggle, onToggleHabit }: {
   items: ScheduleItem[]
   habits: ScheduledHabit[]
+  completedHabitIds: Set<string>
   dayOfWeek: number
   isToday: boolean
-  todayDate: string
-  completedHabitIds: Set<string>
   checked: Set<string>
   onSelectDay: (d: number) => void
   onEdit: (item: ScheduleItem) => void
@@ -501,7 +486,7 @@ function ScheduleTable({ items, habits, isToday, todayDate, completedHabitIds, c
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
-        style={{ maxHeight: 'calc(100dvh - 310px)' }}
+        style={{ maxHeight: 'calc(100dvh - 260px)' }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -584,35 +569,15 @@ function ScheduleTable({ items, habits, isToday, todayDate, completedHabitIds, c
   )
 }
 
-// ─── ProgressSection ──────────────────────────────────────────────────────────
-function ProgressSection({ heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks }: {
-  heatMapDays: { date: string; pct: number }[]
-  weeklyActivity: { date: string; count: number }[]
-  weekSummary: WeekSummary
-  weeklyScheduleChecks: { date: string; count: number }[]
-}) {
-  return (
-    <div className="px-4 pb-8 space-y-6 mt-4">
-      <WeeklySummary habitsCompleted={weekSummary.habitsCompleted} bestDomain={weekSummary.bestDomain} completionPct={weekSummary.completionPct} />
-      <FridaySummary habitsCompleted={weekSummary.habitsCompleted} />
-      <WeeklyChart days={weeklyActivity} scheduleChecks={weeklyScheduleChecks} />
-      <HeatMap days={heatMapDays} />
-    </div>
-  )
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
-type TabId = 'calendar' | 'schedule' | 'progress'
+type TabId = 'calendar' | 'schedule'
 const TABS: { id: TabId; label: string }[] = [
   { id: 'calendar', label: 'לוח שנה' },
   { id: 'schedule', label: 'לוז'      },
-  { id: 'progress', label: 'התקדמות'  },
 ]
 
 export function SchedulePageClient({
-  userId, userItems, allItems, todayChecks,
-  heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks,
-  scheduledHabits, todayCompletedHabitIds,
+  userId, userItems, allItems, todayChecks, scheduledHabits, todayCompletedHabitIds,
 }: Props) {
   const { isDark }  = useTheme()
   const todayDay  = new Date().getDay()
@@ -700,25 +665,15 @@ export function SchedulePageClient({
     <ScheduleTable
       items={items}
       habits={scheduledHabits}
+      completedHabitIds={completedHabitIds}
       dayOfWeek={day}
       isToday={isToday}
-      todayDate={todayDate}
-      completedHabitIds={completedHabitIds}
       checked={checked}
       onSelectDay={setDay}
       onEdit={setEditItem}
       onAdd={h => setAddHour(h ?? null)}
       onToggle={toggleCheck}
       onToggleHabit={toggleHabit}
-    />
-  )
-
-  const progressView = (
-    <ProgressSection
-      heatMapDays={heatMapDays}
-      weeklyActivity={weeklyActivity}
-      weekSummary={weekSummary}
-      weeklyScheduleChecks={weeklyScheduleChecks}
     />
   )
 
@@ -737,7 +692,6 @@ export function SchedulePageClient({
             </div>
           )}
           {tab === 'schedule' && tableView}
-          {tab === 'progress' && <div className="h-full overflow-y-auto">{progressView}</div>}
         </div>
       </div>
 
@@ -753,10 +707,7 @@ export function SchedulePageClient({
             <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה — בפיתוח</p>
           </div>
         )}
-        {tab === 'schedule' && (
-          <div className="grid grid-cols-[1fr,360px] gap-6">{tableView}{progressView}</div>
-        )}
-        {tab === 'progress' && progressView}
+        {tab === 'schedule' && tableView}
       </div>
 
       {/* Sheets */}

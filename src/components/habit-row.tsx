@@ -10,7 +10,9 @@ import {
   setHabitReminder,
   clearHabitReminder,
   requestNotificationPermission,
+  playAlarmSound,
 } from '@/hooks/use-notifications'
+import type { ReminderType, ReminderData } from '@/hooks/use-notifications'
 import type { Habit } from '@/types'
 
 interface HabitRowProps {
@@ -25,8 +27,9 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const [done, setDone] = useState(isCompleted)
   const [swiped, setSwiped] = useState(false)
   const [showReminderPicker, setShowReminderPicker] = useState(false)
-  const [reminder, setReminder] = useState<string | null>(() => getReminderForHabit(habit.id))
+  const [reminder, setReminder] = useState<ReminderData | null>(() => getReminderForHabit(habit.id))
   const [pendingTime, setPendingTime] = useState('')
+  const [pendingType, setPendingType] = useState<ReminderType>('notification')
   const touchStartX = useRef<number | null>(null)
   const domain = getDomainBySlug(habit.domain_slug)
 
@@ -83,9 +86,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const openReminderPicker = async (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation()
     if (!showReminderPicker) {
-      const granted = await requestNotificationPermission()
-      if (!granted) return
-      setPendingTime(reminder ?? '')
+      setPendingTime(reminder?.time ?? '')
+      setPendingType(reminder?.type ?? 'notification')
     }
     setShowReminderPicker((prev) => !prev)
   }
@@ -93,8 +95,16 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const saveReminder = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!pendingTime) return
-    setHabitReminder(habit.id, pendingTime)
-    setReminder(pendingTime)
+
+    if (pendingType === 'notification') {
+      const granted = await requestNotificationPermission()
+      if (!granted) return
+    } else {
+      playAlarmSound()
+    }
+
+    setHabitReminder(habit.id, pendingTime, pendingType)
+    setReminder({ time: pendingTime, type: pendingType })
     setShowReminderPicker(false)
     await createClient().from('habits').update({ schedule_time: pendingTime }).eq('id', habit.id)
   }
@@ -111,7 +121,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const accentColor = domain?.color ?? '#6b7280'
 
   return (
-    <div className={`relative w-full rounded-2xl overflow-hidden ${swiped ? 'animate-swipe-done' : ''}`}
+    <div
+      className={`relative w-full rounded-2xl overflow-hidden ${swiped ? 'animate-swipe-done' : ''}`}
       style={{
         background: done
           ? `linear-gradient(90deg, ${accentColor}14 0%, ${accentColor}06 100%)`
@@ -162,7 +173,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           )}
           {reminder && (
             <p className="text-[10px] mt-0.5" style={{ color: accentColor }}>
-              ⏰ {reminder}
+              {reminder.type === 'alarm' ? '⏰' : '🔔'} {reminder.time}
             </p>
           )}
         </div>
@@ -170,7 +181,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         {/* Bell button */}
         <button
           onClick={openReminderPicker}
-          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault() }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
           className="flex-shrink-0 p-1.5 rounded-lg transition-all active:scale-90"
           style={{
             color: reminder ? accentColor : 'var(--muted-foreground)',
@@ -182,41 +194,71 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         </button>
       </div>
 
-      {/* Reminder picker (inline) */}
+      {/* Reminder picker */}
       {showReminderPicker && (
         <div
-          className="flex items-center gap-2 px-4 pb-3"
+          className="flex flex-col gap-2 px-4 pb-3"
           onClick={(e) => e.stopPropagation()}
         >
-          <input
-            type="time"
-            value={pendingTime}
-            onChange={(e) => setPendingTime(e.target.value)}
-            className="rounded-lg px-2 py-1 text-sm flex-1"
-            style={{
-              background: 'var(--c-input)',
-              border: `1px solid ${accentColor}44`,
-              color: 'var(--foreground)',
-            }}
-          />
-          <button
-            onClick={saveReminder}
-            disabled={!pendingTime}
-            className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all disabled:opacity-40"
-            style={{ background: accentColor, color: '#fff' }}
+          {/* Type toggle */}
+          <div
+            className="flex rounded-xl overflow-hidden"
+            style={{ border: `1px solid ${accentColor}44` }}
           >
-            שמור
-          </button>
-          {reminder && (
             <button
-              onClick={removeReminder}
-              className="p-1.5 rounded-lg transition-all"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
-              aria-label="מחק תזכורת"
+              onClick={() => setPendingType('notification')}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 transition-all font-medium"
+              style={{
+                background: pendingType === 'notification' ? accentColor : 'transparent',
+                color: pendingType === 'notification' ? '#fff' : 'var(--muted-foreground)',
+              }}
             >
-              <X size={14} />
+              🔔 התראה
             </button>
-          )}
+            <button
+              onClick={() => setPendingType('alarm')}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 transition-all font-medium"
+              style={{
+                background: pendingType === 'alarm' ? accentColor : 'transparent',
+                color: pendingType === 'alarm' ? '#fff' : 'var(--muted-foreground)',
+              }}
+            >
+              ⏰ אזעקה
+            </button>
+          </div>
+
+          {/* Time + actions row */}
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={pendingTime}
+              onChange={(e) => setPendingTime(e.target.value)}
+              className="rounded-lg px-2 py-1.5 text-sm flex-1"
+              style={{
+                background: 'var(--c-input)',
+                border: `1px solid ${accentColor}44`,
+                color: 'var(--foreground)',
+              }}
+            />
+            <button
+              onClick={saveReminder}
+              disabled={!pendingTime}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all disabled:opacity-40"
+              style={{ background: accentColor, color: '#fff' }}
+            >
+              שמור
+            </button>
+            {reminder && (
+              <button
+                onClick={removeReminder}
+                className="p-1.5 rounded-lg transition-all"
+                style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
+                aria-label="מחק תזכורת"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
