@@ -20,7 +20,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const { t } = useLang()
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(isCompleted)
-  const [swiped, setSwiped] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(habit.name)
   const [saving, setSaving] = useState(false)
@@ -116,20 +115,13 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     if (dx > 8 || dy > 8) clearTimer()
   }
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchEnd = () => {
     clearTimer()
     if (longFired.current) {
       longFired.current = false
       return
     }
-    const dx = e.changedTouches[0].clientX - startX.current
-    if (Math.abs(dx) > 80) {
-      setSwiped(true)
-      setTimeout(() => setSwiped(false), 400)
-      toggle()
-    } else {
-      toggle()
-    }
+    toggle()
   }
 
   const handleTouchCancel = () => {
@@ -192,9 +184,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
       onContextMenu={(e) => e.preventDefault()}
-      className={`relative w-full flex items-center gap-3 rounded-2xl transition-all overflow-hidden select-none ${
-        swiped ? 'animate-swipe-done' : ''
-      }`}
+      className="relative w-full flex items-center gap-3 rounded-2xl transition-all overflow-hidden select-none active:scale-[0.98]"
       style={{
         background: done
           ? `linear-gradient(90deg, ${accentColor}14 0%, ${accentColor}06 100%)`
