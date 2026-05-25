@@ -348,9 +348,10 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
 }
 
 // ─── HabitBlock ───────────────────────────────────────────────────────────────
-function HabitBlock({ habit, isCompleted, onToggle }: {
+function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
   habit: ScheduledHabit
   isCompleted: boolean
+  isToday: boolean
   onToggle: () => Promise<void>
 }) {
   const domain = DOMAINS.find(d => d.slug === habit.domain_slug)
@@ -369,16 +370,18 @@ function HabitBlock({ habit, isCompleted, onToggle }: {
         <p className="text-sm font-semibold truncate" style={{ color: isCompleted ? 'var(--muted-foreground)' : clr, textDecoration: isCompleted ? 'line-through' : 'none' }}>{habit.name}</p>
         <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{habit.schedule_time.slice(0, 5)}</p>
       </div>
-      <button
-        onClick={onToggle}
-        className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
-        style={{
-          background:  isCompleted ? 'rgba(52,211,153,0.20)' : 'transparent',
-          borderColor: isCompleted ? 'rgba(52,211,153,0.60)' : `${clr}60`,
-        }}
-      >
-        {isCompleted && <Check size={10} className="text-emerald-400" />}
-      </button>
+      {isToday && (
+        <button
+          onClick={onToggle}
+          className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
+          style={{
+            background:  isCompleted ? 'rgba(52,211,153,0.20)' : 'transparent',
+            borderColor: isCompleted ? 'rgba(52,211,153,0.60)' : `${clr}60`,
+          }}
+        >
+          {isCompleted && <Check size={10} className="text-emerald-400" />}
+        </button>
+      )}
     </div>
   )
 }
@@ -556,6 +559,7 @@ function ScheduleTable({ items, habits, isToday, todayDate, completedHabitIds, c
                     key={habit.id}
                     habit={habit}
                     isCompleted={completedHabitIds.has(habit.id)}
+                    isToday={isToday}
                     onToggle={() => onToggleHabit(habit.id)}
                   />
                 ))}
