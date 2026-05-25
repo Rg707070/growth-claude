@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
+import { useHabitReminders } from '@/hooks/use-notifications'
 import { LangToggle } from '@/components/lang-toggle'
 import { DomainCard } from '@/components/domain-card'
 import { HabitRow } from '@/components/habit-row'
@@ -42,6 +43,7 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const { t, isRTL } = useLang()
   const router = useRouter()
+  useHabitReminders(habits)
   const completedSet = new Set(completedIds)
   const activeDomainsProgress = domainProgress.filter((d) => d.totalHabits > 0)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')

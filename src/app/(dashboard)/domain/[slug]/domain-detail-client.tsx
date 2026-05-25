@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowRight, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
+import { useHabitReminders } from '@/hooks/use-notifications'
 import { HabitRow } from '@/components/habit-row'
 import { ProgressRing } from '@/components/progress-ring'
 import { QuickLinks } from '@/components/integrations/quick-links'
@@ -60,6 +61,7 @@ export function DomainDetailClient({
   const router = useRouter()
   const { t, isRTL } = useLang()
   const [habits, setHabits] = useState(initialHabits)
+  useHabitReminders(habits)
   const [adding, setAdding] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
   const [saving, setSaving] = useState(false)
