@@ -42,6 +42,12 @@ export interface DomainProgress {
   completedToday: number
 }
 
+export interface DomainStats {
+  slug: string
+  streak: number
+  failingDays: number
+}
+
 export type TextCategory = 'gemara' | 'mishnah' | 'tanakh' | 'halacha' | 'article' | 'other'
 
 export interface TorahLesson {
