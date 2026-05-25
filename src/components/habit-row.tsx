@@ -28,6 +28,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const startY = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longFired = useRef(false)
+  const touchActive = useRef(false)
 
   const domain = getDomainBySlug(habit.domain_slug)
   const accentColor = domain?.color ?? '#6b7280'
@@ -96,6 +97,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    touchActive.current = true
     const t0 = e.touches[0]
     startX.current = t0.clientX
     startY.current = t0.clientY
@@ -127,6 +129,15 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const handleTouchCancel = () => {
     clearTimer()
     longFired.current = false
+    touchActive.current = false
+  }
+
+  const handleClick = () => {
+    if (touchActive.current) {
+      touchActive.current = false
+      return
+    }
+    toggle()
   }
 
   if (editing) {
@@ -179,6 +190,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
 
   return (
     <div
+      onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
