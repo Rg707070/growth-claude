@@ -26,9 +26,10 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
 
   const startX = useRef(0)
   const startY = useRef(0)
+  const moved = useRef(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longFired = useRef(false)
-  const touchActive = useRef(false)
+  const isTouching = useRef(false)
 
   const domain = getDomainBySlug(habit.domain_slug)
   const accentColor = domain?.color ?? '#6b7280'
@@ -96,49 +97,56 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     setEditName(habit.name)
   }
 
+  // ── Touch handlers ────────────────────────────────────────────────────────
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchActive.current = true
-    const t0 = e.touches[0]
-    startX.current = t0.clientX
-    startY.current = t0.clientY
+    isTouching.current = true
+    moved.current = false
     longFired.current = false
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
     clearTimer()
     timerRef.current = setTimeout(() => {
-      longFired.current = true
-      navigator.vibrate?.(80)
-      setEditing(true)
+      if (!moved.current) {
+        longFired.current = true
+        navigator.vibrate?.(80)
+        setEditing(true)
+      }
     }, 550)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!timerRef.current) return
     const dx = Math.abs(e.touches[0].clientX - startX.current)
     const dy = Math.abs(e.touches[0].clientY - startY.current)
-    if (dx > 8 || dy > 8) clearTimer()
+    if (dx > 8 || dy > 8) {
+      moved.current = true
+      clearTimer()
+    }
   }
 
   const handleTouchEnd = () => {
     clearTimer()
-    if (longFired.current) {
-      longFired.current = false
-      return
-    }
+    if (longFired.current || moved.current) return
     toggle()
   }
 
   const handleTouchCancel = () => {
     clearTimer()
     longFired.current = false
-    touchActive.current = false
+    moved.current = false
+    isTouching.current = false
   }
 
+  // Desktop click (skip if triggered by touch — browser fires click after touchend)
   const handleClick = () => {
-    if (touchActive.current) {
-      touchActive.current = false
+    if (isTouching.current) {
+      isTouching.current = false
       return
     }
     toggle()
   }
+
+  // ── Edit form ─────────────────────────────────────────────────────────────
 
   if (editing) {
     return (
@@ -188,15 +196,19 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     )
   }
 
+  // ── Normal row ────────────────────────────────────────────────────────────
+
   return (
-    <div
+    <button
+      type="button"
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
       onContextMenu={(e) => e.preventDefault()}
-      className="relative w-full flex items-center gap-3 rounded-2xl transition-all overflow-hidden select-none active:scale-[0.98]"
+      disabled={loading}
+      className="relative w-full flex items-center gap-3 rounded-2xl active:scale-[0.98] transition-all text-start disabled:opacity-50 overflow-hidden select-none"
       style={{
         background: done
           ? `linear-gradient(90deg, ${accentColor}14 0%, ${accentColor}06 100%)`
@@ -206,10 +218,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         boxShadow: done ? 'none' : '0 1px 2px var(--c-shadow)',
         WebkitUserSelect: 'none',
         userSelect: 'none',
-        cursor: 'pointer',
       }}
     >
-      {/* Checkbox */}
       <div
         className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
         style={{
@@ -221,7 +231,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         {done && <Check size={12} className="text-white" strokeWidth={3.5} />}
       </div>
 
-      {/* Name */}
       <div className="flex-1 min-w-0">
         <p
           className="text-sm font-medium truncate transition-all"
@@ -233,6 +242,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           {habit.name}
         </p>
       </div>
-    </div>
+    </button>
   )
 }
