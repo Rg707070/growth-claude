@@ -202,11 +202,14 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       {/* Edit button */}
       <button
         onClick={() => setEditing(true)}
-        className="p-2 mx-2 rounded-lg opacity-30 hover:opacity-70 active:opacity-100 transition-opacity flex-shrink-0"
-        style={{ color: 'var(--muted-foreground)' }}
-        tabIndex={-1}
+        className="p-1.5 mx-2 rounded-lg flex-shrink-0 active:scale-95 transition-transform"
+        style={{
+          background: `${accentColor}22`,
+          color: accentColor,
+          border: `1px solid ${accentColor}44`,
+        }}
       >
-        <Pencil size={13} />
+        <Pencil size={13} strokeWidth={2.5} />
       </button>
     </div>
   )
