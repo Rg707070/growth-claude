@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
 import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
+import { HebrewCalendar } from './hebrew-calendar'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -597,13 +598,7 @@ export function SchedulePageClient({
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100dvh - 100px)' }}>
         <div className="flex-shrink-0 px-4 pt-2 pb-3">{tabBar}</div>
         <div className="flex-1 overflow-hidden">
-          {tab === 'calendar' && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-              <span style={{ fontSize: 52 }}>📅</span>
-              <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה</p>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.28)' }}>תצוגת לוח שנה חודשי — בפיתוח</p>
-            </div>
-          )}
+          {tab === 'calendar' && <HebrewCalendar />}
           {tab === 'schedule' && tableView}
         </div>
       </div>
@@ -614,12 +609,7 @@ export function SchedulePageClient({
           <h1 className="text-2xl font-black" style={{ color: 'var(--foreground)' }}>לוח שנה</h1>
         </div>
         <div className="mb-5 w-fit">{tabBar}</div>
-        {tab === 'calendar' && (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <span style={{ fontSize: 52 }}>📅</span>
-            <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה — בפיתוח</p>
-          </div>
-        )}
+        {tab === 'calendar' && <HebrewCalendar />}
         {tab === 'schedule' && tableView}
       </div>
 
