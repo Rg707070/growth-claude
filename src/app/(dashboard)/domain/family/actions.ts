@@ -13,6 +13,7 @@ import type {
   RoutineBreaker,
   RoutineBreakerType,
   RoutineBreakerCostTier,
+  RoutineBreakerStatus,
   MediaLink,
 } from '@/types/family'
 
@@ -227,7 +228,7 @@ export async function createRoutineBreaker(input: {
 
 export async function updateRoutineBreakerStatus(
   breakerId: string,
-  status: 'backlog' | 'planned' | 'archived'
+  status: RoutineBreakerStatus
 ): Promise<void> {
   const { supabase, user } = await getAuthenticatedUser()
   const { error } = await supabase

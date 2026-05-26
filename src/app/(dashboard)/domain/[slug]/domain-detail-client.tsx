@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -72,7 +72,7 @@ export function DomainDetailClient({
   const [newHabitName, setNewHabitName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const completedSet = new Set(completedIds)
+  const completedSet = useMemo(() => new Set(completedIds), [completedIds])
 
   const completedCount = habits.filter((h) => completedSet.has(h.id)).length
   const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0
