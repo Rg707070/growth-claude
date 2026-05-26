@@ -310,3 +310,25 @@ create policy "Users manage own saved lessons"
   on public.saved_lessons for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ============================================================
+-- READING BOOKS (reading schedule calculator)
+-- ============================================================
+create table if not exists public.reading_books (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  title text not null,
+  total_pages integer not null check (total_pages > 0),
+  current_page integer default 0 not null check (current_page >= 0),
+  target_date date not null,
+  color text default '#06b6d4' not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.reading_books enable row level security;
+
+create policy "Users manage own reading books"
+  on public.reading_books for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

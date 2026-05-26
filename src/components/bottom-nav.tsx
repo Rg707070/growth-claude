@@ -1,15 +1,15 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Grid3X3, CalendarDays, Settings, PenLine } from 'lucide-react'
+import { Home, Grid3X3, CalendarDays, Settings, BookOpen } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import type { Profile } from '@/types'
 
 const navItems = [
   { icon: Home,         href: '/dashboard', labelHe: 'בית',    labelEn: 'Home'     },
   { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים', labelEn: 'Domains'  },
-  { icon: PenLine,      href: '/journal',   labelHe: 'יומן',   labelEn: 'Journal'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוח שנה', labelEn: 'Calendar' },
+  { icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',  labelEn: 'Books'    },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',    labelEn: 'Schedule' },
   { icon: Settings,     href: '/settings',  labelHe: 'הגדרות', labelEn: 'Settings' },
 ]
 
