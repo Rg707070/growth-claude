@@ -343,7 +343,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
             color: reminder ? accentColor : 'var(--muted-foreground)',
             background: reminder ? `${accentColor}18` : 'transparent',
           }}
-          aria-label="הגדר תזכורת"
+          aria-label={t('setReminder')}
         >
           {reminder ? <Bell size={14} /> : <BellOff size={14} />}
         </button>
@@ -364,7 +364,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
                 color: pendingType === 'notification' ? '#fff' : 'var(--muted-foreground)',
               }}
             >
-              🔔 התראה
+              🔔 {t('reminderNotification')}
             </button>
             <button
               onClick={() => setPendingType('alarm')}
@@ -374,7 +374,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
                 color: pendingType === 'alarm' ? '#fff' : 'var(--muted-foreground)',
               }}
             >
-              ⏰ אזעקה
+              ⏰ {t('reminderAlarm')}
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -395,14 +395,14 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
               className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all disabled:opacity-40"
               style={{ background: accentColor, color: '#fff' }}
             >
-              שמור
+              {t('save')}
             </button>
             {reminder && (
               <button
                 onClick={removeReminder}
                 className="p-1.5 rounded-lg transition-all"
                 style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
-                aria-label="מחק תזכורת"
+                aria-label={t('deleteReminder')}
               >
                 <X size={14} />
               </button>

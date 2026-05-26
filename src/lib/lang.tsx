@@ -97,6 +97,11 @@ const translations = {
     sessionTimer: 'טיימר שיעור',
     running: 'רץ',
     paused: 'מושהה',
+    setReminder: 'הגדר תזכורת',
+    reminderNotification: 'התראה',
+    reminderAlarm: 'אזעקה',
+    deleteReminder: 'מחק תזכורת',
+    habitReminderBody: 'זמן לבצע את ההרגל! 💪',
   },
   en: {
     appName: 'GROWTH',
@@ -191,6 +196,11 @@ const translations = {
     sessionTimer: 'Session Timer',
     running: 'Running',
     paused: 'Paused',
+    setReminder: 'Set reminder',
+    reminderNotification: 'Notification',
+    reminderAlarm: 'Alarm',
+    deleteReminder: 'Delete reminder',
+    habitReminderBody: "Time to complete your habit! 💪",
   },
 }
 
