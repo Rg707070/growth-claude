@@ -149,6 +149,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     setHabitReminder(habit.id, pendingTime, pendingType)
     setReminder({ time: pendingTime, type: pendingType })
     setShowReminderPicker(false)
+    createClient().from('habits').update({ reminder_time: pendingTime }).eq('id', habit.id).then(null, console.error)
   }
 
   const removeReminder = (e: React.MouseEvent) => {
@@ -157,6 +158,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     setReminder(null)
     setPendingTime('')
     setShowReminderPicker(false)
+    createClient().from('habits').update({ reminder_time: null }).eq('id', habit.id).then(null, console.error)
   }
 
   // Touch handlers — long press (550ms) opens edit, tap toggles

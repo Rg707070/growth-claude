@@ -332,3 +332,27 @@ create policy "Users manage own reading books"
   on public.reading_books for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ============================================================
+-- HABITS: add reminder_time column
+-- ============================================================
+alter table public.habits add column if not exists reminder_time text;
+
+-- ============================================================
+-- PUSH SUBSCRIPTIONS (web push, one row per device per user)
+-- ============================================================
+create table if not exists public.push_subscriptions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, endpoint)
+);
+
+alter table public.push_subscriptions enable row level security;
+create policy "Users manage own push subscriptions"
+  on public.push_subscriptions for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

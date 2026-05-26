@@ -17,7 +17,9 @@ export interface Habit {
   name: string
   description?: string
   frequency: 'daily' | 'weekly'
+  xp_reward?: number
   is_active: boolean
+  reminder_time?: string | null
   created_at: string
 }
 
