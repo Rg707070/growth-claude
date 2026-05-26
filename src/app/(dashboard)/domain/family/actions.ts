@@ -251,13 +251,3 @@ export async function deleteRoutineBreaker(breakerId: string): Promise<void> {
   revalidatePath(familyPath())
 }
 
-// ─── Bulk fetch for the Family page server component ─────────
-
-export async function getFamilyEcosystemData() {
-  const [tasks, habits, routineBreakers] = await Promise.all([
-    getFamilyTasks(),
-    getFamilyHabits(),
-    getRoutineBreakers(),
-  ])
-  return { tasks, habits, routineBreakers }
-}

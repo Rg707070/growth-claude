@@ -17,17 +17,3 @@ export function proposeRoutineBreaker(
 
   return pool[Math.floor(Math.random() * pool.length)]
 }
-
-/**
- * Groups a list of routine breakers by their type for display.
- */
-export function groupByType(
-  items: RoutineBreaker[]
-): Record<string, RoutineBreaker[]> {
-  return items.reduce<Record<string, RoutineBreaker[]>>((acc, item) => {
-    const key = item.type
-    if (!acc[key]) acc[key] = []
-    acc[key].push(item)
-    return acc
-  }, {})
-}

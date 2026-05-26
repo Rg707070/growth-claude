@@ -62,9 +62,3 @@ export interface RoutineBreakerFilters {
   type?: RoutineBreakerType
   cost_tier?: RoutineBreakerCostTier
 }
-
-export interface FamilyEcosystemData {
-  tasks: FamilyTask[]
-  habits: FamilyHabit[]
-  routineBreakers: RoutineBreaker[]
-}
