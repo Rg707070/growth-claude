@@ -598,7 +598,7 @@ export function SchedulePageClient({
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100dvh - 100px)' }}>
         <div className="flex-shrink-0 px-4 pt-2 pb-3">{tabBar}</div>
         <div className="flex-1 overflow-hidden">
-          {tab === 'calendar' && <HebrewCalendar />}
+          {tab === 'calendar' && <HebrewCalendar weeklyItems={userItems} />}
           {tab === 'schedule' && tableView}
         </div>
       </div>
@@ -609,7 +609,7 @@ export function SchedulePageClient({
           <h1 className="text-2xl font-black" style={{ color: 'var(--foreground)' }}>לוח שנה</h1>
         </div>
         <div className="mb-5 w-fit">{tabBar}</div>
-        {tab === 'calendar' && <HebrewCalendar />}
+        {tab === 'calendar' && <HebrewCalendar weeklyItems={userItems} />}
         {tab === 'schedule' && tableView}
       </div>
 
