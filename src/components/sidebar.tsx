@@ -9,6 +9,7 @@ import {
   Settings,
   Plus,
   X,
+  BookOpen,
 } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -18,11 +19,12 @@ import { GrowthLogo } from '@/components/growth-logo'
 import type { Profile } from '@/types'
 
 const navItems = [
-  { icon: Home,         href: '/dashboard', labelHe: 'בית',     labelEn: 'Home'     },
-  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',  labelEn: 'Domains'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',     labelEn: 'Schedule' },
-  { icon: BarChart2,    href: '/progress',  labelHe: 'התקדמות', labelEn: 'Progress' },
-  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',  labelEn: 'Settings' },
+  { icon: Home,         href: '/dashboard', labelHe: 'בית',       labelEn: 'Home'     },
+  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',    labelEn: 'Domains'  },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',       labelEn: 'Schedule' },
+  { icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',     labelEn: 'Books'    },
+  { icon: BarChart2,    href: '/progress',  labelHe: 'התקדמות',   labelEn: 'Progress' },
+  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',    labelEn: 'Settings' },
 ]
 
 interface SidebarProps {
