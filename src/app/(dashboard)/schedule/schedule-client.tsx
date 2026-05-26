@@ -511,7 +511,7 @@ export function SchedulePageClient({
   const { isDark }  = useTheme()
   const todayDay  = new Date().getDay()
   const todayDate = new Date().toISOString().split('T')[0]
-  const [tab,      setTab]      = useState<TabId>('schedule')
+  const [tab,      setTab]      = useState<TabId>('calendar')
   const [day,      setDay]      = useState(todayDay < 6 ? todayDay : 0)
   const [editItem, setEditItem] = useState<ScheduleItem | null>(null)
   const [addHour,  setAddHour]  = useState<number | null | false>(false)
@@ -604,13 +604,36 @@ export function SchedulePageClient({
       </div>
 
       {/* ── DESKTOP ─────────────────────────────────────────────────────────── */}
-      <div className="hidden md:block px-4">
-        <div className="mb-5" dir="rtl">
-          <h1 className="text-2xl font-black" style={{ color: 'var(--foreground)' }}>לוח שנה</h1>
+      <div className="hidden md:flex gap-6 px-4 items-start" dir="rtl">
+        {/* Calendar panel */}
+        <div
+          className="flex-shrink-0 rounded-3xl overflow-hidden"
+          style={{
+            width: 380,
+            background: 'var(--card)',
+            border: '1px solid var(--c-border)',
+          }}
+        >
+          <div className="px-4 pt-4 pb-1 border-b" style={{ borderColor: 'var(--c-border)' }}>
+            <h2 className="text-sm font-black" style={{ color: 'var(--foreground)' }}>לוח שנה</h2>
+          </div>
+          <HebrewCalendar weeklyItems={userItems} />
         </div>
-        <div className="mb-5 w-fit">{tabBar}</div>
-        {tab === 'calendar' && <HebrewCalendar weeklyItems={userItems} />}
-        {tab === 'schedule' && tableView}
+
+        {/* Schedule panel */}
+        <div
+          className="flex-1 rounded-3xl overflow-hidden"
+          style={{
+            background: 'var(--card)',
+            border: '1px solid var(--c-border)',
+            minHeight: 'calc(100dvh - 120px)',
+          }}
+        >
+          <div className="px-4 pt-4 pb-1 border-b" style={{ borderColor: 'var(--c-border)' }}>
+            <h2 className="text-sm font-black" style={{ color: 'var(--foreground)' }}>לוז שבועי</h2>
+          </div>
+          {tableView}
+        </div>
       </div>
 
       {/* Sheets */}

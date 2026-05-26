@@ -192,7 +192,7 @@ export function HebrewCalendar({ weeklyItems = {} }: Props) {
       <div
         dir="rtl"
         className="px-3 py-3 overflow-y-auto select-none"
-        style={{ maxHeight: 'calc(100dvh - 200px)' }}
+        style={{ maxHeight: 'calc(100dvh - 220px)' }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
