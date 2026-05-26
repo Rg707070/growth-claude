@@ -102,7 +102,7 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
         dir: isRTL ? 'rtl' : 'ltr',
       },
     },
-    onUpdate: ({ editor: ed }) => {
+    onUpdate: ({ editor: ed }: { editor: import('@tiptap/react').Editor }) => {
       if (isLoadingDoc.current) return
       setSaveState('unsaved')
       if (saveTimer.current) clearTimeout(saveTimer.current)
