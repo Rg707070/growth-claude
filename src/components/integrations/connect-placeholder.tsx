@@ -1,13 +1,13 @@
 'use client'
 
 import { ExternalLink } from 'lucide-react'
+import { useLang } from '@/lib/lang'
 
 interface ConnectPlaceholderProps {
   service: string
   icon: string
   description: string
   url: string
-  color: string
 }
 
 export function ConnectPlaceholder({
@@ -15,8 +15,9 @@ export function ConnectPlaceholder({
   icon,
   description,
   url,
-  color,
 }: ConnectPlaceholderProps) {
+  const { isRTL } = useLang()
+
   return (
     <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
       <div className="flex items-center justify-between">
@@ -25,7 +26,7 @@ export function ConnectPlaceholder({
           <span className="text-sm font-semibold text-white">{service}</span>
         </div>
         <span className="text-[10px] text-white/40 bg-white/10 px-2 py-0.5 rounded-full">
-          בקרוב
+          {isRTL ? 'בקרוב' : 'Coming soon'}
         </span>
       </div>
       <p className="text-xs text-white/40">{description}</p>
@@ -35,7 +36,7 @@ export function ConnectPlaceholder({
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 text-xs transition-colors"
       >
-        <span>פתח {service}</span>
+        <span>{isRTL ? `פתח ${service}` : `Open ${service}`}</span>
         <ExternalLink size={11} />
       </a>
     </div>

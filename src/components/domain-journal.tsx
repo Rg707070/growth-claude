@@ -57,10 +57,16 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+    <div
+      className="p-4 rounded-2xl"
+      style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+    >
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">✍️</span>
-        <span className="text-white/60 text-xs font-semibold uppercase tracking-wide">
+        <span
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: 'var(--muted-foreground)' }}
+        >
           {isRTL ? 'יומן יומי' : 'Daily Journal'}
         </span>
       </div>
@@ -71,13 +77,19 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
           onBlur={save}
           onKeyDown={(e) => e.key === 'Enter' && save()}
           placeholder={isRTL ? 'מחשבה אחת להיום...' : 'One thought for today...'}
-          className="flex-1 bg-white/8 border border-white/12 rounded-xl px-3 py-2 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-emerald-500/40"
+          className="flex-1 rounded-xl px-3 py-2 text-sm focus:outline-none"
+          style={{
+            background: 'var(--c-input)',
+            border: '1px solid var(--c-input-border)',
+            color: 'var(--foreground)',
+          }}
           dir={isRTL ? 'rtl' : 'ltr'}
         />
         <button
           onClick={save}
           disabled={saving || !text.trim()}
-          className="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-sm hover:bg-emerald-500/30 disabled:opacity-40 transition-colors"
+          className="px-3 py-2 rounded-xl text-sm disabled:opacity-40 transition-colors"
+          style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
         >
           {saving ? '...' : '✓'}
         </button>
@@ -90,10 +102,17 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
             .slice(0, 4)
             .map((e) => (
               <div key={e.id} className="flex gap-2 items-start">
-                <span className="text-white/20 text-[10px] flex-shrink-0 mt-0.5 font-mono">
+                <span
+                  className="text-[10px] flex-shrink-0 mt-0.5 font-mono"
+                  style={{ color: 'var(--muted-foreground)', opacity: 0.6 }}
+                >
                   {e.date.slice(5)}
                 </span>
-                <p className="text-white/45 text-xs leading-relaxed" dir={isRTL ? 'rtl' : 'ltr'}>
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ color: 'var(--muted-foreground)' }}
+                  dir={isRTL ? 'rtl' : 'ltr'}
+                >
                   {e.text}
                 </p>
               </div>

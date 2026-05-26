@@ -13,6 +13,7 @@ import type {
   RoutineBreaker,
   RoutineBreakerType,
   RoutineBreakerCostTier,
+  RoutineBreakerStatus,
   MediaLink,
 } from '@/types/family'
 
@@ -227,7 +228,7 @@ export async function createRoutineBreaker(input: {
 
 export async function updateRoutineBreakerStatus(
   breakerId: string,
-  status: 'backlog' | 'planned' | 'archived'
+  status: RoutineBreakerStatus
 ): Promise<void> {
   const { supabase, user } = await getAuthenticatedUser()
   const { error } = await supabase
@@ -250,13 +251,3 @@ export async function deleteRoutineBreaker(breakerId: string): Promise<void> {
   revalidatePath(familyPath())
 }
 
-// ─── Bulk fetch for the Family page server component ─────────
-
-export async function getFamilyEcosystemData() {
-  const [tasks, habits, routineBreakers] = await Promise.all([
-    getFamilyTasks(),
-    getFamilyHabits(),
-    getRoutineBreakers(),
-  ])
-  return { tasks, habits, routineBreakers }
-}

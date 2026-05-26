@@ -4,7 +4,7 @@
 
 ## What this project is
 
-A mobile-first, gamified habit tracker for a yeshiva student (Rotem). Tracks 8 life domains (family, friends, torah, secular, sports, trading, finance, music) with XP + levels drawn from *Mesillat Yesharim*. Bilingual: Hebrew (RTL, default) + English.
+A mobile-first, gamified habit tracker for a yeshiva student (Rotem). Tracks 7 life domains (family, friends, torah, secular, sports, finance, music) with XP + levels drawn from *Mesillat Yesharim*. Bilingual: Hebrew (RTL, default) + English.
 
 **Stack:** Next.js 16, TypeScript 5 (strict), Supabase (auth + Postgres + RLS), Tailwind CSS v4, shadcn/ui, Lucide icons, Google Generative AI (Gemini).
 **Deployed:** Vercel ← GitHub (`Rg707070/growth-claude`, branch `main`).
@@ -96,11 +96,10 @@ Each domain in `src/lib/domains.ts` carries: `color` (hex, for inline styles), `
 
 `src/lib/domains.ts` → `DOMAINS` array. Never hardcode domain names, colors, or slugs anywhere else.
 
-The 8 slugs: `family`, `friends`, `torah`, `secular`, `sports`, `trading`, `finance`, `music`.
+The 7 slugs: `family`, `friends`, `torah`, `secular`, `sports`, `finance`, `music`. `family` has its own dedicated page (`/domain/family`) with tasks, rituals, and adventures.
 
 Domain-specific extras in `domain-detail-client.tsx`:
 - `torah` → `SefariaWidget`
-- `trading` → `PortfolioTracker` + `TradingViewWidget`
 - `sports` / `music` → `ConnectPlaceholder`
 
 ---

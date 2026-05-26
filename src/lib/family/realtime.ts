@@ -32,10 +32,8 @@ export function subscribeFamilyRealtime(
     supabase
       .channel(name)
       .on(
-        // @ts-ignore — 'postgres_changes' is a valid Supabase realtime event
         'postgres_changes',
         { event: '*', schema: 'public', table },
-        // @ts-ignore — payload shape is provided by Supabase at runtime
         (payload: { eventType: string; new: unknown; old: unknown }) =>
           onUpdate({
             eventType: payload.eventType as FamilyRealtimeEvent['eventType'],
