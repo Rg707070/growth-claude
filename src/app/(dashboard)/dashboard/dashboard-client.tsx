@@ -6,6 +6,7 @@ import { useHabitReminders } from '@/hooks/use-notifications'
 import { LangToggle } from '@/components/lang-toggle'
 import { HabitRow } from '@/components/habit-row'
 import { ScheduleToday } from '@/components/schedule-today'
+import { useTodaySchedule } from '@/lib/schedule-realtime'
 import { TimeBackground } from '@/components/time-background'
 import { WaveAnimation } from '@/components/wave-animation'
 import { WeeklyChart } from '@/components/weekly-chart'
@@ -48,6 +49,7 @@ export function DashboardClient({
   const { t, isRTL } = useLang()
   const router = useRouter()
   useHabitReminders(habits)
+  const { items: scheduleItems, loading: scheduleLoading } = useTodaySchedule(profile.id)
 
   const completedSet = new Set(completedIds)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')
@@ -315,7 +317,7 @@ export function DashboardClient({
 
             {/* Mobile-only: schedule + journal + chart */}
             <div className="space-y-6 md:hidden">
-              <ScheduleToday />
+              <ScheduleToday items={scheduleItems} loading={scheduleLoading} />
               <button
                 onClick={() => router.push('/journal')}
                 className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
@@ -339,7 +341,7 @@ export function DashboardClient({
           {/* ── SECONDARY COLUMN (desktop only) ── */}
           <div className="hidden md:flex flex-col gap-6 sticky top-8">
             <WeeklyChart days={weeklyActivity} />
-            <ScheduleToday />
+            <ScheduleToday items={scheduleItems} loading={scheduleLoading} />
             <button
               onClick={() => router.push('/journal')}
               className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"

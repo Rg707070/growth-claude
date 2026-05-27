@@ -4,22 +4,35 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import UnderlineExt from '@tiptap/extension-underline'
+import TextAlign from '@tiptap/extension-text-align'
+import Highlight from '@tiptap/extension-highlight'
+import CharacterCount from '@tiptap/extension-character-count'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import {
   Bold,
   Italic,
+  Underline,
+  Strikethrough,
   Heading1,
   Heading2,
   List,
   ListOrdered,
   Quote,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Highlighter,
+  Minus,
   Plus,
   Trash2,
   Menu,
   X,
   Mic,
   MicOff,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import type { DocMeta } from './page'
 
@@ -64,6 +77,7 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [hasSpeechSupport, setHasSpeechSupport] = useState(false)
+  const [focusMode, setFocusMode] = useState(false)
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isLoadingDoc = useRef(false)
@@ -95,6 +109,10 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
       Placeholder.configure({
         placeholder: isRTL ? 'התחל לכתוב...' : 'Start writing...',
       }),
+      UnderlineExt,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Highlight.configure({ multicolor: false }),
+      CharacterCount,
     ],
     content: '',
     editorProps: {
@@ -112,6 +130,9 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
       }, 1400)
     },
   })
+
+  const wordCount = (editor?.storage as unknown as Record<string, { words?: () => number }> | undefined)
+    ?.characterCount?.words?.() ?? 0
 
   const persistDoc = useCallback(
     async (content: object) => {
@@ -235,13 +256,25 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
 
   const toolbarButtons = (
     <>
+      {/* Text style */}
       <Btn onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')}>
         <Bold size={14} />
       </Btn>
       <Btn onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')}>
         <Italic size={14} />
       </Btn>
+      <Btn onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')}>
+        <Underline size={14} />
+      </Btn>
+      <Btn onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')}>
+        <Strikethrough size={14} />
+      </Btn>
+      <Btn onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')}>
+        <Highlighter size={14} />
+      </Btn>
       <Sep />
+
+      {/* Headings */}
       <Btn
         onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
         active={editor?.isActive('heading', { level: 1 })}
@@ -255,6 +288,8 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
         <Heading2 size={14} />
       </Btn>
       <Sep />
+
+      {/* Lists + quote */}
       <Btn
         onClick={() => editor?.chain().focus().toggleBulletList().run()}
         active={editor?.isActive('bulletList')}
@@ -273,6 +308,35 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
       >
         <Quote size={14} />
       </Btn>
+      <Sep />
+
+      {/* Alignment */}
+      <Btn
+        onClick={() => editor?.chain().focus().setTextAlign('right').run()}
+        active={editor?.isActive({ textAlign: 'right' })}
+      >
+        <AlignRight size={14} />
+      </Btn>
+      <Btn
+        onClick={() => editor?.chain().focus().setTextAlign('center').run()}
+        active={editor?.isActive({ textAlign: 'center' })}
+      >
+        <AlignCenter size={14} />
+      </Btn>
+      <Btn
+        onClick={() => editor?.chain().focus().setTextAlign('left').run()}
+        active={editor?.isActive({ textAlign: 'left' })}
+      >
+        <AlignLeft size={14} />
+      </Btn>
+      <Sep />
+
+      {/* Divider */}
+      <Btn onClick={() => editor?.chain().focus().setHorizontalRule().run()} active={false}>
+        <Minus size={14} />
+      </Btn>
+
+      {/* Speech */}
       {hasSpeechSupport && (
         <>
           <Sep />
@@ -283,6 +347,229 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
       )}
     </>
   )
+
+  const editorArea = (
+    <>
+      {/* Desktop toolbar (top) */}
+      <div
+        className="hidden md:flex items-center gap-0.5 px-4 py-2 border-b flex-wrap"
+        style={{ borderColor: 'var(--c-card-border)' }}
+      >
+        {toolbarButtons}
+        <div className="flex-1" />
+        <div className="flex items-center gap-3">
+          {wordCount > 0 && (
+            <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+              {wordCount} {isRTL ? 'מילים' : 'words'}
+            </span>
+          )}
+          <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
+          </span>
+          <button
+            onClick={() => setFocusMode((v) => !v)}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--muted-foreground)' }}
+            title={isRTL ? 'מצב מיקוד' : 'Focus mode'}
+          >
+            {focusMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile top bar */}
+      <div
+        className="flex md:hidden items-center gap-2 px-4 py-2 border-b"
+        style={{ borderColor: 'var(--c-card-border)' }}
+      >
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-lg -ms-1"
+          style={{ color: 'var(--muted-foreground)' }}
+        >
+          <Menu size={18} />
+        </button>
+        <span className="flex-1 text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>
+          {title || (isRTL ? 'ללא כותרת' : 'Untitled')}
+        </span>
+        {wordCount > 0 && (
+          <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            {wordCount}w
+          </span>
+        )}
+        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+          {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
+        </span>
+      </div>
+
+      {/* Document — extra bottom padding on mobile for the fixed toolbar */}
+      <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
+        <div className="max-w-2xl mx-auto px-4 md:px-8 py-6">
+          {/* בס"ד + date */}
+          <div
+            className="text-center mb-6 pb-4 border-b"
+            style={{ borderColor: 'var(--c-card-border)' }}
+          >
+            <p
+              className="text-xs font-semibold tracking-widest"
+              style={{ color: 'var(--muted-foreground)' }}
+              dir="rtl"
+            >
+              בס&quot;ד
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+              {docDateStr}
+            </p>
+          </div>
+
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => void saveTitle()}
+            placeholder={isRTL ? 'כותרת...' : 'Title...'}
+            className="w-full text-2xl font-bold bg-transparent border-none outline-none mb-6"
+            style={{ color: 'var(--foreground)', direction: isRTL ? 'rtl' : 'ltr' }}
+          />
+          <EditorContent editor={editor} />
+        </div>
+      </div>
+
+      {/* Mobile bottom toolbar — fixed above keyboard */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center gap-0.5 overflow-x-auto px-4 py-3 border-t"
+        style={{
+          borderColor: 'var(--c-card-border)',
+          background: 'var(--c-card)',
+          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+        }}
+      >
+        {toolbarButtons}
+      </div>
+    </>
+  )
+
+  const sidebar = (
+    <div
+      className={[
+        'flex-shrink-0 flex flex-col border-e',
+        'fixed inset-y-0 z-50 w-72 transition-transform duration-300',
+        isRTL ? 'right-0' : 'left-0',
+        sidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full',
+        'md:static md:w-48 md:translate-x-0',
+      ].join(' ')}
+      style={{ borderColor: 'var(--c-card-border)', background: 'var(--c-card)' }}
+    >
+      <div className="flex items-center gap-2 p-3">
+        <button
+          onClick={createDoc}
+          className="flex items-center gap-2 flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+          style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+        >
+          <Plus size={14} />
+          {isRTL ? 'מסמך חדש' : 'New doc'}
+        </button>
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="md:hidden p-1.5 rounded-lg"
+          style={{ color: 'var(--muted-foreground)' }}
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
+        {docs.map((doc) => {
+          const isActive = doc.id === activeDocId
+          return (
+            <div
+              key={doc.id}
+              className="group flex items-center gap-1 rounded-xl px-2 py-2 cursor-pointer transition-colors"
+              style={isActive ? { background: 'var(--c-primary-glow)' } : {}}
+              onClick={() => { setActiveDocId(doc.id); setSidebarOpen(false) }}
+            >
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-xs font-medium truncate"
+                  style={{ color: isActive ? 'var(--primary)' : 'var(--foreground)' }}
+                >
+                  {doc.title || (isRTL ? 'ללא כותרת' : 'Untitled')}
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                  {fmt(doc.updated_at)}
+                </p>
+              </div>
+              {docs.length > 1 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); void deleteDoc(doc.id) }}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity hover:text-red-400"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </div>
+          )
+        })}
+
+        {docs.length === 0 && (
+          <p className="text-xs text-center py-6" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'אין מסמכים' : 'No documents'}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+
+  /* ── Focus mode: full-screen overlay ── */
+  if (focusMode && activeDocId) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col"
+        style={{ background: 'var(--background)' }}
+      >
+        {/* Focus mode toolbar */}
+        <div
+          className="flex items-center gap-0.5 px-4 py-2 border-b flex-wrap flex-shrink-0"
+          style={{ borderColor: 'var(--c-card-border)', background: 'var(--c-card)' }}
+        >
+          {toolbarButtons}
+          <div className="flex-1" />
+          <div className="flex items-center gap-3">
+            {wordCount > 0 && (
+              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                {wordCount} {isRTL ? 'מילים' : 'words'}
+              </span>
+            )}
+            <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+              {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
+            </span>
+            <button
+              onClick={() => setFocusMode(false)}
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              <Minimize2 size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* Focus mode editor */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-6 py-10">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => void saveTitle()}
+              placeholder={isRTL ? 'כותרת...' : 'Title...'}
+              className="w-full text-3xl font-bold bg-transparent border-none outline-none mb-8"
+              style={{ color: 'var(--foreground)', direction: isRTL ? 'rtl' : 'ltr' }}
+            />
+            <EditorContent editor={editor} />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -297,158 +584,13 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
         />
       )}
 
-      {/* Sidebar — fixed overlay on mobile, static on desktop */}
-      <div
-        className={[
-          'flex-shrink-0 flex flex-col border-e',
-          'fixed inset-y-0 z-50 w-72 transition-transform duration-300',
-          isRTL ? 'right-0' : 'left-0',
-          sidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full',
-          'md:static md:w-48 md:translate-x-0',
-        ].join(' ')}
-        style={{ borderColor: 'var(--c-card-border)', background: 'var(--c-card)' }}
-      >
-        <div className="flex items-center gap-2 p-3">
-          <button
-            onClick={createDoc}
-            className="flex items-center gap-2 flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-            style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
-          >
-            <Plus size={14} />
-            {isRTL ? 'מסמך חדש' : 'New doc'}
-          </button>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-1.5 rounded-lg"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
-          {docs.map((doc) => {
-            const isActive = doc.id === activeDocId
-            return (
-              <div
-                key={doc.id}
-                className="group flex items-center gap-1 rounded-xl px-2 py-2 cursor-pointer transition-colors"
-                style={isActive ? { background: 'var(--c-primary-glow)' } : {}}
-                onClick={() => { setActiveDocId(doc.id); setSidebarOpen(false) }}
-              >
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="text-xs font-medium truncate"
-                    style={{ color: isActive ? 'var(--primary)' : 'var(--foreground)' }}
-                  >
-                    {doc.title || (isRTL ? 'ללא כותרת' : 'Untitled')}
-                  </p>
-                  <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-                    {fmt(doc.updated_at)}
-                  </p>
-                </div>
-                {docs.length > 1 && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); void deleteDoc(doc.id) }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity hover:text-red-400"
-                    style={{ color: 'var(--muted-foreground)' }}
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                )}
-              </div>
-            )
-          })}
-
-          {docs.length === 0 && (
-            <p className="text-xs text-center py-6" style={{ color: 'var(--muted-foreground)' }}>
-              {isRTL ? 'אין מסמכים' : 'No documents'}
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Sidebar */}
+      {sidebar}
 
       {/* Editor area */}
       <div className="flex-1 flex flex-col min-w-0">
         {activeDocId ? (
-          <>
-            {/* Desktop toolbar (top) */}
-            <div
-              className="hidden md:flex items-center gap-0.5 px-4 py-2 border-b flex-wrap"
-              style={{ borderColor: 'var(--c-card-border)' }}
-            >
-              {toolbarButtons}
-              <div className="flex-1" />
-              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-                {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
-              </span>
-            </div>
-
-            {/* Mobile top bar */}
-            <div
-              className="flex md:hidden items-center gap-2 px-4 py-2 border-b"
-              style={{ borderColor: 'var(--c-card-border)' }}
-            >
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg -ms-1"
-                style={{ color: 'var(--muted-foreground)' }}
-              >
-                <Menu size={18} />
-              </button>
-              <span className="flex-1 text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>
-                {title || (isRTL ? 'ללא כותרת' : 'Untitled')}
-              </span>
-              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-                {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
-              </span>
-            </div>
-
-            {/* Document — extra bottom padding on mobile for the fixed toolbar */}
-            <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
-              <div className="max-w-2xl mx-auto px-4 md:px-8 py-6">
-
-                {/* בס"ד + date — outside the writing zone */}
-                <div
-                  className="text-center mb-6 pb-4 border-b"
-                  style={{ borderColor: 'var(--c-card-border)' }}
-                >
-                  <p
-                    className="text-xs font-semibold tracking-widest"
-                    style={{ color: 'var(--muted-foreground)' }}
-                    dir="rtl"
-                  >
-                    בס&quot;ד
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-                    {docDateStr}
-                  </p>
-                </div>
-
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onBlur={() => void saveTitle()}
-                  placeholder={isRTL ? 'כותרת...' : 'Title...'}
-                  className="w-full text-2xl font-bold bg-transparent border-none outline-none mb-6"
-                  style={{ color: 'var(--foreground)', direction: isRTL ? 'rtl' : 'ltr' }}
-                />
-                <EditorContent editor={editor} />
-              </div>
-            </div>
-
-            {/* Mobile bottom toolbar — fixed above keyboard */}
-            <div
-              className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center gap-0.5 px-4 py-3 border-t"
-              style={{
-                borderColor: 'var(--c-card-border)',
-                background: 'var(--c-card)',
-                paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
-              }}
-            >
-              {toolbarButtons}
-            </div>
-          </>
+          editorArea
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <button
@@ -479,7 +621,7 @@ function Btn({
   return (
     <button
       onClick={onClick}
-      className="p-2 md:p-1.5 rounded-lg transition-colors"
+      className="p-2 md:p-1.5 rounded-lg transition-colors flex-shrink-0"
       style={
         active
           ? { background: 'var(--c-primary-glow)', color: 'var(--primary)' }
@@ -492,5 +634,5 @@ function Btn({
 }
 
 function Sep() {
-  return <div className="w-px h-4 mx-1" style={{ background: 'var(--c-card-border)' }} />
+  return <div className="w-px h-4 mx-1 flex-shrink-0" style={{ background: 'var(--c-card-border)' }} />
 }

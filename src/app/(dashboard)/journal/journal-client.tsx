@@ -5,9 +5,10 @@ import { useLang } from '@/lib/lang'
 import { WritingTab } from './writing-tab'
 import { InsightsTab } from './insights-tab'
 import { AlbumTab } from './album-tab'
+import { ScheduleTab } from './schedule-tab'
 import type { DocMeta, DomainEntry, PhotoEntry } from './page'
 
-type Tab = 'writing' | 'insights' | 'album'
+type Tab = 'writing' | 'insights' | 'album' | 'schedule'
 
 interface JournalClientProps {
   userId: string
@@ -21,9 +22,10 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
   const [tab, setTab] = useState<Tab>('writing')
 
   const tabs: { id: Tab; labelHe: string; labelEn: string }[] = [
-    { id: 'writing', labelHe: 'כתיבה', labelEn: 'Writing' },
-    { id: 'insights', labelHe: 'הארות', labelEn: 'Insights' },
-    { id: 'album', labelHe: 'אלבום', labelEn: 'Album' },
+    { id: 'writing',  labelHe: 'כתיבה',  labelEn: 'Writing'  },
+    { id: 'insights', labelHe: 'הארות',  labelEn: 'Insights' },
+    { id: 'album',    labelHe: 'אלבום',  labelEn: 'Album'    },
+    { id: 'schedule', labelHe: 'לו"ז',   labelEn: 'Schedule' },
   ]
 
   return (
@@ -45,7 +47,7 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="px-5 py-2 rounded-xl text-sm font-semibold transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
               style={
                 tab === t.id
                   ? { background: 'var(--primary)', color: 'var(--primary-foreground)' }
@@ -58,9 +60,10 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
         </div>
 
         {/* Tab content */}
-        {tab === 'writing' && <WritingTab userId={userId} initialDocs={documents} />}
+        {tab === 'writing'  && <WritingTab userId={userId} initialDocs={documents} />}
         {tab === 'insights' && <InsightsTab entries={domainEntries} />}
-        {tab === 'album' && <AlbumTab userId={userId} initialPhotos={photos} />}
+        {tab === 'album'    && <AlbumTab userId={userId} initialPhotos={photos} />}
+        {tab === 'schedule' && <ScheduleTab userId={userId} />}
       </div>
     </div>
   )

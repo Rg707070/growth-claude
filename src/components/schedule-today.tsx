@@ -1,14 +1,10 @@
 'use client'
 
 import { useLang } from '@/lib/lang'
-import {
-  getTodaySchedule,
-  getCurrentAndNextItems,
-  DAY_NAMES_HE,
-  DAY_NAMES_EN,
-} from '@/lib/schedule'
+import { DAY_NAMES_HE, DAY_NAMES_EN } from '@/lib/schedule'
+import type { ScheduleRow } from '@/lib/schedule-realtime'
 
-const TYPE_COLORS = {
+const TYPE_COLORS: Record<string, string> = {
   torah:  'text-amber-400 bg-amber-500/10 border-amber-500/20',
   shiur:  'text-blue-400 bg-blue-500/10 border-blue-500/20',
   prayer: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
@@ -17,14 +13,36 @@ const TYPE_COLORS = {
   sports: 'text-red-400 bg-red-500/10 border-red-500/20',
 }
 
-export function ScheduleToday() {
+function getCurrentAndNext(items: ScheduleRow[]): { current: ScheduleRow | null; upcoming: ScheduleRow[] } {
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return h * 60 + m
+  }
+
+  let curIdx = -1
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (toMin(items[i].time) <= nowMin) { curIdx = i; break }
+  }
+
+  return {
+    current: curIdx >= 0 ? items[curIdx] : null,
+    upcoming: items.slice(curIdx + 1, curIdx + 4),
+  }
+}
+
+interface ScheduleTodayProps {
+  items: ScheduleRow[]
+  loading?: boolean
+}
+
+export function ScheduleToday({ items, loading = false }: ScheduleTodayProps) {
   const { isRTL } = useLang()
   const day = new Date().getDay()
-  const allItems = getTodaySchedule()
-  const { current, upcoming } = getCurrentAndNextItems()
   const dayName = isRTL ? DAY_NAMES_HE[day] : DAY_NAMES_EN[day]
-
-  const isEmpty = allItems.length === 0 || (!current && upcoming.length === 0)
+  const { current, upcoming } = getCurrentAndNext(items)
+  const isEmpty = !loading && items.length === 0
 
   return (
     <div className="space-y-2">
@@ -32,12 +50,18 @@ export function ScheduleToday() {
         <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider">
           {isRTL ? `לוח יום ${dayName}` : `${dayName}'s Schedule`}
         </h2>
-        {allItems.length > 0 && (
-          <span className="text-white/30 text-xs">{allItems.length} פריטים</span>
+        {items.length > 0 && (
+          <span className="text-white/30 text-xs">{items.length} פריטים</span>
         )}
       </div>
 
-      {isEmpty ? (
+      {loading ? (
+        <div className="space-y-1.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-10 rounded-xl animate-pulse bg-white/5" />
+          ))}
+        </div>
+      ) : isEmpty ? (
         <div className="flex items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5">
           <p className="text-white/30 text-sm">
             {isRTL ? 'אין לוז כרגע' : 'No schedule right now'}
@@ -45,9 +69,8 @@ export function ScheduleToday() {
         </div>
       ) : (
         <>
-          {/* Current item */}
           {current && (
-            <div className={`flex items-center gap-3 p-3 rounded-xl border ${TYPE_COLORS[current.type]}`}>
+            <div className={`flex items-center gap-3 p-3 rounded-xl border ${TYPE_COLORS[current.type] ?? TYPE_COLORS.other}`}>
               <div className="w-2 h-2 rounded-full bg-current animate-pulse flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] opacity-60 font-mono">{current.time}</p>
@@ -59,10 +82,9 @@ export function ScheduleToday() {
             </div>
           )}
 
-          {/* Upcoming items */}
           {upcoming.map((item, i) => (
             <div
-              key={i}
+              key={item.id}
               className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5"
               style={{ opacity: 1 - i * 0.2 }}
             >
