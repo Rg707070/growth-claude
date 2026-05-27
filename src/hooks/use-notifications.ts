@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from 'react'
+import { useLang } from '@/lib/lang'
 
 const STORAGE_KEY = 'growth-habit-reminders'
 
@@ -95,6 +96,7 @@ function msUntilTime(time: string): number {
 }
 
 export function useHabitReminders(habits: Array<{ id: string; name: string }>) {
+  const { t } = useLang()
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const scheduleAll = useCallback(() => {
@@ -112,12 +114,12 @@ export function useHabitReminders(habits: Array<{ id: string; name: string }>) {
       const delay = msUntilTime(reminder.time)
       if (delay < 0) return
 
-      const t = setTimeout(() => {
+      const timer = setTimeout(() => {
         if (reminder.type === 'alarm') {
           playAlarmSound()
         } else if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(`🔔 ${habit.name}`, {
-            body: 'זמן לבצע את ההרגל! 💪',
+            body: t('habitReminderBody'),
             icon: '/apple-icon.png',
             tag: `habit-${habit.id}`,
             requireInteraction: false,
@@ -126,15 +128,16 @@ export function useHabitReminders(habits: Array<{ id: string; name: string }>) {
         active.delete(habit.id)
       }, delay)
 
-      active.set(habit.id, t)
+      active.set(habit.id, timer)
     })
-  }, [habits])
+  }, [habits, t])
 
   useEffect(() => {
     scheduleAll()
+    const timeouts = timeoutsRef.current
     return () => {
-      timeoutsRef.current.forEach((t) => clearTimeout(t))
-      timeoutsRef.current.clear()
+      timeouts.forEach((t) => clearTimeout(t))
+      timeouts.clear()
     }
   }, [scheduleAll])
 

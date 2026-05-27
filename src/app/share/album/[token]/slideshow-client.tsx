@@ -20,7 +20,7 @@ export function SlideShowClient({ photos, weekLabel }: SlideShowClientProps) {
   const [playing, setPlaying] = useState(true)
 
   const next = useCallback(() => setIdx((i) => (i + 1) % photos.length), [photos.length])
-  const prev = () => setIdx((i) => (i - 1 + photos.length) % photos.length)
+  const prev = useCallback(() => setIdx((i) => (i - 1 + photos.length) % photos.length), [photos.length])
 
   useEffect(() => {
     if (!playing) return
@@ -36,7 +36,7 @@ export function SlideShowClient({ photos, weekLabel }: SlideShowClientProps) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [next])
+  }, [next, prev])
 
   const current = photos[idx]
 

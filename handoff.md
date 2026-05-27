@@ -15,7 +15,7 @@ This document is written for a fresh AI agent picking up this project. Read it f
 ## What the App Is
 
 GROWTH is a personal optimization app — a gamified habit tracker with:
-- 8 life domains (family, friends, torah, secular, sports, trading, finance, music)
+- 7 life domains (family, friends, torah, secular, sports, finance, music)
 - XP + leveling system drawn from *Mesillat Yesharim* (9 levels)
 - Streak tracking, achievements, weekly charts, 84-day heat map
 - AI coaching via Claude Haiku
@@ -142,15 +142,17 @@ All tables have RLS enabled — users only see their own rows.
 
 ---
 
-## The 8 Domains
+## The 7 Domains
 
 ```ts
-['family', 'friends', 'torah', 'secular', 'sports', 'trading', 'finance', 'music']
+['family', 'friends', 'torah', 'secular', 'sports', 'finance', 'music']
 ```
 
 Domain pages at `/domain/[slug]` are dynamic. The `domain-detail-client.tsx` renders domain-specific extras:
-- `torah` slug: shows `MesillatQuote` + `SefariaWidget`
-- `trading` slug: shows `PortfolioTracker` + `TradingViewWidget`
+- `torah` slug: shows `SefariaWidget`
+- `sports` / `music` slugs: show `ConnectPlaceholder`
+
+`family` has its own dedicated route at `/domain/family` with tasks, rituals, and adventures.
 
 ---
 
@@ -299,7 +301,7 @@ git push
 - [x] Habit list with add/delete
 - [x] Pomodoro timer (25/5 min, SVG ring)
 - [x] One-line daily journal
-- [x] Domain-specific extras (Sefaria for torah, portfolio for trading)
+- [x] Domain-specific extras (Sefaria for torah, Connect placeholders for sports/music)
 
 **Progress**
 - [x] 84-day completion heat map

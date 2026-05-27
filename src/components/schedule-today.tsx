@@ -24,7 +24,7 @@ export function ScheduleToday() {
   const { current, upcoming } = getCurrentAndNextItems()
   const dayName = isRTL ? DAY_NAMES_HE[day] : DAY_NAMES_EN[day]
 
-  if (allItems.length === 0) return null
+  const isEmpty = allItems.length === 0 || (!current && upcoming.length === 0)
 
   return (
     <div className="space-y-2">
@@ -32,34 +32,46 @@ export function ScheduleToday() {
         <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider">
           {isRTL ? `לוח יום ${dayName}` : `${dayName}'s Schedule`}
         </h2>
-        <span className="text-white/30 text-xs">{allItems.length} פריטים</span>
+        {allItems.length > 0 && (
+          <span className="text-white/30 text-xs">{allItems.length} פריטים</span>
+        )}
       </div>
 
-      {/* Current item */}
-      {current && (
-        <div className={`flex items-center gap-3 p-3 rounded-xl border ${TYPE_COLORS[current.type]}`}>
-          <div className="w-2 h-2 rounded-full bg-current animate-pulse flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] opacity-60 font-mono">{current.time}</p>
-            <p className="text-sm font-semibold truncate">{current.label}</p>
-          </div>
-          <span className="text-[10px] opacity-60 flex-shrink-0">
-            {isRTL ? 'עכשיו' : 'now'}
-          </span>
+      {isEmpty ? (
+        <div className="flex items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5">
+          <p className="text-white/30 text-sm">
+            {isRTL ? 'אין לוז כרגע' : 'No schedule right now'}
+          </p>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Current item */}
+          {current && (
+            <div className={`flex items-center gap-3 p-3 rounded-xl border ${TYPE_COLORS[current.type]}`}>
+              <div className="w-2 h-2 rounded-full bg-current animate-pulse flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] opacity-60 font-mono">{current.time}</p>
+                <p className="text-sm font-semibold truncate">{current.label}</p>
+              </div>
+              <span className="text-[10px] opacity-60 flex-shrink-0">
+                {isRTL ? 'עכשיו' : 'now'}
+              </span>
+            </div>
+          )}
 
-      {/* Upcoming items */}
-      {upcoming.map((item, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5"
-          style={{ opacity: 1 - i * 0.2 }}
-        >
-          <span className="text-white/30 text-xs font-mono flex-shrink-0 w-10">{item.time}</span>
-          <p className="text-sm text-white/70 truncate">{item.label}</p>
-        </div>
-      ))}
+          {/* Upcoming items */}
+          {upcoming.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5"
+              style={{ opacity: 1 - i * 0.2 }}
+            >
+              <span className="text-white/30 text-xs font-mono flex-shrink-0 w-10">{item.time}</span>
+              <p className="text-sm text-white/70 truncate">{item.label}</p>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   )
 }

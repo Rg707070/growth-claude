@@ -63,7 +63,7 @@ export function TorahFeedTab({ userId, lessons, savedLessonIds, onSavedChange }:
             style={
               activeCategory === cat
                 ? { background: TORAH_COLOR, color: '#fff' }
-                : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)' }
+                : { background: 'rgba(255,255,255,0.05)', color: 'var(--c-text-muted)' }
             }
           >
             {cat}
@@ -146,7 +146,7 @@ function LessonCard({
       >
         <div className="flex items-center gap-1 text-white/30">
           <Clock size={12} />
-          <span className="text-xs">{lesson.duration_minutes} דק'</span>
+          <span className="text-xs">{lesson.duration_minutes} דק&apos;</span>
         </div>
         <div className="flex items-center gap-1 text-white/30">
           <User size={12} />

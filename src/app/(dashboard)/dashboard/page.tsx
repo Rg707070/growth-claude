@@ -65,9 +65,9 @@ export default async function DashboardPage() {
     created_at: new Date().toISOString(),
   }) as { full_name: string | null; last_activity_date: string | null; created_at: string }
 
-  // Cap failingDays to days since account creation so new users don't see false warnings
   const accountAgeDays = Math.max(
     1,
+    // eslint-disable-next-line react-hooks/purity -- server component runs per request
     Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86_400_000),
   )
 

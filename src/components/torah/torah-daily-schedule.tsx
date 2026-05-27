@@ -120,13 +120,13 @@ export function TorahDailySchedule({ userId, initialTracks, onOpenReader }: Prop
                   style={{ color: done ? 'rgba(245,158,11,0.3)' : 'rgba(245,158,11,0.6)', flexShrink: 0 }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium mb-0.5" style={{ color: done ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.4)' }}>
+                  <p className="text-xs font-medium mb-0.5" style={{ color: done ? 'rgba(245,158,11,0.5)' : 'var(--c-text-subtle)' }}>
                     {track.name}
                   </p>
                   <p
                     className="text-sm leading-snug"
                     style={{
-                      color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+                      color: done ? 'var(--c-text-faint)' : 'var(--c-text)',
                       textDecoration: done ? 'line-through' : 'none',
                     }}
                   >
@@ -159,7 +159,7 @@ export function TorahDailySchedule({ userId, initialTracks, onOpenReader }: Prop
                   className="flex items-center gap-1.5 text-xs font-medium transition-all px-2 py-0.5 rounded-full"
                   style={{
                     background: done ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.06)',
-                    color: done ? '#f59e0b' : 'rgba(255,255,255,0.35)',
+                    color: done ? '#f59e0b' : 'var(--c-text-subtle)',
                   }}
                 >
                   {done ? <Check size={11} strokeWidth={3} /> : <Check size={11} />}

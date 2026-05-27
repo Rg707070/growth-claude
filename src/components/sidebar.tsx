@@ -9,6 +9,7 @@ import {
   Settings,
   Plus,
   X,
+  BookOpen,
 } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -18,11 +19,12 @@ import { GrowthLogo } from '@/components/growth-logo'
 import type { Profile } from '@/types'
 
 const navItems = [
-  { icon: Home,         href: '/dashboard', labelHe: 'בית',     labelEn: 'Home'     },
-  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',  labelEn: 'Domains'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',     labelEn: 'Schedule' },
-  { icon: BarChart2,    href: '/progress',  labelHe: 'התקדמות', labelEn: 'Progress' },
-  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',  labelEn: 'Settings' },
+  { icon: Home,         href: '/dashboard', labelHe: 'בית',       labelEn: 'Home'     },
+  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',    labelEn: 'Domains'  },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',       labelEn: 'Schedule' },
+  { icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',     labelEn: 'Books'    },
+  { icon: BarChart2,    href: '/progress',  labelHe: 'התקדמות',   labelEn: 'Progress' },
+  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',    labelEn: 'Settings' },
 ]
 
 interface SidebarProps {
@@ -88,7 +90,7 @@ export function Sidebar({ profile }: SidebarProps) {
   return (
     <>
       <aside
-        className="hidden md:flex fixed inset-y-0 start-0 z-40 w-64 flex-col"
+        className="hidden md:flex fixed inset-y-0 start-0 z-40 w-72 flex-col"
         style={{
           background: 'var(--c-nav)',
           borderInlineEnd: '1px solid var(--c-nav-border)',
@@ -96,22 +98,33 @@ export function Sidebar({ profile }: SidebarProps) {
         }}
       >
         {/* Logo */}
-        <div className="px-6 pt-7 pb-5">
+        <div className="px-6 pt-7 pb-5 border-b" style={{ borderColor: 'var(--c-nav-border)' }}>
           <GrowthLogo size={34} />
         </div>
 
         {/* Profile card */}
-        <div className="px-4 pb-4">
+        <div className="px-4 py-4">
           <div
-            className="rounded-2xl p-3.5"
+            className="rounded-2xl p-3.5 flex items-center gap-3"
             style={{
               background: 'var(--c-surface-2)',
               border: '1px solid var(--c-border)',
             }}
           >
-            <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-              {displayName}
-            </p>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 select-none"
+              style={{ background: 'var(--brand-gradient)' }}
+            >
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                {displayName}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'מחובר' : 'Signed in'}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -126,7 +139,7 @@ export function Sidebar({ profile }: SidebarProps) {
                 <li key={href}>
                   <button
                     onClick={() => router.push(href)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
                     style={isActive ? {
                       background: 'var(--c-primary-glow)',
                       color: 'var(--primary)',
