@@ -115,30 +115,35 @@ export function DomainDetailClient({
   }
 
   return (
-    <div className="px-4 pt-12 space-y-6 pb-8">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-xl transition-colors"
-          style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
-        >
-          <ArrowRight
-            size={20}
-            style={{ color: 'var(--foreground)', transform: isRTL ? 'none' : 'rotate(180deg)' }}
-          />
-        </button>
-        <div className="flex-1">
-          <h1
-            className="text-xl font-bold flex items-center gap-2"
-            style={{ color: 'var(--foreground)' }}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-xl transition-colors"
+            style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
           >
-            <span>{domain.icon}</span>
-            <span>{isRTL ? domain.nameHe : domain.nameEn}</span>
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-            {completedCount}/{habits.length} {t('habits')}
-          </p>
+            <ArrowRight
+              size={20}
+              style={{ color: 'var(--foreground)', transform: isRTL ? 'none' : 'rotate(180deg)' }}
+            />
+          </button>
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl"
+            style={{ background: `${domain.color}22`, color: domain.color }}
+          >
+            {domain.icon}
+          </div>
+          <div>
+            <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
+              {isRTL ? domain.nameHe : domain.nameEn}
+            </h1>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {completedCount}/{habits.length} {t('habits')}
+            </p>
+          </div>
         </div>
         <ProgressRing percentage={pct} color={domain.color} size={48} strokeWidth={4}>
           <span className="text-[10px] font-bold" style={{ color: domain.color }}>{pct}%</span>
@@ -250,6 +255,7 @@ export function DomainDetailClient({
           <span className="text-sm">{t('addHabit')}</span>
         </button>
       )}
+      </div>
     </div>
   )
 }

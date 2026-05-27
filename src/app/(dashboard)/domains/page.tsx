@@ -3,22 +3,31 @@
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { DOMAINS } from '@/lib/domains'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, LayoutGrid } from 'lucide-react'
 
 export default function DomainsPage() {
   const { t, isRTL } = useLang()
   const router = useRouter()
 
   return (
-    <div className="px-4 pt-12 pb-28 space-y-5 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>{t('allDomains')}</h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-          {isRTL ? 'בחר תחום כדי לנהל הרגלים' : 'Select a domain to manage habits'}
-        </p>
-      </div>
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+          >
+            <LayoutGrid size={20} />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>{t('allDomains')}</h1>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'בחר תחום כדי לנהל הרגלים' : 'Select a domain to manage habits'}
+            </p>
+          </div>
+        </div>
 
-      <div className="space-y-2">
+        <div className="space-y-2">
         {DOMAINS.map((domain) => (
           <button
             key={domain.slug}
@@ -74,6 +83,7 @@ export default function DomainsPage() {
             />
           </button>
         ))}
+        </div>
       </div>
     </div>
   )

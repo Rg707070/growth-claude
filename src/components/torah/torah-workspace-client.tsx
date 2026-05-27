@@ -42,7 +42,7 @@ export function TorahWorkspaceClient({
   savedLessonIds,
   dailyTracks,
 }: Props) {
-  const { t } = useLang()
+  const { t, isRTL } = useLang()
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [localSummaries, setLocalSummaries] = useState<LearningSummary[]>(summaries)
   const [localSessions, setLocalSessions] = useState<LearningSession[]>(sessions)
@@ -81,22 +81,24 @@ export function TorahWorkspaceClient({
   }
 
   return (
-    <div className="flex flex-col min-h-screen pb-20">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
       {/* Header */}
-      <div
-        className="px-4 pt-4 pb-3 flex items-center gap-3"
-        style={{ borderBottom: `1px solid ${TORAH_TINT}` }}
-      >
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
-          style={{ background: TORAH_TINT, color: TORAH_COLOR }}
-        >
-          📖
-        </div>
-        <div>
-          <h1 className="text-base font-semibold text-white leading-tight">
-            {t('torahWorkspace')}
-          </h1>
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl"
+            style={{ background: TORAH_TINT, color: TORAH_COLOR }}
+          >
+            📖
+          </div>
+          <div>
+            <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
+              {t('torahWorkspace')}
+            </h1>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'ניהול לימוד יומי' : 'Daily learning management'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -126,7 +128,7 @@ export function TorahWorkspaceClient({
       </div>
 
       {/* Tab content */}
-      <div className="flex-1">
+      <div className="max-w-2xl mx-auto">
         {activeTab === 'home' && (
           <TorahHomeTab
             habits={habits}
