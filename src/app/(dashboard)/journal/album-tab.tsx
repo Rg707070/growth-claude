@@ -52,6 +52,7 @@ export function AlbumTab({ userId, initialPhotos }: AlbumTabProps) {
   const uploadPhoto = async (file: File, weekStart: string) => {
     setUploading(true)
     const ext = file.name.split('.').pop() ?? 'jpg'
+    // eslint-disable-next-line react-hooks/purity -- inside event handler, not render
     const path = `${userId}/${weekStart}/${Date.now()}.${ext}`
     const supabase = createClient()
     const { error } = await supabase.storage.from('journal-photos').upload(path, file)

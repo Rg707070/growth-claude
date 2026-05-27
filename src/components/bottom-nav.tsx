@@ -22,7 +22,6 @@ import { CSS } from '@dnd-kit/utilities'
 import { createClient } from '@/lib/supabase/client'
 import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
-import type { Profile } from '@/types'
 
 type NavItem = {
   id: string
@@ -129,7 +128,7 @@ function SortableNavButton({
 
 // ─── Main component ────────────────────────────────────────────────────────
 
-export function BottomNav({ profile: _profile }: { profile: Profile }) {
+export function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { isRTL } = useLang()
@@ -148,6 +147,7 @@ export function BottomNav({ profile: _profile }: { profile: Profile }) {
   const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is SSR-unsafe, must sync post-mount
     setItems(loadOrder())
   }, [])
 

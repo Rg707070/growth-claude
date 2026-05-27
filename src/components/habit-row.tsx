@@ -25,7 +25,7 @@ interface HabitRowProps {
 
 export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const router = useRouter()
-  const { t } = useLang()
+  const { t, isRTL } = useLang()
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(isCompleted)
   const [showReminderPicker, setShowReminderPicker] = useState(false)
@@ -276,69 +276,100 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     )
   }
 
-  // ── Normal row ────────────────────────────────────────────────────────────
+  // ── Normal row (book-card style) ─────────────────────────────────────────
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden"
+      className="rounded-2xl p-4 relative"
       style={{
         background: done
-          ? `linear-gradient(90deg, ${accentColor}14 0%, ${accentColor}06 100%)`
-          : 'var(--card)',
-        border: `1px solid ${done ? `${accentColor}33` : 'var(--c-border)'}`,
-        boxShadow: done ? 'none' : '0 1px 2px var(--c-shadow)',
+          ? 'linear-gradient(135deg, #10b98118, #10b98108)'
+          : `linear-gradient(135deg, ${accentColor}18, ${accentColor}08)`,
+        border: `1px solid ${done ? '#10b98135' : `${accentColor}35`}`,
       }}
     >
-      {/* Main row: toggle button + bell button side by side (no nesting) */}
-      <div className="flex items-center">
-        <button
-          type="button"
-          onClick={handleClick}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchCancel}
-          onContextMenu={(e) => e.preventDefault()}
-          disabled={loading}
-          className="flex-1 flex items-center gap-3 active:scale-[0.98] transition-all text-start disabled:opacity-50 select-none"
-          style={{ padding: '0.85rem 1rem', WebkitUserSelect: 'none', userSelect: 'none' }}
-        >
-          {/* Checkbox */}
-          <div
-            className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
-            style={{
-              borderColor: accentColor,
-              backgroundColor: done ? accentColor : 'transparent',
-              boxShadow: done ? `0 0 0 4px ${accentColor}1a` : 'none',
-            }}
-          >
-            {done && <Check size={12} className="text-white" strokeWidth={3.5} />}
-          </div>
+      {/* Left accent bar */}
+      <div
+        className="absolute start-0 top-3 bottom-3 w-1 rounded-full"
+        style={{ background: done ? '#10b981' : accentColor }}
+      />
 
-          {/* Name + reminder time */}
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-sm font-medium truncate transition-all"
+      {/* Tappable content area */}
+      <button
+        type="button"
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
+        onContextMenu={(e) => e.preventDefault()}
+        disabled={loading}
+        className="w-full text-start select-none active:opacity-75 transition-opacity disabled:opacity-50"
+        style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+      >
+        <div className="ps-3">
+          {/* Title + status badge */}
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h3
+              className="font-semibold text-sm leading-snug"
               style={{
                 color: done ? 'var(--muted-foreground)' : 'var(--foreground)',
                 textDecoration: done ? 'line-through' : 'none',
               }}
             >
               {habit.name}
-            </p>
-            {reminder && (
-              <p className="text-[10px] mt-0.5" style={{ color: accentColor }}>
-                {reminder.type === 'alarm' ? '⏰' : '🔔'} {reminder.time}
-              </p>
+            </h3>
+
+            {done ? (
+              <span
+                className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
+                style={{ background: '#10b98120', color: '#10b981' }}
+              >
+                <Check size={11} />
+                {isRTL ? 'הושלם!' : 'Done!'}
+              </span>
+            ) : (
+              <span
+                className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                style={{ background: `${accentColor}22`, color: accentColor }}
+              >
+                {domain?.icon}
+              </span>
             )}
           </div>
-        </button>
 
-        {/* Bell button — sibling of toggle, not nested inside it */}
+          {/* Domain name */}
+          <p className="text-xs mb-3" style={{ color: 'var(--muted-foreground)' }}>
+            {domain?.icon} {isRTL ? domain?.nameHe : domain?.nameEn}
+          </p>
+
+          {/* Progress bar */}
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--c-border)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: done ? '100%' : '0%',
+                background: done ? '#10b981' : accentColor,
+              }}
+            />
+          </div>
+        </div>
+      </button>
+
+      {/* Footer: reminder + bell */}
+      <div className="flex items-center justify-between mt-3 ps-3">
+        <span className="text-xs" style={{ color: reminder ? accentColor : 'var(--muted-foreground)' }}>
+          {reminder
+            ? `${reminder.type === 'alarm' ? '⏰' : '🔔'} ${reminder.time}`
+            : done
+            ? (isRTL ? 'כל הכבוד! 💪' : 'Great work! 💪')
+            : (isRTL ? 'לחץ לסימון כבוצע' : 'Tap to complete')}
+        </span>
+
         <button
           type="button"
           onClick={openReminderPicker}
-          className="flex-shrink-0 p-2 mr-2 rounded-lg transition-all active:scale-90"
+          className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-90"
           style={{
             color: reminder ? accentColor : 'var(--muted-foreground)',
             background: reminder ? `${accentColor}18` : 'transparent',
@@ -351,7 +382,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
 
       {/* Reminder picker */}
       {showReminderPicker && (
-        <div className="flex flex-col gap-2 px-4 pb-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col gap-2 px-3 pt-3" onClick={(e) => e.stopPropagation()}>
           <div
             className="flex rounded-xl overflow-hidden"
             style={{ border: `1px solid ${accentColor}44` }}

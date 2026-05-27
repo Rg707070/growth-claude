@@ -24,6 +24,7 @@ export function SefariaReader({ initialRef, userId, onClose, onStartSession }: P
   const [mobileTab, setMobileTab] = useState<MobileTab>('read')
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset loading state when ref prop changes before async fetch
     setResolving(true)
     setIframeUrl(null)
 
@@ -72,7 +73,7 @@ export function SefariaReader({ initialRef, userId, onClose, onStartSession }: P
           className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
           style={{
             background: splitMode ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.05)',
-            color: splitMode ? '#f59e0b' : 'rgba(255,255,255,0.4)',
+            color: splitMode ? '#f59e0b' : 'var(--c-text-subtle)',
           }}
           title="סיכום לצד הטקסט"
         >
@@ -93,7 +94,7 @@ export function SefariaReader({ initialRef, userId, onClose, onStartSession }: P
               className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors"
               style={{
                 background: mobileTab === tab ? 'rgba(245,158,11,0.08)' : 'transparent',
-                color: mobileTab === tab ? '#f59e0b' : 'rgba(255,255,255,0.35)',
+                color: mobileTab === tab ? '#f59e0b' : 'var(--c-text-subtle)',
                 borderBottom: mobileTab === tab ? '2px solid #f59e0b' : '2px solid transparent',
               }}
             >

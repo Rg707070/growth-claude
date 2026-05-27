@@ -134,9 +134,10 @@ export function useHabitReminders(habits: Array<{ id: string; name: string }>) {
 
   useEffect(() => {
     scheduleAll()
+    const timeouts = timeoutsRef.current
     return () => {
-      timeoutsRef.current.forEach((t) => clearTimeout(t))
-      timeoutsRef.current.clear()
+      timeouts.forEach((t) => clearTimeout(t))
+      timeouts.clear()
     }
   }, [scheduleAll])
 
