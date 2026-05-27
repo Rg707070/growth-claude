@@ -114,10 +114,36 @@ export function DomainDetailClient({
     }
   }
 
+  const widgetsPanel = (
+    <div className="space-y-6">
+      {integration?.links && integration.links.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>כלים</h2>
+          <QuickLinks links={integration.links} />
+        </div>
+      )}
+
+      {integration?.widgetType && (
+        <div className="space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+            {integration.widgetType === 'sefaria' && 'לימוד יומי'}
+            {integration.widgetType === 'spotify' && 'מוזיקה'}
+            {integration.widgetType === 'garmin' && 'פעילות גופנית'}
+          </h2>
+          <DomainWidget slug={domain.slug} isRTL={isRTL} />
+        </div>
+      )}
+
+      <PomodoroTimer />
+
+      <DomainJournal domainSlug={domain.slug} userId={userId} />
+    </div>
+  )
+
   return (
-    <div className="px-4 pt-12 space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+    <div className="px-4 pt-12 pb-8 md:px-0 md:pt-8">
+      {/* Header — full width */}
+      <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.back()}
           className="p-2 rounded-xl transition-colors"
@@ -145,111 +171,99 @@ export function DomainDetailClient({
         </ProgressRing>
       </div>
 
-      {/* Quick links */}
-      {integration?.links && integration.links.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>כלים</h2>
-          <QuickLinks links={integration.links} />
-        </div>
-      )}
+      {/* Two-column on desktop, single-column on mobile */}
+      <div className="lg:grid lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] lg:gap-8 xl:gap-10 lg:items-start">
 
-      {/* Domain widget */}
-      {integration?.widgetType && (
-        <div className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-            {integration.widgetType === 'sefaria' && 'לימוד יומי'}
-            {integration.widgetType === 'spotify' && 'מוזיקה'}
-            {integration.widgetType === 'garmin' && 'פעילות גופנית'}
-          </h2>
-          <DomainWidget slug={domain.slug} isRTL={isRTL} />
-        </div>
-      )}
-
-      {/* Pomodoro timer */}
-      <PomodoroTimer />
-
-      {/* Daily Journal */}
-      <DomainJournal domainSlug={domain.slug} userId={userId} />
-
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid var(--border)' }} />
-
-      {/* Habits */}
-      <div className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-          {t('habits')}
-        </h2>
-        {habits.length === 0 && !adding && (
-          <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {t('noHabitsYet')}
+        {/* Primary column: habits */}
+        <div className="space-y-4">
+          {/* Widgets inline on mobile/tablet */}
+          <div className="space-y-6 lg:hidden mb-2">
+            {widgetsPanel}
+            <div style={{ borderTop: '1px solid var(--border)' }} />
           </div>
-        )}
-        {habits.map((habit) => (
-          <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
-        ))}
-      </div>
 
-      {/* Add habit */}
-      {adding ? (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <Input
-              autoFocus
-              value={newHabitName}
-              onChange={(e) => setNewHabitName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addHabit()}
-              placeholder={t('habitName')}
-              className="rounded-xl"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
-            />
-            <input
-              type="time"
-              value={newHabitTime}
-              onChange={(e) => setNewHabitTime(e.target.value)}
-              className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
-            />
-            <Button
-              onClick={addHabit}
-              disabled={saving || !newHabitName.trim()}
-              className="rounded-xl flex-shrink-0"
-              style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
-            >
-              {t('save')}
-            </Button>
+          <div className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+              {t('habits')}
+            </h2>
+            {habits.length === 0 && !adding && (
+              <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                {t('noHabitsYet')}
+              </div>
+            )}
+            {habits.map((habit) => (
+              <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
+            ))}
+          </div>
+
+          {adding ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  autoFocus
+                  value={newHabitName}
+                  onChange={(e) => setNewHabitName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addHabit()}
+                  placeholder={t('habitName')}
+                  className="rounded-xl"
+                  style={{
+                    background: 'var(--c-input)',
+                    border: '1px solid var(--c-input-border)',
+                    color: 'var(--foreground)',
+                  }}
+                />
+                <input
+                  type="time"
+                  value={newHabitTime}
+                  onChange={(e) => setNewHabitTime(e.target.value)}
+                  className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
+                  style={{
+                    background: 'var(--c-input)',
+                    border: '1px solid var(--c-input-border)',
+                    color: 'var(--foreground)',
+                  }}
+                />
+                <Button
+                  onClick={addHabit}
+                  disabled={saving || !newHabitName.trim()}
+                  className="rounded-xl flex-shrink-0"
+                  style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                >
+                  {t('save')}
+                </Button>
+                <button
+                  onClick={() => { setAdding(false); setNewHabitName(''); setNewHabitTime(''); setSaveError(null) }}
+                  className="p-2 rounded-xl transition-colors"
+                  style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {saveError && (
+                <p className="text-red-400 text-xs text-center">{saveError}</p>
+              )}
+            </div>
+          ) : (
             <button
-              onClick={() => { setAdding(false); setNewHabitName(''); setNewHabitTime(''); setSaveError(null) }}
-              className="p-2 rounded-xl transition-colors"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
+              onClick={() => setAdding(true)}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
+              style={{
+                borderColor: 'var(--border)',
+                color: 'var(--muted-foreground)',
+              }}
             >
-              <X size={18} />
+              <Plus size={18} />
+              <span className="text-sm">{t('addHabit')}</span>
             </button>
-          </div>
-          {saveError && (
-            <p className="text-red-400 text-xs text-center">{saveError}</p>
           )}
         </div>
-      ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
-          style={{
-            borderColor: 'var(--border)',
-            color: 'var(--muted-foreground)',
-          }}
-        >
-          <Plus size={18} />
-          <span className="text-sm">{t('addHabit')}</span>
-        </button>
-      )}
+
+        {/* Secondary column: widgets (desktop only) */}
+        <div className="hidden lg:block sticky top-8">
+          {widgetsPanel}
+        </div>
+
+      </div>
     </div>
   )
 }

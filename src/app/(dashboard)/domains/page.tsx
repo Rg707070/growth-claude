@@ -10,7 +10,7 @@ export default function DomainsPage() {
   const router = useRouter()
 
   return (
-    <div className="px-4 pt-12 pb-28 space-y-5 animate-fade-up">
+    <div className="px-4 pt-12 pb-28 md:px-0 md:pt-8 md:pb-8 space-y-5 animate-fade-up">
       <div>
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>{t('allDomains')}</h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
@@ -18,7 +18,7 @@ export default function DomainsPage() {
         </p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
         {DOMAINS.map((domain) => (
           <button
             key={domain.slug}
