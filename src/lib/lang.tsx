@@ -21,8 +21,6 @@ const translations = {
     domains: 'תחומים',
     streak: 'רצף',
     days: 'ימים',
-    xp: 'XP',
-    level: 'רמה',
     progress: 'התקדמות',
     addHabit: 'הוסף הרגל',
     complete: 'סמן כהשלמה',
@@ -44,7 +42,6 @@ const translations = {
     deleteConfirm: 'בטוח?',
     todayHabits: 'הרגלי היום',
     allDomains: 'כל התחומים',
-    nextLevel: 'לרמה הבאה',
     // Torah workspace
     torahWorkspace: 'אזור קודש',
     torahHome: 'בית',
@@ -120,8 +117,6 @@ const translations = {
     domains: 'Domains',
     streak: 'Streak',
     days: 'days',
-    xp: 'XP',
-    level: 'Level',
     progress: 'Progress',
     addHabit: 'Add Habit',
     complete: 'Mark Complete',
@@ -143,7 +138,6 @@ const translations = {
     deleteConfirm: 'Sure?',
     todayHabits: "Today's Habits",
     allDomains: 'All Domains',
-    nextLevel: 'to next level',
     // Torah workspace
     torahWorkspace: 'Torah Workspace',
     torahHome: 'Home',
