@@ -16,6 +16,17 @@ const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
 })
 
+function applyTheme(t: Theme) {
+  const html = document.documentElement
+  if (t === 'dark') {
+    html.classList.add('dark')
+    html.classList.remove('light')
+  } else {
+    html.classList.remove('dark')
+    html.classList.add('light')
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
 
@@ -27,20 +38,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     const saved = localStorage.getItem('growth-theme') as Theme | null
     const initial = saved ?? 'light'
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is SSR-unsafe, must sync post-mount
     setTheme(initial)
     applyTheme(initial)
   }, [])
-
-  const applyTheme = (t: Theme) => {
-    const html = document.documentElement
-    if (t === 'dark') {
-      html.classList.add('dark')
-      html.classList.remove('light')
-    } else {
-      html.classList.remove('dark')
-      html.classList.add('light')
-    }
-  }
 
   const toggleTheme = () => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'

@@ -6,7 +6,7 @@ A mobile-first, gamified personal growth tracker built for a yeshiva student. Tr
 
 ## What it does
 
-- **Habit tracking** across 8 domains (Family, Friends, Torah, Secular Study, Sports, Trading, Finance, Music)
+- **Habit tracking** across 7 domains (Family, Friends, Torah, Secular Study, Sports, Finance, Music)
 - **XP & leveling system** based on the 9 levels of *Mesillat Yesharim* — from Watchfulness (זהירות) to Holiness (קדושה)
 - **Streak tracking** with animated flame badges that grow at milestones
 - **Achievement system** — 8 unlockable badges (first habit, 7-day streak, 30-day streak, etc.)
@@ -16,11 +16,9 @@ A mobile-first, gamified personal growth tracker built for a yeshiva student. Tr
 - **Pomodoro timer** per domain (25/5 min focus sessions)
 - **Daily journal** — one-line entry per domain per day, last 5 entries shown
 - **Night check-in** modal — mood / productivity / gratitude, shown after 9 PM
-- **Portfolio tracker** — for the Trading domain, manual buy/current price table with P&L
 - **Personal schedule** — full weekly timetable sourced from the user's yeshiva schedule
 - **Mesillat Yesharim quotes** — one daily quote cycling through 30 classic passages
 - **Sefaria widget** — embedded Torah source viewer in the Torah domain
-- **TradingView widget** — embedded chart in the Trading domain
 - **FAB (Floating Action Button)** — quick-add any habit from anywhere
 - **Light / Dark mode** — Ocean Dark (default) and Light Ocean themes
 - **PWA-ready** — installable on iOS and Android
@@ -95,19 +93,17 @@ src/
 │   ├── mesillat-quote.tsx       # Daily rotating Mesillat Yesharim quote
 │   ├── domain-journal.tsx       # One-line daily journal per domain, last 5 entries
 │   ├── pomodoro-timer.tsx       # 25/5 min timer with SVG ring, shown in domain pages
-│   ├── portfolio-tracker.tsx    # Trading domain: stock table with P&L (LUNR, AFRM, etc.)
 │   ├── night-checkin.tsx        # Post-9pm modal: mood/productive/gratitude, gated by localStorage
 │   ├── schedule-today.tsx       # Dashboard widget: today's schedule preview
 │   ├── lang-toggle.tsx          # He/En toggle button (header)
 │   ├── confetti.tsx             # Ocean-colored confetti burst on habit completion
 │   └── integrations/
 │       ├── sefaria-widget.tsx   # Embedded Sefaria for Torah domain
-│       ├── tradingview-widget.tsx  # Embedded TradingView for Trading domain
 │       ├── connect-placeholder.tsx # Placeholder for future integrations
 │       └── quick-links.tsx      # Domain-specific shortcut links
 │
 ├── lib/
-│   ├── domains.ts               # DOMAINS array: 8 life domains with color/icon/gradient/glowColor
+│   ├── domains.ts               # DOMAINS array: 7 life domains with color/icon/gradient/glowColor
 │   ├── mesillat.ts              # 9 XP level definitions + getLevelFromXp() + getXpProgress()
 │   ├── mesillat-quotes.ts       # Array of 30 Mesillat Yesharim quotes in Hebrew
 │   ├── achievements.ts          # 8 achievement definitions + getUnlockedIds()
@@ -215,7 +211,6 @@ Deployed on **Vercel**, connected to GitHub repo `Rg707070/growth-claude`. Every
 | `torah` | לימודי קודש | Torah Study | Amber |
 | `secular` | לימודי חול | Secular Study | Orange |
 | `sports` | ספורט | Sports | Red |
-| `trading` | מסחר | Trading | Violet |
 | `finance` | כספים | Finance | Cyan |
 | `music` | מוזיקה | Music | Pink |
 

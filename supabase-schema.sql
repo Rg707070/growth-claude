@@ -7,7 +7,6 @@
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   full_name text,
-  xp integer default 0 not null,
   current_streak integer default 0 not null,
   longest_streak integer default 0 not null,
   last_activity_date date,
@@ -37,7 +36,6 @@ create table if not exists public.habits (
   name text not null,
   description text,
   frequency text default 'daily' not null check (frequency in ('daily', 'weekly')),
-  xp_reward integer default 10 not null,
   is_active boolean default true not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -53,18 +51,6 @@ create table if not exists public.habit_logs (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(habit_id, completed_at)
 );
-
--- ============================================================
--- XP UPDATE FUNCTION (atomic — no race conditions)
--- ============================================================
-create or replace function public.update_profile_xp(uid uuid, xp_delta integer)
-returns void as $$
-begin
-  update public.profiles
-  set xp = greatest(0, xp + xp_delta)
-  where id = uid;
-end;
-$$ language plpgsql security definer;
 
 -- ============================================================
 -- RLS
@@ -536,3 +522,25 @@ begin
   return new_index;
 end;
 $$ language plpgsql security definer;
+
+-- ============================================================
+-- READING BOOKS (reading schedule calculator)
+-- ============================================================
+create table if not exists public.reading_books (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  title text not null,
+  total_pages integer not null check (total_pages > 0),
+  current_page integer default 0 not null check (current_page >= 0),
+  target_date date not null,
+  color text default '#06b6d4' not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.reading_books enable row level security;
+
+create policy "Users manage own reading books"
+  on public.reading_books for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

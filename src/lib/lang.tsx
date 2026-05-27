@@ -21,8 +21,6 @@ const translations = {
     domains: 'תחומים',
     streak: 'רצף',
     days: 'ימים',
-    xp: 'XP',
-    level: 'רמה',
     progress: 'התקדמות',
     addHabit: 'הוסף הרגל',
     complete: 'סמן כהשלמה',
@@ -40,9 +38,10 @@ const translations = {
     habitName: 'שם ההרגל',
     save: 'שמור',
     cancel: 'ביטול',
+    deleteHabit: 'מחק הרגל',
+    deleteConfirm: 'בטוח?',
     todayHabits: 'הרגלי היום',
     allDomains: 'כל התחומים',
-    nextLevel: 'לרמה הבאה',
     // Torah workspace
     torahWorkspace: 'אזור קודש',
     torahHome: 'בית',
@@ -95,6 +94,11 @@ const translations = {
     sessionTimer: 'טיימר שיעור',
     running: 'רץ',
     paused: 'מושהה',
+    setReminder: 'הגדר תזכורת',
+    reminderNotification: 'התראה',
+    reminderAlarm: 'אזעקה',
+    deleteReminder: 'מחק תזכורת',
+    habitReminderBody: 'זמן לבצע את ההרגל! 💪',
   },
   en: {
     appName: 'GROWTH',
@@ -113,8 +117,6 @@ const translations = {
     domains: 'Domains',
     streak: 'Streak',
     days: 'days',
-    xp: 'XP',
-    level: 'Level',
     progress: 'Progress',
     addHabit: 'Add Habit',
     complete: 'Mark Complete',
@@ -132,9 +134,10 @@ const translations = {
     habitName: 'Habit name',
     save: 'Save',
     cancel: 'Cancel',
+    deleteHabit: 'Delete habit',
+    deleteConfirm: 'Sure?',
     todayHabits: "Today's Habits",
     allDomains: 'All Domains',
-    nextLevel: 'to next level',
     // Torah workspace
     torahWorkspace: 'Torah Workspace',
     torahHome: 'Home',
@@ -187,6 +190,11 @@ const translations = {
     sessionTimer: 'Session Timer',
     running: 'Running',
     paused: 'Paused',
+    setReminder: 'Set reminder',
+    reminderNotification: 'Notification',
+    reminderAlarm: 'Alarm',
+    deleteReminder: 'Delete reminder',
+    habitReminderBody: "Time to complete your habit! 💪",
   },
 }
 
@@ -211,6 +219,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('growth-lang') as Language | null
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is SSR-unsafe, must sync post-mount
     if (saved === 'en' || saved === 'he') setLang(saved)
   }, [])
 

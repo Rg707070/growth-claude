@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
+import { useHabitReminders } from '@/hooks/use-notifications'
 import { HabitRow } from '@/components/habit-row'
 import { ProgressRing } from '@/components/progress-ring'
 import { QuickLinks } from '@/components/integrations/quick-links'
@@ -24,16 +25,19 @@ interface Props {
   userId: string
 }
 
-function DomainWidget({ slug }: { slug: string }) {
+function DomainWidget({ slug, isRTL }: { slug: string; isRTL: boolean }) {
   if (slug === 'torah') return <SefariaWidget />
   if (slug === 'sports') {
     return (
       <ConnectPlaceholder
         service="Garmin Connect"
         icon="⌚"
-        description="חבר את הגארמין כדי לראות פעילות, צעדים וישנה"
+        description={
+          isRTL
+            ? 'חבר את הגארמין כדי לראות פעילות, צעדים ושינה'
+            : 'Connect Garmin to see activity, steps, and sleep'
+        }
         url="https://connect.garmin.com"
-        color="#007CC3"
       />
     )
   }
@@ -42,9 +46,12 @@ function DomainWidget({ slug }: { slug: string }) {
       <ConnectPlaceholder
         service="Spotify"
         icon="🎵"
-        description="חבר את Spotify כדי לראות מה שאתה מאזין ולנהל פלייליסטים"
+        description={
+          isRTL
+            ? 'חבר את Spotify כדי לראות מה שאתה מאזין ולנהל פלייליסטים'
+            : 'Connect Spotify to see your listening and manage playlists'
+        }
         url="https://open.spotify.com"
-        color="#1DB954"
       />
     )
   }
@@ -60,11 +67,12 @@ export function DomainDetailClient({
   const router = useRouter()
   const { t, isRTL } = useLang()
   const [habits, setHabits] = useState(initialHabits)
+  useHabitReminders(habits)
   const [adding, setAdding] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const completedSet = new Set(completedIds)
+  const completedSet = useMemo(() => new Set(completedIds), [completedIds])
 
   const completedCount = habits.filter((h) => completedSet.has(h.id)).length
   const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0
@@ -150,7 +158,7 @@ export function DomainDetailClient({
             {integration.widgetType === 'spotify' && 'מוזיקה'}
             {integration.widgetType === 'garmin' && 'פעילות גופנית'}
           </h2>
-          <DomainWidget slug={domain.slug} />
+          <DomainWidget slug={domain.slug} isRTL={isRTL} />
         </div>
       )}
 

@@ -6,10 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
 import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
-import { HeatMap } from '@/components/heat-map'
-import { WeeklyChart } from '@/components/weekly-chart'
-import { WeeklySummary } from '@/components/weekly-summary'
-import { FridaySummary } from '@/components/friday-summary'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -90,21 +86,11 @@ interface AllItem {
 
 interface CheckRow { time: string; note: string | null }
 
-interface WeekSummary {
-  bestDomain: string; completionPct: number
-  habitCount: number; topDomainSlug: string; habitsCompleted: number
-}
-
 interface Props {
   userId: string
-  reflections: { date: string; notes: string }[]
   userItems: Record<number, ScheduleItem[]>
   allItems: AllItem[]
   todayChecks: CheckRow[]
-  heatMapDays: { date: string; pct: number }[]
-  weeklyActivity: { date: string; count: number }[]
-  weekSummary: WeekSummary
-  weeklyScheduleChecks: { date: string; count: number }[]
 }
 
 // ─── ScopeModal ───────────────────────────────────────────────────────────────
@@ -439,7 +425,7 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
-        style={{ maxHeight: 'calc(100dvh - 310px)' }}
+        style={{ maxHeight: 'calc(100dvh - 260px)' }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -511,34 +497,15 @@ function ScheduleTable({ items, dayOfWeek, isToday, checked, onSelectDay, onEdit
   )
 }
 
-// ─── ProgressSection ──────────────────────────────────────────────────────────
-function ProgressSection({ heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks }: {
-  heatMapDays: { date: string; pct: number }[]
-  weeklyActivity: { date: string; count: number }[]
-  weekSummary: WeekSummary
-  weeklyScheduleChecks: { date: string; count: number }[]
-}) {
-  return (
-    <div className="px-4 pb-8 space-y-6 mt-4">
-      <WeeklySummary habitsCompleted={weekSummary.habitsCompleted} bestDomain={weekSummary.bestDomain} completionPct={weekSummary.completionPct} />
-      <FridaySummary habitsCompleted={weekSummary.habitsCompleted} />
-      <WeeklyChart days={weeklyActivity} scheduleChecks={weeklyScheduleChecks} />
-      <HeatMap days={heatMapDays} />
-    </div>
-  )
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
-type TabId = 'calendar' | 'schedule' | 'progress'
+type TabId = 'calendar' | 'schedule'
 const TABS: { id: TabId; label: string }[] = [
   { id: 'calendar', label: 'לוח שנה' },
   { id: 'schedule', label: 'לוז'      },
-  { id: 'progress', label: 'התקדמות'  },
 ]
 
 export function SchedulePageClient({
   userId, userItems, allItems, todayChecks,
-  heatMapDays, weeklyActivity, weekSummary, weeklyScheduleChecks,
 }: Props) {
   const { isDark }  = useTheme()
   const todayDay  = new Date().getDay()
@@ -623,15 +590,6 @@ export function SchedulePageClient({
     />
   )
 
-  const progressView = (
-    <ProgressSection
-      heatMapDays={heatMapDays}
-      weeklyActivity={weeklyActivity}
-      weekSummary={weekSummary}
-      weeklyScheduleChecks={weeklyScheduleChecks}
-    />
-  )
-
   return (
     <div className="pt-2 pb-32 md:pb-8">
 
@@ -647,7 +605,6 @@ export function SchedulePageClient({
             </div>
           )}
           {tab === 'schedule' && tableView}
-          {tab === 'progress' && <div className="h-full overflow-y-auto">{progressView}</div>}
         </div>
       </div>
 
@@ -663,10 +620,7 @@ export function SchedulePageClient({
             <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה — בפיתוח</p>
           </div>
         )}
-        {tab === 'schedule' && (
-          <div className="grid grid-cols-[1fr,360px] gap-6">{tableView}{progressView}</div>
-        )}
-        {tab === 'progress' && progressView}
+        {tab === 'schedule' && tableView}
       </div>
 
       {/* Sheets */}

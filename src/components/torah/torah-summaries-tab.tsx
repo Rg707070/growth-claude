@@ -139,7 +139,7 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
                       key={f}
                       onClick={() => { setFolder(f); setShowFolderPicker(false) }}
                       className="text-sm text-right px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                      style={{ color: folder === f ? TORAH_COLOR : 'rgba(255,255,255,0.7)' }}
+                      style={{ color: folder === f ? TORAH_COLOR : 'var(--c-text-2)' }}
                     >
                       {f}
                     </button>
@@ -236,7 +236,7 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
               <span
                 key={tag}
                 className="text-xs px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}
+                style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--c-text-subtle)' }}
               >
                 #{tag}
               </span>
@@ -286,7 +286,7 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
           style={
             favOnly
               ? { background: `${GOLD}22`, color: GOLD }
-              : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.35)' }
+              : { background: 'rgba(255,255,255,0.04)', color: 'var(--c-text-subtle)' }
           }
         >
           <Star size={11} />
@@ -300,7 +300,7 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             style={
               folderFilter === f
                 ? { background: `${TORAH_COLOR}22`, color: TORAH_COLOR }
-                : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.35)' }
+                : { background: 'rgba(255,255,255,0.04)', color: 'var(--c-text-subtle)' }
             }
           >
             {f}

@@ -101,7 +101,7 @@ export function FamilyClient({ domain, tasks, habits, breakers, schemaReady }: P
         <StatTile
           color={domain.color}
           icon={<Sparkles size={16} />}
-          label={isRTL ? 'בbacklog' : 'Backlog'}
+          label={isRTL ? 'רעיונות' : 'Backlog'}
           value={breakers.filter((b) => b.status === 'backlog').length}
         />
       </div>

@@ -20,6 +20,7 @@ export function TorahSummaryPanel({ userId, defaultTitle }: Props) {
   const [appSave, setAppSave] = useState<SaveState>('idle')
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset title when default changes from parent
     setTitle(defaultTitle)
   }, [defaultTitle])
 

@@ -109,7 +109,7 @@ export function TorahProfileTab({ habits, completedIds, sessions, summaries, tot
                   </div>
                   <span
                     className="text-xs"
-                    style={{ color: isToday ? TORAH_COLOR : 'rgba(255,255,255,0.3)' }}
+                    style={{ color: isToday ? TORAH_COLOR : 'var(--c-text-faint)' }}
                   >
                     {getDayLabel(day)}
                   </span>
@@ -163,7 +163,7 @@ export function TorahProfileTab({ habits, completedIds, sessions, summaries, tot
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ background: done ? TORAH_COLOR : 'rgba(255,255,255,0.15)' }}
                   />
-                  <span className="text-sm text-right flex-1 mr-3" style={{ color: done ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)' }}>
+                  <span className="text-sm text-right flex-1 mr-3" style={{ color: done ? 'var(--c-text)' : 'var(--c-text-subtle)' }}>
                     {h.name}
                   </span>
                 </div>
