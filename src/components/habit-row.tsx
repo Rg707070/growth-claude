@@ -149,14 +149,16 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     setHabitReminder(habit.id, pendingTime, pendingType)
     setReminder({ time: pendingTime, type: pendingType })
     setShowReminderPicker(false)
+    await createClient().from('habits').update({ schedule_time: pendingTime }).eq('id', habit.id)
   }
 
-  const removeReminder = (e: React.MouseEvent) => {
+  const removeReminder = async (e: React.MouseEvent) => {
     e.stopPropagation()
     clearHabitReminder(habit.id)
     setReminder(null)
     setPendingTime('')
     setShowReminderPicker(false)
+    await createClient().from('habits').update({ schedule_time: null }).eq('id', habit.id)
   }
 
   // Touch handlers — long press (550ms) opens edit, tap toggles
@@ -342,6 +344,11 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           <p className="text-xs mb-3" style={{ color: 'var(--muted-foreground)' }}>
             {domain?.icon} {isRTL ? domain?.nameHe : domain?.nameEn}
           </p>
+          {habit.schedule_time && (
+            <p className="text-[10px] mt-0.5" style={{ color: accentColor }}>
+              🕐 {habit.schedule_time.slice(0, 5)}
+            </p>
+          )}
 
           {/* Progress bar */}
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--c-border)' }}>

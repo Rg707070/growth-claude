@@ -41,7 +41,12 @@ export default async function SchedulePage() {
 
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map(getWeekDate)
 
-  const [{ data: scheduleRows }, { data: checkRows }] = await Promise.all([
+  const [
+    { data: scheduleRows },
+    { data: checkRows },
+    scheduledHabitsRes,
+    todayHabitLogsRes,
+  ] = await Promise.all([
     supabase
       .from('user_schedule')
       .select('id, day_of_week, time, label, type, color, specific_date')
@@ -53,6 +58,17 @@ export default async function SchedulePage() {
       .select('time, note')
       .eq('user_id', user.id)
       .eq('date', todayDate),
+    supabase
+      .from('habits')
+      .select('id, name, domain_slug, schedule_time')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .not('schedule_time', 'is', null),
+    supabase
+      .from('habit_logs')
+      .select('habit_id')
+      .eq('user_id', user.id)
+      .eq('completed_at', todayDate),
   ])
 
   const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null }[]> = {}
@@ -64,12 +80,17 @@ export default async function SchedulePage() {
     userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, color: (row.color as string | null) ?? null, specificDate: row.specific_date ?? null })
   }
 
+  const scheduledHabits = (scheduledHabitsRes.data ?? []) as { id: string; name: string; domain_slug: string; schedule_time: string }[]
+  const todayCompletedHabitIds: string[] = (todayHabitLogsRes.data ?? []).map((r: { habit_id: string }) => r.habit_id)
+
   return (
     <SchedulePageClient
       userId={user.id}
       userItems={userItems}
       allItems={scheduleRows ?? []}
       todayChecks={(checkRows ?? []).map((r: { time: string; note: string | null }) => ({ time: r.time, note: r.note }))}
+      scheduledHabits={scheduledHabits}
+      todayCompletedHabitIds={todayCompletedHabitIds}
     />
   )
 }

@@ -70,6 +70,7 @@ export function DomainDetailClient({
   useHabitReminders(habits)
   const [adding, setAdding] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
+  const [newHabitTime, setNewHabitTime] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const completedSet = useMemo(() => new Set(completedIds), [completedIds])
@@ -91,6 +92,7 @@ export function DomainDetailClient({
           domain_slug: domain.slug,
           name: newHabitName.trim(),
           frequency: 'daily',
+          schedule_time: newHabitTime || null,
         })
         .select()
         .single()
@@ -102,6 +104,7 @@ export function DomainDetailClient({
       }
       setHabits((prev) => [...prev, data as Habit])
       setNewHabitName('')
+      setNewHabitTime('')
       setAdding(false)
       setSaving(false)
       router.refresh()
@@ -203,6 +206,17 @@ export function DomainDetailClient({
                 color: 'var(--foreground)',
               }}
             />
+            <input
+              type="time"
+              value={newHabitTime}
+              onChange={(e) => setNewHabitTime(e.target.value)}
+              className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
+              style={{
+                background: 'var(--c-input)',
+                border: '1px solid var(--c-input-border)',
+                color: 'var(--foreground)',
+              }}
+            />
             <Button
               onClick={addHabit}
               disabled={saving || !newHabitName.trim()}
@@ -212,7 +226,7 @@ export function DomainDetailClient({
               {t('save')}
             </Button>
             <button
-              onClick={() => { setAdding(false); setNewHabitName(''); setSaveError(null) }}
+              onClick={() => { setAdding(false); setNewHabitName(''); setNewHabitTime(''); setSaveError(null) }}
               className="p-2 rounded-xl transition-colors"
               style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
             >
