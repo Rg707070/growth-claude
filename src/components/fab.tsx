@@ -180,10 +180,10 @@ export function FAB() {
         </div>
       )}
 
-      {/* FAB button */}
+      {/* FAB button — desktop only; mobile uses the centered button in BottomNav */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 z-50 w-14 h-14 rounded-2xl flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-all md:hidden"
+        className="fixed bottom-8 z-50 w-14 h-14 rounded-2xl items-center justify-center text-white hover:scale-105 active:scale-95 transition-all hidden"
         style={{
           insetInlineEnd: '1.25rem',
           background: 'var(--brand-gradient)',
