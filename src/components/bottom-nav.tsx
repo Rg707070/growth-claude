@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Grid3X3, CalendarDays, Settings, BookOpen } from 'lucide-react'
 import { useLang } from '@/lib/lang'
-import type { Profile } from '@/types'
 
 const navItems = [
   { icon: Home,         href: '/dashboard', labelHe: 'בית',    labelEn: 'Home'     },
@@ -13,7 +12,7 @@ const navItems = [
   { icon: Settings,     href: '/settings',  labelHe: 'הגדרות', labelEn: 'Settings' },
 ]
 
-export function BottomNav({ profile: _profile }: { profile: Profile }) {
+export function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { isRTL } = useLang()

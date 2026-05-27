@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useLang } from '@/lib/lang'
 
 interface FridaySummaryProps {
@@ -21,11 +22,12 @@ const MOTIVATIONAL_EN = [
 
 export function FridaySummary({ habitsCompleted }: FridaySummaryProps) {
   const { isRTL } = useLang()
-  const isFriday = new Date().getDay() === 5
-  if (!isFriday) return null
+  const [dayIndex] = useState(() => Math.floor(Date.now() / 86400000))
+  const [todayDay] = useState(() => new Date().getDay())
+  if (todayDay !== 5) return null
 
   const quotes = isRTL ? MOTIVATIONAL_HE : MOTIVATIONAL_EN
-  const quote = quotes[Math.floor(Date.now() / 86400000) % quotes.length]
+  const quote = quotes[dayIndex % quotes.length]
 
   return (
     <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-500/15 to-orange-600/5 border border-yellow-500/25 shadow-[0_0_20px_rgba(251,211,77,0.12)]">

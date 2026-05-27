@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Play, Square, Plus, BookOpen, MessageSquare, HelpCircle, ChevronDown, ChevronUp, Trash2, Search, X, Camera, Loader2 } from 'lucide-react'
+import { Play, Square, Plus, MessageSquare, HelpCircle, ChevronDown, ChevronUp, Trash2, Search, X, Camera, Loader2 } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
 import { TorahDailySchedule } from './torah-daily-schedule'
@@ -95,6 +95,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
 
   function startTimer() {
     if (!textTitle.trim()) return
+    // eslint-disable-next-line react-hooks/purity -- event handler, not render
     startTimeRef.current = Date.now() - elapsed * 1000
     setRunning(true)
     timerRef.current = setInterval(() => {

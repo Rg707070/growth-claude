@@ -566,6 +566,7 @@ export function ReadingClient({ userId, initialBooks }: ReadingClientProps) {
   const [showAdd, setShowAdd] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local state with server-fetched prop after router.refresh
     setBooks(initialBooks)
   }, [initialBooks])
 

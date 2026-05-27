@@ -72,6 +72,7 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- window API check is SSR-unsafe
     setHasSpeechSupport('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
     return () => { recognitionRef.current?.stop() }
   }, [])
@@ -153,6 +154,7 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
   )
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadDoc fetches doc content and updates editor when active doc changes
     if (activeDocId) void loadDoc(activeDocId)
   }, [activeDocId, loadDoc])
 
@@ -416,7 +418,7 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
                     style={{ color: 'var(--muted-foreground)' }}
                     dir="rtl"
                   >
-                    בס"ד
+                    בס&quot;ד
                   </p>
                   <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
                     {docDateStr}

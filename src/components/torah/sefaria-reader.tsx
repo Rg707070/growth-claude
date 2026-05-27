@@ -24,6 +24,7 @@ export function SefariaReader({ initialRef, userId, onClose, onStartSession }: P
   const [mobileTab, setMobileTab] = useState<MobileTab>('read')
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset loading state when ref prop changes before async fetch
     setResolving(true)
     setIframeUrl(null)
 
