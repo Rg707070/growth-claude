@@ -524,16 +524,20 @@ end;
 $$ language plpgsql security definer;
 
 -- ============================================================
--- READING BOOKS (reading schedule calculator)
+-- READING BOOKS
 -- ============================================================
 create table if not exists public.reading_books (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
   title text not null,
-  total_pages integer not null check (total_pages > 0),
+  total_pages integer check (total_pages is null or total_pages > 0),
   current_page integer default 0 not null check (current_page >= 0),
-  target_date date not null,
+  total_chapters integer check (total_chapters is null or total_chapters > 0),
+  current_chapter integer default 0 not null check (current_chapter >= 0),
+  target_date date,
   color text default '#06b6d4' not null,
+  notes text default '' not null,
+  completed boolean default false not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -544,3 +548,12 @@ create policy "Users manage own reading books"
   on public.reading_books for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Migration for existing deployments:
+-- alter table public.reading_books
+--   alter column total_pages drop not null,
+--   alter column target_date drop not null,
+--   add column if not exists total_chapters integer check (total_chapters is null or total_chapters > 0),
+--   add column if not exists current_chapter integer default 0 not null check (current_chapter >= 0),
+--   add column if not exists notes text default '' not null,
+--   add column if not exists completed boolean default false not null;
