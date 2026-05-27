@@ -166,7 +166,7 @@ export function TorahHomeTab({
                   <span
                     className="text-sm flex-1 text-right font-medium"
                     style={{
-                      color: isDone ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.9)',
+                      color: isDone ? 'var(--c-text-subtle)' : 'var(--c-text)',
                       textDecoration: isDone ? 'line-through' : 'none',
                     }}
                   >
