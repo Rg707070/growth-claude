@@ -114,43 +114,8 @@ export function DomainDetailClient({
     }
   }
 
-  return (
-    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-xl transition-colors"
-            style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
-          >
-            <ArrowRight
-              size={20}
-              style={{ color: 'var(--foreground)', transform: isRTL ? 'none' : 'rotate(180deg)' }}
-            />
-          </button>
-          <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl"
-            style={{ background: `${domain.color}22`, color: domain.color }}
-          >
-            {domain.icon}
-          </div>
-          <div>
-            <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
-              {isRTL ? domain.nameHe : domain.nameEn}
-            </h1>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              {completedCount}/{habits.length} {t('habits')}
-            </p>
-          </div>
-        </div>
-        <ProgressRing percentage={pct} color={domain.color} size={48} strokeWidth={4}>
-          <span className="text-[10px] font-bold" style={{ color: domain.color }}>{pct}%</span>
-        </ProgressRing>
-      </div>
-
-      {/* Quick links */}
+  const widgetsPanel = (
+    <div className="space-y-6">
       {integration?.links && integration.links.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>כלים</h2>
@@ -158,7 +123,6 @@ export function DomainDetailClient({
         </div>
       )}
 
-      {/* Domain widget */}
       {integration?.widgetType && (
         <div className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
@@ -170,91 +134,142 @@ export function DomainDetailClient({
         </div>
       )}
 
-      {/* Pomodoro timer */}
       <PomodoroTimer />
 
-      {/* Daily Journal */}
       <DomainJournal domainSlug={domain.slug} userId={userId} />
+    </div>
+  )
 
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid var(--border)' }} />
+  return (
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 md:max-w-none md:px-0 md:py-8">
 
-      {/* Habits */}
-      <div className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-          {t('habits')}
-        </h2>
-        {habits.length === 0 && !adding && (
-          <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {t('noHabitsYet')}
-          </div>
-        )}
-        {habits.map((habit) => (
-          <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
-        ))}
-      </div>
-
-      {/* Add habit */}
-      {adding ? (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <Input
-              autoFocus
-              value={newHabitName}
-              onChange={(e) => setNewHabitName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addHabit()}
-              placeholder={t('habitName')}
-              className="rounded-xl"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
-            />
-            <input
-              type="time"
-              value={newHabitTime}
-              onChange={(e) => setNewHabitTime(e.target.value)}
-              className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
-            />
-            <Button
-              onClick={addHabit}
-              disabled={saving || !newHabitName.trim()}
-              className="rounded-xl flex-shrink-0"
-              style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
-            >
-              {t('save')}
-            </Button>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => { setAdding(false); setNewHabitName(''); setNewHabitTime(''); setSaveError(null) }}
+              onClick={() => router.back()}
               className="p-2 rounded-xl transition-colors"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
+              style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
             >
-              <X size={18} />
+              <ArrowRight
+                size={20}
+                style={{ color: 'var(--foreground)', transform: isRTL ? 'none' : 'rotate(180deg)' }}
+              />
             </button>
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl"
+              style={{ background: `${domain.color}22`, color: domain.color }}
+            >
+              {domain.icon}
+            </div>
+            <div>
+              <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
+                {isRTL ? domain.nameHe : domain.nameEn}
+              </h1>
+              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                {completedCount}/{habits.length} {t('habits')}
+              </p>
+            </div>
           </div>
-          {saveError && (
-            <p className="text-red-400 text-xs text-center">{saveError}</p>
-          )}
+          <ProgressRing percentage={pct} color={domain.color} size={48} strokeWidth={4}>
+            <span className="text-[10px] font-bold" style={{ color: domain.color }}>{pct}%</span>
+          </ProgressRing>
         </div>
-      ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
-          style={{
-            borderColor: 'var(--border)',
-            color: 'var(--muted-foreground)',
-          }}
-        >
-          <Plus size={18} />
-          <span className="text-sm">{t('addHabit')}</span>
-        </button>
-      )}
+
+        {/* Two-column on lg+, single-column on mobile/tablet */}
+        <div className="lg:grid lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] lg:gap-8 xl:gap-10 lg:items-start">
+
+          {/* Primary column: habits */}
+          <div className="space-y-4">
+            {/* Widgets inline on mobile/tablet */}
+            <div className="space-y-6 lg:hidden mb-2">
+              {widgetsPanel}
+              <div style={{ borderTop: '1px solid var(--border)' }} />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                {t('habits')}
+              </h2>
+              {habits.length === 0 && !adding && (
+                <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  {t('noHabitsYet')}
+                </div>
+              )}
+              {habits.map((habit) => (
+                <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
+              ))}
+            </div>
+
+            {adding ? (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    autoFocus
+                    value={newHabitName}
+                    onChange={(e) => setNewHabitName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addHabit()}
+                    placeholder={t('habitName')}
+                    className="rounded-xl"
+                    style={{
+                      background: 'var(--c-input)',
+                      border: '1px solid var(--c-input-border)',
+                      color: 'var(--foreground)',
+                    }}
+                  />
+                  <input
+                    type="time"
+                    value={newHabitTime}
+                    onChange={(e) => setNewHabitTime(e.target.value)}
+                    className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
+                    style={{
+                      background: 'var(--c-input)',
+                      border: '1px solid var(--c-input-border)',
+                      color: 'var(--foreground)',
+                    }}
+                  />
+                  <Button
+                    onClick={addHabit}
+                    disabled={saving || !newHabitName.trim()}
+                    className="rounded-xl flex-shrink-0"
+                    style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                  >
+                    {t('save')}
+                  </Button>
+                  <button
+                    onClick={() => { setAdding(false); setNewHabitName(''); setNewHabitTime(''); setSaveError(null) }}
+                    className="p-2 rounded-xl transition-colors"
+                    style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                {saveError && (
+                  <p className="text-red-400 text-xs text-center">{saveError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setAdding(true)}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
+                style={{
+                  borderColor: 'var(--border)',
+                  color: 'var(--muted-foreground)',
+                }}
+              >
+                <Plus size={18} />
+                <span className="text-sm">{t('addHabit')}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Secondary column: widgets (desktop only) */}
+          <div className="hidden lg:block sticky top-8">
+            {widgetsPanel}
+          </div>
+
+        </div>
       </div>
     </div>
   )

@@ -74,8 +74,8 @@ export function DashboardClient({
     <TimeBackground>
       <div className="px-4 pt-12 pb-32 md:px-0 md:pt-8 md:pb-12">
 
-        {/* Desktop: two-column grid. Mobile: single-column flow */}
-        <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-[1fr_340px] md:gap-8 md:items-start">
+        {/* Desktop: two-column grid. Tablet/mobile: single-column flow */}
+        <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] lg:gap-8 xl:gap-10 lg:items-start">
 
           {/* ── PRIMARY COLUMN ── */}
           <div className="space-y-6">
@@ -211,7 +211,7 @@ export function DashboardClient({
               >
                 {t('allDomains')}
               </h2>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {domainsToShow.map((dp) => {
                   const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }
                   const isFailing = stat.failingDays >= 3
@@ -313,8 +313,8 @@ export function DashboardClient({
               )}
             </div>
 
-            {/* Mobile-only: schedule + journal + chart */}
-            <div className="space-y-6 md:hidden">
+            {/* Mobile/tablet-only: schedule + journal + chart */}
+            <div className="space-y-6 lg:hidden">
               <ScheduleToday />
               <button
                 onClick={() => router.push('/journal')}
@@ -336,8 +336,8 @@ export function DashboardClient({
             </div>
           </div>
 
-          {/* ── SECONDARY COLUMN (desktop only) ── */}
-          <div className="hidden md:flex flex-col gap-6 sticky top-8">
+          {/* ── SECONDARY COLUMN (desktop only, lg+) ── */}
+          <div className="hidden lg:flex flex-col gap-6 sticky top-8">
             <WeeklyChart days={weeklyActivity} />
             <ScheduleToday />
             <button
