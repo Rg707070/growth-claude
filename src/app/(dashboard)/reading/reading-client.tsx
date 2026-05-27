@@ -138,7 +138,7 @@ function AddBookForm({ userId, nextColor, defaultCompleted, onClose, onSaved, is
     })
     setSaving(false)
     if (err) {
-      setError(isRTL ? 'שגיאה בשמירה' : 'Save failed')
+      setError((isRTL ? 'שגיאה בשמירה: ' : 'Save failed: ') + err.message)
       return
     }
     onSaved()
