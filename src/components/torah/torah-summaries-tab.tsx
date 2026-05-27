@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Star, StarOff, Search, X, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Star, StarOff, Search, X, Trash2, ChevronDown, Pencil } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
 import type { LearningSummary } from '@/types'
@@ -17,7 +17,7 @@ interface Props {
   onDeleted: (id: string) => void
 }
 
-type View = 'list' | 'create' | 'view'
+type View = 'list' | 'create' | 'view' | 'edit'
 
 const DEFAULT_FOLDERS = ['כללי', 'גמרא', 'הלכה', 'מחשבה', 'תנ"ך', 'שיעורים']
 
@@ -73,6 +73,28 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
     setTagsInput('')
     setFolder('כללי')
     setView('list')
+  }
+
+  async function updateSummary() {
+    if (!selected || !title.trim() || !content.trim()) return
+    setSaving(true)
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+    const { data } = await supabase
+      .from('learning_summaries')
+      .update({ title: title.trim(), content: content.trim(), source: source.trim() || null, folder, tags })
+      .eq('id', selected.id)
+      .select()
+      .single()
+    if (data) {
+      const updated = data as LearningSummary
+      onUpdated(updated)
+      setSelected(updated)
+    }
+    setSaving(false)
+    setView('view')
   }
 
   async function toggleFavorite(summary: LearningSummary) {
@@ -201,6 +223,19 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
               )}
             </button>
             <button
+              onClick={() => {
+                setTitle(selected.title)
+                setContent(selected.content)
+                setSource(selected.source ?? '')
+                setFolder(selected.folder)
+                setTagsInput(selected.tags.join(', '))
+                setView('edit')
+              }}
+              className="text-white/30 hover:text-white/70 transition-colors"
+            >
+              <Pencil size={17} />
+            </button>
+            <button
               onClick={() => deleteSummary(selected.id)}
               className="text-white/30 hover:text-red-400 transition-colors"
             >
@@ -243,6 +278,102 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             ))}
           </div>
         )}
+      </div>
+    )
+  }
+
+  if (view === 'edit' && selected) {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => setView('view')} className="text-xs text-white/40 hover:text-white/70 transition-colors">
+            {t('cancel')}
+          </button>
+          <h2 className="text-sm font-semibold text-white">{t('editSummary')}</h2>
+        </div>
+
+        <div className="space-y-3">
+          <Field label={t('summaryTitle')}>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="כותרת הסיכום"
+              className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none text-right py-1"
+              dir="rtl"
+            />
+          </Field>
+
+          <Field label={t('summarySource')}>
+            <input
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="ברכות ב:א / שיעור של הרב..."
+              className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none text-right py-1"
+              dir="rtl"
+            />
+          </Field>
+
+          <Field label={t('summaryFolder')}>
+            <div className="relative">
+              <button
+                onClick={() => setShowFolderPicker((v) => !v)}
+                className="flex items-center gap-1.5 text-sm text-right"
+                style={{ color: TORAH_COLOR }}
+              >
+                {folder} <ChevronDown size={13} />
+              </button>
+              {showFolderPicker && (
+                <div
+                  className="absolute top-7 right-0 z-20 rounded-xl p-2 flex flex-col gap-1 min-w-36"
+                  style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
+                >
+                  {DEFAULT_FOLDERS.map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => { setFolder(f); setShowFolderPicker(false) }}
+                      className="text-sm text-right px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                      style={{ color: folder === f ? TORAH_COLOR : 'var(--c-text-2)' }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Field>
+
+          <Field label={t('summaryTags')}>
+            <input
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="ברכות, תפילה, שחרית"
+              className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none text-right py-1"
+              dir="rtl"
+            />
+          </Field>
+
+          <div>
+            <p className="text-xs text-white/40 text-right mb-2">{t('summaryContent')}</p>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="כתוב כאן את הסיכום שלך..."
+              rows={8}
+              className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none text-right resize-none leading-relaxed"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={updateSummary}
+          disabled={!title.trim() || !content.trim() || saving}
+          className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-30"
+          style={{ background: TORAH_COLOR, color: '#fff' }}
+        >
+          {t('save')}
+        </button>
       </div>
     )
   }

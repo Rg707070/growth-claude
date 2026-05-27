@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
 import { DOMAINS } from '@/lib/domains'
-import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react'
+import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check, CalendarDays } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
+import { useLang } from '@/lib/lang'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -486,7 +487,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
-        style={{ maxHeight: 'calc(100dvh - 260px)' }}
+        style={{ maxHeight: 'calc(100dvh - 340px)' }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -580,6 +581,7 @@ export function SchedulePageClient({
   userId, userItems, allItems, todayChecks, scheduledHabits, todayCompletedHabitIds,
 }: Props) {
   const { isDark }  = useTheme()
+  const { isRTL }   = useLang()
   const todayDay  = new Date().getDay()
   const todayDate = new Date().toISOString().split('T')[0]
   const [tab,      setTab]      = useState<TabId>('schedule')
@@ -678,11 +680,29 @@ export function SchedulePageClient({
   )
 
   return (
-    <div className="pt-2 pb-32 md:pb-8">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
+
+      {/* ── Module header ──────────────────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4 flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-2xl flex items-center justify-center"
+          style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+        >
+          <CalendarDays size={20} />
+        </div>
+        <div>
+          <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? 'לוח שנה' : 'Schedule'}
+          </h1>
+          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'תכנן את השבוע שלך' : 'Plan your week'}
+          </p>
+        </div>
+      </div>
 
       {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
-      <div className="md:hidden flex flex-col" style={{ height: 'calc(100dvh - 100px)' }}>
-        <div className="flex-shrink-0 px-4 pt-2 pb-3">{tabBar}</div>
+      <div className="md:hidden flex flex-col" style={{ height: 'calc(100dvh - 180px)' }}>
+        <div className="flex-shrink-0 px-4 pb-3">{tabBar}</div>
         <div className="flex-1 overflow-hidden">
           {tab === 'calendar' && (
             <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
@@ -696,10 +716,7 @@ export function SchedulePageClient({
       </div>
 
       {/* ── DESKTOP ─────────────────────────────────────────────────────────── */}
-      <div className="hidden md:block px-4">
-        <div className="mb-5" dir="rtl">
-          <h1 className="text-2xl font-black" style={{ color: 'var(--foreground)' }}>לוח שנה</h1>
-        </div>
+      <div className="hidden md:block max-w-2xl mx-auto px-4">
         <div className="mb-5 w-fit">{tabBar}</div>
         {tab === 'calendar' && (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
