@@ -4,12 +4,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useTheme } from '@/lib/theme'
-import { Button } from '@/components/ui/button'
 import { Moon, Sun } from 'lucide-react'
 
 export default function SettingsPage() {
   const { t, lang, toggleLang, isRTL } = useLang()
-  const { theme, toggleTheme, isDark } = useTheme()
+  const { theme, toggleTheme } = useTheme()
   const router = useRouter()
 
   const handleLogout = async () => {

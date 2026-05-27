@@ -146,7 +146,7 @@ function LessonCard({
       >
         <div className="flex items-center gap-1 text-white/30">
           <Clock size={12} />
-          <span className="text-xs">{lesson.duration_minutes} דק'</span>
+          <span className="text-xs">{lesson.duration_minutes} דק&apos;</span>
         </div>
         <div className="flex items-center gap-1 text-white/30">
           <User size={12} />

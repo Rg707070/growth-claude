@@ -33,7 +33,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-background">
       <Sidebar profile={profile} />
       <DashboardMain>{children}</DashboardMain>
-      <BottomNav profile={profile} />
+      <BottomNav />
       <FAB />
       <NightCheckIn />
     </div>

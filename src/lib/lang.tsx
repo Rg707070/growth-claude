@@ -225,6 +225,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('growth-lang') as Language | null
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is SSR-unsafe, must sync post-mount
     if (saved === 'en' || saved === 'he') setLang(saved)
   }, [])
 

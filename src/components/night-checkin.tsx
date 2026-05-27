@@ -29,6 +29,7 @@ export function NightCheckIn() {
     const key = `night_checkin_${today}`
     if (localStorage.getItem(key)) return
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs SSR-unsafe state (time + localStorage) into render
     setVisible(true)
   }, [])
 
