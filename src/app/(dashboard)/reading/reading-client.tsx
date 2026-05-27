@@ -30,6 +30,19 @@ const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July
 const DAYS_HE = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']
 const DAYS_EN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
+function calcChaptersPerDay(book: ReadingBook): number {
+  if (!book.total_chapters || !book.target_date) return 0
+  const chaptersLeft = book.total_chapters - book.current_chapter
+  if (chaptersLeft <= 0) return 0
+  const today = new Date()
+  const target = new Date(book.target_date + 'T12:00:00')
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const startOfTarget = new Date(target.getFullYear(), target.getMonth(), target.getDate())
+  const daysLeft = Math.ceil((startOfTarget.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  if (daysLeft <= 0) return chaptersLeft
+  return Math.ceil(chaptersLeft / daysLeft)
+}
+
 function calcPagesPerDay(book: ReadingBook): number {
   if (!book.total_pages || !book.target_date) return 0
   const pagesLeft = book.total_pages - book.current_page
@@ -80,6 +93,210 @@ function booksForDay(
       return date >= todayStart && date <= targetStart
     })
     .map((b) => ({ book: b, pages: calcPagesPerDay(b) }))
+}
+
+// ─── Daily Tasks Board ───────────────────────────────────────────────────────
+
+interface DailyBoardRowProps {
+  book: ReadingBook
+  isRTL: boolean
+  onUpdated: () => void
+}
+
+function DailyBoardRow({ book, isRTL, onUpdated }: DailyBoardRowProps) {
+  const [logPages, setLogPages] = useState('')
+  const [logChaps, setLogChaps] = useState('')
+  const [mode, setMode] = useState<'idle' | 'pages' | 'chapters'>('idle')
+  const [logging, setLogging] = useState(false)
+
+  const pagesPerDay = calcPagesPerDay(book)
+  const chaptersPerDay = calcChaptersPerDay(book)
+  const hasPages = book.total_pages !== null && book.total_pages > 0
+  const hasChapters = book.total_chapters !== null && book.total_chapters > 0
+
+  const logP = async () => {
+    const n = parseInt(logPages)
+    if (isNaN(n) || n <= 0 || !hasPages) return
+    setLogging(true)
+    const supabase = createClient()
+    const newPage = Math.min(book.total_pages!, book.current_page + n)
+    await supabase.from('reading_books').update({ current_page: newPage }).eq('id', book.id)
+    setLogging(false)
+    setMode('idle')
+    setLogPages('')
+    onUpdated()
+  }
+
+  const logC = async () => {
+    const n = parseInt(logChaps)
+    if (isNaN(n) || n <= 0 || !hasChapters) return
+    setLogging(true)
+    const supabase = createClient()
+    const newChap = Math.min(book.total_chapters!, book.current_chapter + n)
+    await supabase.from('reading_books').update({ current_chapter: newChap }).eq('id', book.id)
+    setLogging(false)
+    setMode('idle')
+    setLogChaps('')
+    onUpdated()
+  }
+
+  return (
+    <div
+      className="flex items-center gap-2 py-2.5 px-3 rounded-xl"
+      style={{ background: `${book.color}10`, border: `1px solid ${book.color}25` }}
+    >
+      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: book.color }} />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium truncate block" style={{ color: 'var(--foreground)' }}>
+          {book.title}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {pagesPerDay > 0 && (
+          <span
+            className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ background: `${book.color}22`, color: book.color }}
+          >
+            {pagesPerDay}{isRTL ? "ע'" : 'p'}
+          </span>
+        )}
+        {chaptersPerDay > 0 && (
+          <span
+            className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ background: `${book.color}22`, color: book.color }}
+          >
+            {chaptersPerDay}{isRTL ? "פ'" : 'ch'}
+          </span>
+        )}
+      </div>
+
+      {mode === 'idle' ? (
+        <div className="flex gap-1 shrink-0">
+          {hasPages && pagesPerDay > 0 && (
+            <button
+              onClick={() => setMode('pages')}
+              className="text-xs px-2 py-1 rounded-lg font-medium"
+              style={{ background: `${book.color}25`, color: book.color }}
+            >
+              {isRTL ? '+ע' : '+p'}
+            </button>
+          )}
+          {hasChapters && chaptersPerDay > 0 && (
+            <button
+              onClick={() => setMode('chapters')}
+              className="text-xs px-2 py-1 rounded-lg font-medium"
+              style={{ background: `${book.color}25`, color: book.color }}
+            >
+              {isRTL ? '+פ' : '+ch'}
+            </button>
+          )}
+        </div>
+      ) : mode === 'pages' ? (
+        <div className="flex gap-1 shrink-0">
+          <input
+            autoFocus
+            type="number"
+            min="1"
+            value={logPages}
+            onChange={(e) => setLogPages(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && logP()}
+            placeholder={String(pagesPerDay)}
+            className="w-14 rounded-lg px-2 py-1 text-xs focus:outline-none"
+            style={{
+              background: 'var(--c-input)',
+              border: '1px solid var(--c-input-border)',
+              color: 'var(--foreground)',
+            }}
+          />
+          <button
+            onClick={logP}
+            disabled={logging}
+            className="text-xs px-2 py-1 rounded-lg text-white font-medium disabled:opacity-50"
+            style={{ background: book.color }}
+          >
+            {logging ? '…' : '✓'}
+          </button>
+          <button
+            onClick={() => { setMode('idle'); setLogPages('') }}
+            className="text-xs px-1.5 py-1 rounded-lg"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-1 shrink-0">
+          <input
+            autoFocus
+            type="number"
+            min="1"
+            value={logChaps}
+            onChange={(e) => setLogChaps(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && logC()}
+            placeholder={String(chaptersPerDay)}
+            className="w-14 rounded-lg px-2 py-1 text-xs focus:outline-none"
+            style={{
+              background: 'var(--c-input)',
+              border: '1px solid var(--c-input-border)',
+              color: 'var(--foreground)',
+            }}
+          />
+          <button
+            onClick={logC}
+            disabled={logging}
+            className="text-xs px-2 py-1 rounded-lg text-white font-medium disabled:opacity-50"
+            style={{ background: book.color }}
+          >
+            {logging ? '…' : '✓'}
+          </button>
+          <button
+            onClick={() => { setMode('idle'); setLogChaps('') }}
+            className="text-xs px-1.5 py-1 rounded-lg"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface DailyTasksBoardProps {
+  books: ReadingBook[]
+  isRTL: boolean
+  onUpdated: () => void
+}
+
+function DailyTasksBoard({ books, isRTL, onUpdated }: DailyTasksBoardProps) {
+  const activeBooks = books.filter(
+    (b) => !b.completed && b.target_date && (calcPagesPerDay(b) > 0 || calcChaptersPerDay(b) > 0)
+  )
+
+  if (activeBooks.length === 0) return null
+
+  return (
+    <div
+      className="rounded-2xl p-4 space-y-2"
+      style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+          {isRTL ? 'משימות היום' : "Today's Tasks"}
+        </span>
+        <span
+          className="text-xs px-2 py-0.5 rounded-full font-bold"
+          style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+        >
+          {activeBooks.length}
+        </span>
+      </div>
+      {activeBooks.map((book) => (
+        <DailyBoardRow key={book.id} book={book} isRTL={isRTL} onUpdated={onUpdated} />
+      ))}
+    </div>
+  )
 }
 
 // ─── Add Book Form ───────────────────────────────────────────────────────────
@@ -947,6 +1164,11 @@ export function ReadingClient({ userId, initialBooks }: ReadingClientProps) {
             )
           })}
         </div>
+
+        {/* Daily tasks board */}
+        {activeTab === 'want_to_read' && (
+          <DailyTasksBoard books={wantToReadBooks} isRTL={isRTL} onUpdated={refresh} />
+        )}
 
         {/* Book list */}
         {displayBooks.length === 0 ? (
