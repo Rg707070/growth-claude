@@ -15,8 +15,6 @@ interface Props {
   completedIds: string[]
   sessions: LearningSession[]
   summaries: LearningSummary[]
-  todaySeconds: number
-  todaySessionCount: number
   dailyTracks: DailyTrack[]
 }
 
@@ -30,8 +28,6 @@ export function TorahWorkspaceClient({
   completedIds,
   sessions,
   summaries,
-  todaySeconds,
-  todaySessionCount,
   dailyTracks,
 }: Props) {
   const router = useRouter()
@@ -39,13 +35,9 @@ export function TorahWorkspaceClient({
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [localSummaries, setLocalSummaries] = useState<LearningSummary[]>(summaries)
   const [localSessions, setLocalSessions] = useState<LearningSession[]>(sessions)
-  const [localTodaySeconds, setLocalTodaySeconds] = useState(todaySeconds)
-  const [localTodayCount, setLocalTodayCount] = useState(todaySessionCount)
 
-  function onSessionSaved(session: LearningSession, addedSeconds: number) {
+  function onSessionSaved(session: LearningSession) {
     setLocalSessions((prev) => [session, ...prev.slice(0, 9)])
-    setLocalTodaySeconds((prev) => prev + addedSeconds)
-    setLocalTodayCount((prev) => prev + 1)
   }
 
   function onSummaryCreated(summary: LearningSummary) {
@@ -125,8 +117,6 @@ export function TorahWorkspaceClient({
             userId={userId}
             recentSessions={localSessions.slice(0, 3)}
             recentSummaries={localSummaries.slice(0, 2)}
-            todaySeconds={localTodaySeconds}
-            todaySessionCount={localTodayCount}
             onNavigate={setActiveTab}
           />
         )}

@@ -56,7 +56,7 @@ interface Props {
   userId: string
   recentSessions: LearningSession[]
   initialTracks: DailyTrack[]
-  onSessionSaved: (session: LearningSession, addedSeconds: number) => void
+  onSessionSaved: (session: LearningSession) => void
   onSessionDeleted: (id: string) => void
 }
 
@@ -121,7 +121,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
       .from('learning_sessions')
       .update({ ended_at: new Date().toISOString(), duration_seconds: elapsed })
       .eq('id', activeSession.id).select().single()
-    if (data) onSessionSaved(data as LearningSession, elapsed)
+    if (data) onSessionSaved(data as LearningSession)
     setActiveSession(null); setElapsed(0); setTextTitle(''); setNotes([]); setSaving(false)
   }
 

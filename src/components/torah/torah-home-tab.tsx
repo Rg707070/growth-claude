@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Clock, Flame, ChevronLeft, CheckCircle2, Circle, Plus } from 'lucide-react'
+import { BookOpen, Flame, ChevronLeft, CheckCircle2, Circle, Plus } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
 import type { Habit, LearningSession, LearningSummary } from '@/types'
@@ -16,13 +16,7 @@ interface Props {
   userId: string
   recentSessions: LearningSession[]
   recentSummaries: LearningSummary[]
-  todaySeconds: number
-  todaySessionCount: number
   onNavigate: (tab: 'home' | 'learn' | 'summaries') => void
-}
-
-function formatMinutes(seconds: number) {
-  return Math.round(seconds / 60)
 }
 
 function timeAgo(iso: string) {
@@ -40,8 +34,6 @@ export function TorahHomeTab({
   userId,
   recentSessions,
   recentSummaries,
-  todaySeconds,
-  todaySessionCount,
   onNavigate,
 }: Props) {
   const { t } = useLang()
@@ -64,17 +56,10 @@ export function TorahHomeTab({
 
   const lastSession = recentSessions[0]
   const doneCount = habits.filter((h) => completed.has(h.id)).length
-  const todayMinutes = formatMinutes(todaySeconds)
   const allDone = habits.length > 0 && doneCount === habits.length
 
   return (
     <div className="space-y-6">
-
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={<Clock size={16} />} label={t('minutesToday')} value={String(todayMinutes)} />
-        <StatCard icon={<BookOpen size={16} />} label={t('sessionsToday')} value={String(todaySessionCount)} />
-      </div>
 
       {/* Continue / Start CTA */}
       {lastSession ? (
@@ -196,18 +181,6 @@ export function TorahHomeTab({
           </div>
         </section>
       )}
-    </div>
-  )
-}
-
-function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center gap-1.5 mb-3" style={{ color: 'var(--muted-foreground)' }}>
-        {icon}
-        <span className="text-xs font-medium">{label}</span>
-      </div>
-      <p className="text-3xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{value}</p>
     </div>
   )
 }

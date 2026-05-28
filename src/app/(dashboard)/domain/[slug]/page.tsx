@@ -45,8 +45,6 @@ export default async function DomainPage({ params }: Props) {
     const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
     const sessions = (sessionsRes.data as LearningSession[]) ?? []
     const summaries = (summariesRes.data as LearningSummary[]) ?? []
-    const todaySessions = sessions.filter((s) => s.created_at.startsWith(today))
-    const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration_seconds, 0)
     const dailyTracks = (tracksRes.data as DailyTrack[]) ?? []
 
     return (
@@ -56,8 +54,6 @@ export default async function DomainPage({ params }: Props) {
         completedIds={completedIds}
         sessions={sessions}
         summaries={summaries}
-        todaySeconds={todaySeconds}
-        todaySessionCount={todaySessions.length}
         dailyTracks={dailyTracks}
       />
     )
