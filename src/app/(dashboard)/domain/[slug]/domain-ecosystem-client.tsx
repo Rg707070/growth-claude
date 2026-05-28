@@ -11,6 +11,7 @@ import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
 import { HabitRow } from '@/components/habit-row'
 import { ProgressRing } from '@/components/progress-ring'
+import { DomainJournal } from '@/components/domain-journal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -168,6 +169,10 @@ export function DomainEcosystemClient({
             isRTL={isRTL}
           />
         )}
+
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+          <DomainJournal domainSlug={domain.slug} userId={userId} />
+        </div>
 
       </div>
     </div>
