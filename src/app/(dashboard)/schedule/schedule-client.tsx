@@ -95,6 +95,24 @@ interface ScheduledHabit {
   schedule_time: string
 }
 
+interface HabitFull {
+  id: string
+  name: string
+  domain_slug: string
+  frequency: 'daily' | 'weekly'
+  schedule_time: string | null
+}
+
+interface HabitLogEntry {
+  habit_id: string
+  completed_at: string
+}
+
+interface ActivityCheckEntry {
+  date: string
+  time: string
+}
+
 interface Props {
   userId: string
   userItems: Record<number, ScheduleItem[]>
@@ -102,6 +120,9 @@ interface Props {
   todayChecks: CheckRow[]
   scheduledHabits: ScheduledHabit[]
   todayCompletedHabitIds: string[]
+  allHabits: HabitFull[]
+  weekHabitLogs: HabitLogEntry[]
+  weekActivityChecks: ActivityCheckEntry[]
 }
 
 // ─── ScopeModal ───────────────────────────────────────────────────────────────
@@ -373,6 +394,425 @@ function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
   )
 }
 
+// ─── CalendarView ─────────────────────────────────────────────────────────────
+function CalendarView({
+  userItems,
+  allHabits,
+  weekHabitLogs,
+  weekActivityChecks,
+  completedHabitIds,
+  checked,
+  onToggleHabit,
+  isRTL,
+}: {
+  userItems: Record<number, ScheduleItem[]>
+  allHabits: HabitFull[]
+  weekHabitLogs: HabitLogEntry[]
+  weekActivityChecks: ActivityCheckEntry[]
+  completedHabitIds: Set<string>
+  checked: Set<string>
+  onToggleHabit: (habitId: string) => Promise<void>
+  isRTL: boolean
+}) {
+  const { isDark } = useTheme()
+  const todayDow   = new Date().getDay()
+  const todayDate  = new Date().toISOString().split('T')[0]
+
+  const [selectedDow,   setSelectedDow]   = useState<number>(todayDow < 6 ? todayDow : 0)
+  const [domainFilter,  setDomainFilter]  = useState<string | null>(null)
+  const [contentFilter, setContentFilter] = useState<'all' | 'habits' | 'activities'>('all')
+  const [freqFilter,    setFreqFilter]    = useState<'all' | 'daily' | 'weekly'>('all')
+
+  const dailyHabits = allHabits.filter(h => h.frequency === 'daily')
+
+  // Build per-day data for the entire displayed week
+  const weekData = DAYS.map(dow => {
+    const date      = getWeekDate(dow)
+    const isFuture  = date > todayDate
+    const activities = userItems[dow] ?? []
+
+    const completedHabitSet = dow === todayDow
+      ? new Set([...completedHabitIds])
+      : new Set(weekHabitLogs.filter(l => l.completed_at === date).map(l => l.habit_id))
+
+    const checkedActivityTimes = dow === todayDow
+      ? new Set([...checked])
+      : new Set(weekActivityChecks.filter(c => c.date === date).map(c => c.time))
+
+    const dateObj = new Date(date + 'T12:00:00')
+    const habitDone    = dailyHabits.filter(h => completedHabitSet.has(h.id)).length
+    const habitTotal   = dailyHabits.length
+    const activityDone = activities.filter(a => checkedActivityTimes.has(a.time)).length
+    const activeDomains = [...new Set(dailyHabits.map(h => h.domain_slug))]
+
+    return {
+      dow, date, isFuture,
+      dateNum: dateObj.getDate(),
+      activities,
+      completedHabitSet,
+      checkedActivityTimes,
+      habitDone, habitTotal,
+      activityDone,
+      activityTotal: activities.length,
+      activeDomains,
+    }
+  })
+
+  // Week-level aggregates (past days + today only)
+  const pastAndToday   = weekData.filter(d => !d.isFuture || d.dow === todayDow)
+  const weekHabitDone  = pastAndToday.reduce((s, d) => s + d.habitDone, 0)
+  const weekHabitTotal = pastAndToday.reduce((s, d) => s + d.habitTotal, 0)
+  const weekActDone    = pastAndToday.reduce((s, d) => s + d.activityDone, 0)
+  const weekActTotal   = pastAndToday.reduce((s, d) => s + d.activityTotal, 0)
+
+  const sel         = weekData.find(d => d.dow === selectedDow)!
+  const isSelToday  = selectedDow === todayDow
+
+  // Filtered items for detail panel
+  const filteredHabits = contentFilter === 'activities' ? [] : dailyHabits.filter(h => {
+    if (domainFilter && h.domain_slug !== domainFilter) return false
+    if (freqFilter !== 'all' && h.frequency !== freqFilter) return false
+    return true
+  })
+  const filteredActivities = contentFilter === 'habits'
+    ? []
+    : sel.activities.slice().sort((a, b) => toMin(a.time) - toMin(b.time))
+
+  const hasContent = filteredActivities.length > 0 || filteredHabits.length > 0
+
+  return (
+    <div className="flex flex-col gap-4 pb-4" dir="rtl">
+
+      {/* Weekly stats */}
+      <div className="mx-4 rounded-2xl p-4"
+        style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+        <p className="text-[10px] font-bold mb-3" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'סיכום שבועי' : 'Weekly Summary'}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[11px] font-semibold" style={{ color: w(0.5, isDark) }}>
+                {isRTL ? 'הרגלים' : 'Habits'}
+              </span>
+              <span className="text-[11px] font-bold" style={{ color: w(0.7, isDark) }}>
+                {weekHabitDone}/{weekHabitTotal}
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: w(0.07, isDark) }}>
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${weekHabitTotal > 0 ? (weekHabitDone / weekHabitTotal) * 100 : 0}%`, background: 'rgb(52,211,153)' }} />
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[11px] font-semibold" style={{ color: w(0.5, isDark) }}>
+                {isRTL ? 'פעילויות' : 'Activities'}
+              </span>
+              <span className="text-[11px] font-bold" style={{ color: w(0.7, isDark) }}>
+                {weekActDone}/{weekActTotal}
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: w(0.07, isDark) }}>
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${weekActTotal > 0 ? (weekActDone / weekActTotal) * 100 : 0}%`, background: 'rgb(103,232,249)' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Domain breakdown row */}
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+          {DOMAINS.map(d => {
+            const dHabits = dailyHabits.filter(h => h.domain_slug === d.slug)
+            if (dHabits.length === 0) return null
+            const done  = pastAndToday.reduce((s, day) => s + dHabits.filter(h => day.completedHabitSet.has(h.id)).length, 0)
+            const total = dHabits.length * pastAndToday.length
+            const pct   = total > 0 ? Math.round((done / total) * 100) : 0
+            return (
+              <div key={d.slug} className="flex items-center gap-1">
+                <span className="text-[10px]">{d.icon}</span>
+                <span className="text-[10px] font-bold" style={{ color: d.color }}>{pct}%</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Domain filter chips */}
+      <div className="overflow-x-auto px-4" style={{ direction: 'rtl' }}>
+        <div className="flex gap-2 pb-1">
+          <button
+            onClick={() => setDomainFilter(null)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all"
+            style={{
+              background:  domainFilter === null ? 'rgba(34,211,238,0.15)' : w(0.05, isDark),
+              color:       domainFilter === null ? 'rgb(103,232,249)' : w(0.4, isDark),
+              border:      domainFilter === null ? '1px solid rgba(34,211,238,0.30)' : '1px solid transparent',
+            }}
+          >{isRTL ? 'הכל' : 'All'}</button>
+          {DOMAINS.map(d => {
+            const hasHabits = allHabits.some(h => h.domain_slug === d.slug)
+            if (!hasHabits) return null
+            const active = domainFilter === d.slug
+            return (
+              <button key={d.slug}
+                onClick={() => setDomainFilter(active ? null : d.slug)}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all"
+                style={{
+                  background:  active ? `${d.color}22` : w(0.05, isDark),
+                  color:       active ? d.color : w(0.4, isDark),
+                  border:      active ? `1px solid ${d.color}55` : '1px solid transparent',
+                }}
+              >
+                <span>{d.icon}</span>
+                <span>{isRTL ? d.nameHe : d.nameEn}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Content-type + frequency filters */}
+      <div className="px-4 flex items-center gap-2 flex-wrap">
+        <div className="flex rounded-xl overflow-hidden" style={{ border: `1px solid ${w(0.08, isDark)}` }}>
+          {([
+            { v: 'all'        as const, l: isRTL ? 'הכל'    : 'All'      },
+            { v: 'habits'     as const, l: isRTL ? 'הרגלים' : 'Habits'   },
+            { v: 'activities' as const, l: isRTL ? 'לוז'     : 'Schedule' },
+          ]).map(({ v, l }) => (
+            <button key={v} onClick={() => setContentFilter(v)}
+              className="px-3 py-1.5 text-[11px] font-bold transition-all"
+              style={{
+                background: contentFilter === v ? w(0.10, isDark) : 'transparent',
+                color:      contentFilter === v ? w(0.85, isDark) : w(0.35, isDark),
+              }}
+            >{l}</button>
+          ))}
+        </div>
+        <div className="flex rounded-xl overflow-hidden" style={{ border: `1px solid ${w(0.08, isDark)}` }}>
+          {([
+            { v: 'all'    as const, l: isRTL ? 'כל עדיפות' : 'All'    },
+            { v: 'daily'  as const, l: isRTL ? 'יומי'      : 'Daily'  },
+            { v: 'weekly' as const, l: isRTL ? 'שבועי'     : 'Weekly' },
+          ]).map(({ v, l }) => (
+            <button key={v} onClick={() => setFreqFilter(v)}
+              className="px-3 py-1.5 text-[11px] font-bold transition-all"
+              style={{
+                background: freqFilter === v ? 'rgba(245,158,11,0.15)' : 'transparent',
+                color:      freqFilter === v ? 'rgb(251,191,36)'       : w(0.35, isDark),
+              }}
+            >{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Weekly mini-calendar grid */}
+      <div className="px-4">
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+          {weekData.map(day => {
+            const isSel    = day.dow === selectedDow
+            const isTd     = day.dow === todayDow
+            const compRate = day.habitTotal > 0 && !day.isFuture ? day.habitDone / day.habitTotal : 0
+            const compColor = compRate >= 1 ? 'rgb(52,211,153)' : compRate > 0 ? 'rgb(103,232,249)' : w(0.12, isDark)
+
+            return (
+              <button key={day.dow} onClick={() => setSelectedDow(day.dow)}
+                className="flex flex-col items-center rounded-2xl py-2 px-1 gap-1 transition-all"
+                style={{
+                  background: isSel ? (isTd ? 'rgba(34,211,238,0.14)' : w(0.07, isDark)) : isTd ? w(0.04, isDark) : 'transparent',
+                  border:     isSel ? (isTd ? '1px solid rgba(34,211,238,0.30)' : `1px solid ${w(0.14, isDark)}`) : '1px solid transparent',
+                }}
+              >
+                <span className="text-[9px] font-bold leading-none"
+                  style={{ color: isTd ? 'rgb(103,232,249)' : w(0.38, isDark) }}>
+                  {DAY_NAMES_HE[day.dow]}
+                </span>
+                <span className="text-[15px] font-bold leading-none"
+                  style={{ color: isTd ? 'rgb(103,232,249)' : isSel ? w(0.85, isDark) : w(0.55, isDark) }}>
+                  {day.dateNum}
+                </span>
+                {day.habitTotal > 0 && (
+                  <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: w(0.07, isDark) }}>
+                    <div className="h-full rounded-full"
+                      style={{ width: `${compRate * 100}%`, background: !day.isFuture ? compColor : 'transparent' }} />
+                  </div>
+                )}
+                {!day.isFuture && (
+                  <div className="flex gap-0.5 flex-wrap justify-center min-h-[8px]">
+                    {day.activeDomains.slice(0, 4).map(slug => {
+                      const d = DOMAINS.find(x => x.slug === slug)
+                      if (!d) return null
+                      const allDone = dailyHabits.filter(h => h.domain_slug === slug)
+                        .every(h => day.completedHabitSet.has(h.id))
+                      return (
+                        <div key={slug} className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: allDone ? d.color : `${d.color}50` }} />
+                      )
+                    })}
+                  </div>
+                )}
+                {day.activityTotal > 0 && (
+                  <span className="text-[8px]" style={{ color: w(0.22, isDark) }}>{day.activityTotal}◆</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Selected day detail panel */}
+      <div className="mx-4 rounded-2xl overflow-hidden"
+        style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+
+        {/* Day header */}
+        <div className="px-4 py-3 flex items-center justify-between"
+          style={{ borderBottom: '1px solid var(--c-border)' }}>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm"
+              style={{ color: isSelToday ? 'rgb(103,232,249)' : 'var(--foreground)' }}>
+              {DAY_NAMES_HE[sel.dow]}&nbsp;{sel.dateNum}/{new Date(sel.date + 'T12:00:00').getMonth() + 1}
+            </span>
+            {isSelToday && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}>
+                {isRTL ? 'היום' : 'Today'}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px]" style={{ color: w(0.35, isDark) }}>
+              {sel.habitDone}/{sel.habitTotal} {isRTL ? 'הרגלים' : 'habits'}
+            </span>
+            {sel.activityTotal > 0 && (
+              <span className="text-[11px]" style={{ color: w(0.25, isDark) }}>
+                · {sel.activityDone}/{sel.activityTotal} {isRTL ? 'פעילויות' : 'acts'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Activities section */}
+        {filteredActivities.length > 0 && (
+          <div className="p-3">
+            <p className="text-[10px] font-bold mb-2 px-1" style={{ color: w(0.28, isDark) }}>
+              {isRTL ? 'פעילויות' : 'Scheduled Activities'}
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {filteredActivities.map(item => {
+                const clr    = activityColor(item)
+                const isDone = sel.checkedActivityTimes.has(item.time)
+                return (
+                  <div key={item.id}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                    style={{
+                      background: isDone ? 'rgba(52,211,153,0.06)' : hexBg(clr),
+                      border:     `1px solid ${isDone ? 'rgba(52,211,153,0.22)' : hexBorder(clr)}`,
+                      opacity:    isDone ? 0.65 : 1,
+                    }}
+                  >
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: clr }} />
+                    <span className="text-[10px] font-mono" style={{ color: w(0.28, isDark) }}>{item.time}</span>
+                    <span className="flex-1 text-sm font-semibold truncate"
+                      style={{ color: isDone ? w(0.35, isDark) : clr, textDecoration: isDone ? 'line-through' : 'none' }}>
+                      {item.label}
+                    </span>
+                    {isDone && <Check size={12} className="text-emerald-400 flex-shrink-0" />}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Divider between sections when both visible */}
+        {filteredActivities.length > 0 && filteredHabits.length > 0 && (
+          <div style={{ height: 1, background: 'var(--c-border)', margin: '0 12px' }} />
+        )}
+
+        {/* Habits section */}
+        {filteredHabits.length > 0 && (
+          <div className="p-3">
+            <p className="text-[10px] font-bold mb-2 px-1" style={{ color: w(0.28, isDark) }}>
+              {isRTL ? 'הרגלים' : 'Habits'}
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {filteredHabits.map(habit => {
+                const d      = DOMAINS.find(x => x.slug === habit.domain_slug)
+                const clr    = d?.color ?? '#6366F1'
+                const isDone = isSelToday
+                  ? completedHabitIds.has(habit.id)
+                  : sel.completedHabitSet.has(habit.id)
+                return (
+                  <div key={habit.id}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"
+                    style={{
+                      background: isDone ? 'rgba(52,211,153,0.06)' : `${clr}15`,
+                      border:     `1px solid ${isDone ? 'rgba(52,211,153,0.22)' : `${clr}38`}`,
+                      opacity:    isDone ? 0.65 : 1,
+                    }}
+                  >
+                    <span className="text-sm flex-shrink-0">{d?.icon ?? '✦'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate"
+                        style={{ color: isDone ? w(0.35, isDark) : clr, textDecoration: isDone ? 'line-through' : 'none' }}>
+                        {habit.name}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        {habit.schedule_time && (
+                          <span className="text-[10px] font-mono" style={{ color: w(0.25, isDark) }}>
+                            {habit.schedule_time.slice(0, 5)}
+                          </span>
+                        )}
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full"
+                          style={{ background: `${clr}20`, color: clr }}>
+                          {habit.frequency === 'daily' ? (isRTL ? 'יומי' : 'daily') : (isRTL ? 'שבועי' : 'weekly')}
+                        </span>
+                      </div>
+                    </div>
+                    {isSelToday ? (
+                      <button
+                        onClick={() => onToggleHabit(habit.id)}
+                        className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                        style={{
+                          background:  isDone ? 'rgba(52,211,153,0.20)' : 'transparent',
+                          borderColor: isDone ? 'rgba(52,211,153,0.60)' : `${clr}60`,
+                        }}
+                      >
+                        {isDone && <Check size={10} className="text-emerald-400" />}
+                      </button>
+                    ) : (
+                      isDone && <Check size={14} className="text-emerald-400 flex-shrink-0" />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!hasContent && (
+          <div className="p-10 flex flex-col items-center gap-2">
+            <span style={{ fontSize: 32 }}>📋</span>
+            <p className="text-sm font-semibold" style={{ color: w(0.28, isDark) }}>
+              {isRTL ? 'אין פריטים ליום זה' : 'No items for this day'}
+            </p>
+            {(domainFilter || contentFilter !== 'all') && (
+              <button
+                onClick={() => { setDomainFilter(null); setContentFilter('all'); setFreqFilter('all') }}
+                className="text-[11px] font-semibold"
+                style={{ color: 'rgb(103,232,249)' }}
+              >
+                {isRTL ? 'אפס סינונים' : 'Clear filters'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── ScheduleTable ────────────────────────────────────────────────────────────
 function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, checked, onSelectDay, onEdit, onAdd, onToggle, onToggleHabit }: {
   items: ScheduleItem[]
@@ -579,6 +1019,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export function SchedulePageClient({
   userId, userItems, allItems, todayChecks, scheduledHabits, todayCompletedHabitIds,
+  allHabits, weekHabitLogs, weekActivityChecks,
 }: Props) {
   const { isDark }  = useTheme()
   const { isRTL }   = useLang()
@@ -703,13 +1144,18 @@ export function SchedulePageClient({
       {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100dvh - 180px)' }}>
         <div className="flex-shrink-0 px-4 pb-3">{tabBar}</div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           {tab === 'calendar' && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-              <span style={{ fontSize: 52 }}>📅</span>
-              <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה</p>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.28)' }}>תצוגת לוח שנה חודשי — בפיתוח</p>
-            </div>
+            <CalendarView
+              userItems={userItems}
+              allHabits={allHabits}
+              weekHabitLogs={weekHabitLogs}
+              weekActivityChecks={weekActivityChecks}
+              completedHabitIds={completedHabitIds}
+              checked={checked}
+              onToggleHabit={toggleHabit}
+              isRTL={isRTL}
+            />
           )}
           {tab === 'schedule' && tableView}
         </div>
@@ -719,10 +1165,16 @@ export function SchedulePageClient({
       <div className="hidden md:block max-w-2xl mx-auto px-4">
         <div className="mb-5 w-fit">{tabBar}</div>
         {tab === 'calendar' && (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <span style={{ fontSize: 52 }}>📅</span>
-            <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה — בפיתוח</p>
-          </div>
+          <CalendarView
+            userItems={userItems}
+            allHabits={allHabits}
+            weekHabitLogs={weekHabitLogs}
+            weekActivityChecks={weekActivityChecks}
+            completedHabitIds={completedHabitIds}
+            checked={checked}
+            onToggleHabit={toggleHabit}
+            isRTL={isRTL}
+          />
         )}
         {tab === 'schedule' && tableView}
       </div>
