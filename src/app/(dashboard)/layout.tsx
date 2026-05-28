@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { BottomNav } from '@/components/bottom-nav'
-import { FAB } from '@/components/fab'
 import { NightCheckIn } from '@/components/night-checkin'
 import { DashboardMain } from '@/components/dashboard-main'
 import { Sidebar } from '@/components/sidebar'
@@ -34,7 +33,6 @@ export default async function DashboardLayout({
       <Sidebar profile={profile} />
       <DashboardMain>{children}</DashboardMain>
       <BottomNav />
-      <FAB />
       <NightCheckIn />
     </div>
   )

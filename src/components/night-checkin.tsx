@@ -22,12 +22,25 @@ export function NightCheckIn() {
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour < 21) return
+    const now = new Date()
+    const hour = now.getHours()
+    // Window: 20:00 through 01:59 (next morning)
+    const inWindow = hour >= 20 || hour < 2
+    if (!inWindow) return
 
-    const today = new Date().toISOString().split('T')[0]
-    const key = `night_checkin_${today}`
-    if (localStorage.getItem(key)) return
+    // Use yesterday's date as the key if it's past midnight, so we still capture the right night
+    const ref = new Date(now)
+    if (hour < 2) ref.setDate(ref.getDate() - 1)
+    const dateKey = ref.toISOString().split('T')[0]
+    const key = `night_checkin_${dateKey}`
+    const stored = localStorage.getItem(key)
+
+    if (stored === 'done' || stored === 'dismissed') return
+
+    if (stored?.startsWith('snooze:')) {
+      const until = Number(stored.split(':')[1])
+      if (Date.now() < until) return
+    }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs SSR-unsafe state (time + localStorage) into render
     setVisible(true)
@@ -36,6 +49,13 @@ export function NightCheckIn() {
   const dismiss = () => {
     const today = new Date().toISOString().split('T')[0]
     localStorage.setItem(`night_checkin_${today}`, 'dismissed')
+    setVisible(false)
+  }
+
+  const snooze = () => {
+    const today = new Date().toISOString().split('T')[0]
+    const until = Date.now() + 30 * 60 * 1000 // 30 minutes
+    localStorage.setItem(`night_checkin_${today}`, `snooze:${until}`)
     setVisible(false)
   }
 
@@ -136,17 +156,29 @@ export function NightCheckIn() {
               ))}
             </div>
 
-            <button
-              onClick={submit}
-              disabled={!allAnswered}
-              className="mt-5 w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-40 transition-all active:scale-[0.97] hover:shadow-lg"
-              style={{
-                background: 'var(--brand-gradient)',
-                boxShadow: '0 4px 14px var(--c-hero-shadow)',
-              }}
-            >
-              {isRTL ? 'שמור ✓' : 'Save ✓'}
-            </button>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                onClick={submit}
+                disabled={!allAnswered}
+                className="w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-40 transition-all active:scale-[0.97] hover:shadow-lg"
+                style={{
+                  background: 'var(--brand-gradient)',
+                  boxShadow: '0 4px 14px var(--c-hero-shadow)',
+                }}
+              >
+                {isRTL ? 'שמור ✓' : 'Save ✓'}
+              </button>
+              <button
+                onClick={snooze}
+                className="w-full py-2 rounded-xl text-xs font-medium transition-colors"
+                style={{
+                  background: 'transparent',
+                  color: 'var(--muted-foreground)',
+                }}
+              >
+                {isRTL ? 'תזכיר לי בעוד 30 דק׳' : 'Remind me in 30 min'}
+              </button>
+            </div>
           </>
         )}
       </div>

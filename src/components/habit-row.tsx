@@ -37,6 +37,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [celebrating, setCelebrating] = useState(false)
 
   const startX = useRef(0)
   const startY = useRef(0)
@@ -59,8 +60,13 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     if (loading) return
     setLoading(true)
     const prevDone = done
-    setDone(!done)
-    navigator.vibrate?.(50)
+    const nowDone = !done
+    setDone(nowDone)
+    navigator.vibrate?.(nowDone ? 12 : 6)
+    if (nowDone) {
+      setCelebrating(true)
+      setTimeout(() => setCelebrating(false), 460)
+    }
     try {
       const supabase = createClient()
       const today = new Date().toISOString().split('T')[0]
@@ -282,18 +288,23 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
 
   return (
     <div
-      className="rounded-2xl p-4 relative"
+      className={`rounded-2xl p-4 relative ${celebrating ? 'animate-habit-celebrate' : ''}`}
       style={{
         background: done
           ? 'linear-gradient(135deg, #10b98118, #10b98108)'
           : `linear-gradient(135deg, ${accentColor}18, ${accentColor}08)`,
         border: `1px solid ${done ? '#10b98135' : `${accentColor}35`}`,
+        transition: 'background 240ms ease, border-color 240ms ease',
       }}
     >
       {/* Left accent bar */}
       <div
-        className="absolute start-0 top-3 bottom-3 w-1 rounded-full"
-        style={{ background: done ? '#10b981' : accentColor }}
+        className={`absolute start-0 top-3 bottom-3 w-1 rounded-full ${celebrating ? 'animate-accent-pulse' : ''}`}
+        style={{
+          background: done ? '#10b981' : accentColor,
+          boxShadow: celebrating ? `0 0 12px ${done ? '#10b98166' : accentColor + '66'}` : undefined,
+          transition: 'background 200ms ease, box-shadow 200ms ease',
+        }}
       />
 
       {/* Tappable content area */}

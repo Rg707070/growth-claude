@@ -448,6 +448,32 @@ html.light .bg-background     { background: var(--background) !important; }
 }
 .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
 
+/* Habit completion: brief celebratory pulse on the row + accent stripe */
+@keyframes habit-celebrate {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+@keyframes accent-pulse {
+  0%   { transform: scaleY(1); opacity: 1; }
+  40%  { transform: scaleY(1.18); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+@keyframes streak-rise {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-habit-celebrate {
+  animation: habit-celebrate 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.animate-accent-pulse {
+  animation: accent-pulse 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
+.animate-streak-rise {
+  animation: streak-rise 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Confetti canvas */
 #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
 

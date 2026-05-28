@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
+export const runtime = 'edge'
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' })
 

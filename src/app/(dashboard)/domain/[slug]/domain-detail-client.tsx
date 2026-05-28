@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PomodoroTimer } from '@/components/pomodoro-timer'
 import { DomainJournal } from '@/components/domain-journal'
+import { EmptyState } from '@/components/ui/empty-state'
 import { DOMAIN_INTEGRATIONS } from '@/lib/domain-integrations'
 import type { Domain, Habit } from '@/types'
 
@@ -193,9 +194,15 @@ export function DomainDetailClient({
                 {t('habits')}
               </h2>
               {habits.length === 0 && !adding && (
-                <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  {t('noHabitsYet')}
-                </div>
+                <EmptyState
+                  emoji={domain.icon}
+                  title={t('noHabitsYet')}
+                  description={isRTL
+                    ? `התחל בהרגל קטן ל${domain.nameHe} — 2 דקות, מדי יום`
+                    : `Start a small habit for ${domain.nameEn} — 2 minutes, daily`}
+                  actionLabel={t('addHabit')}
+                  onAction={() => setAdding(true)}
+                />
               )}
               {habits.map((habit) => (
                 <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />

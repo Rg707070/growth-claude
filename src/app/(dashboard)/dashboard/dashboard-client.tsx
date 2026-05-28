@@ -10,7 +10,21 @@ import { TimeBackground } from '@/components/time-background'
 import { WaveAnimation } from '@/components/wave-animation'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { ProgressRing } from '@/components/progress-ring'
+import { EmptyState } from '@/components/ui/empty-state'
+import { FridaySummary } from '@/components/friday-summary'
+import { Sparkles } from 'lucide-react'
 import type { Profile, Habit, DomainProgress, DomainStats } from '@/types'
+
+function streakStyle(streak: number, domainColor: string) {
+  // <16 — muted gray (build-up); 16-49 — full domain color; 50+ — color + glow
+  if (streak < 16) {
+    return { color: 'var(--muted-foreground)', textShadow: 'none' }
+  }
+  if (streak < 50) {
+    return { color: domainColor, textShadow: 'none' }
+  }
+  return { color: domainColor, textShadow: `0 0 10px ${domainColor}88` }
+}
 
 interface DashboardClientProps {
   profile: Profile
@@ -66,6 +80,21 @@ export function DashboardClient({
   const failingDomains = domainsToShow.filter(
     (d) => (domainStatMap[d.domain.slug]?.failingDays ?? 0) >= 3
   )
+
+  // Top / weak domains for Friday review
+  const activeStats = domainsToShow
+    .map((dp) => ({
+      slug: dp.domain.slug,
+      streak: domainStatMap[dp.domain.slug]?.streak ?? 0,
+      failingDays: domainStatMap[dp.domain.slug]?.failingDays ?? 0,
+    }))
+  const topDomainSlug = activeStats.length
+    ? [...activeStats].sort((a, b) => b.streak - a.streak)[0]?.slug ?? null
+    : null
+  const weakDomainSlug = activeStats.length
+    ? [...activeStats].sort((a, b) => b.failingDays - a.failingDays)[0]?.slug ?? null
+    : null
+  const weekCompletions = weeklyActivity.reduce((sum, d) => sum + d.count, 0)
 
   const pendingHabits = todayHabits.filter((h) => !completedSet.has(h.id))
   const doneHabits = todayHabits.filter((h) => completedSet.has(h.id))
@@ -157,14 +186,22 @@ export function DashboardClient({
               </div>
             </div>
 
-            {/* NEEDS ATTENTION */}
+            {/* FRIDAY REVIEW (only renders on Friday) */}
+            <FridaySummary
+              habitsCompleted={weekCompletions}
+              topDomainSlug={topDomainSlug}
+              weakDomainSlug={weakDomainSlug}
+            />
+
+            {/* NEEDS ATTENTION — recovery loop */}
             {failingDomains.length > 0 && (
               <div>
                 <h2
                   className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5"
                   style={{ color: '#F97316' }}
                 >
-                  ⚠️ {isRTL ? 'טעונים תשומת לב' : 'Needs Attention'}
+                  <Sparkles size={13} strokeWidth={2} />
+                  {isRTL ? 'חזרה עדינה' : 'Gentle Comeback'}
                 </h2>
                 <div className="space-y-2">
                   {failingDomains.map((dp) => {
@@ -191,8 +228,8 @@ export function DashboardClient({
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: '#F97316' }}>
                             {isRTL
-                              ? `${stat?.failingDays} ימים ללא פעילות — שקול לשנות`
-                              : `${stat?.failingDays} days inactive — consider changing`}
+                              ? `${stat?.failingDays} ימים שקטים · התחל מהרגל אחד קטן`
+                              : `${stat?.failingDays} quiet days · start with one tiny habit`}
                           </p>
                         </div>
                         <span className="text-base" style={{ color: 'rgba(249,115,22,0.5)' }}>›</span>
@@ -248,10 +285,13 @@ export function DashboardClient({
                       <div className="mt-auto flex items-center justify-between w-full">
                         {isFailing ? (
                           <span className="text-[10px] font-semibold" style={{ color: '#F97316' }}>
-                            ⚠️ {stat.failingDays}
+                            ⚠ {stat.failingDays}
                           </span>
                         ) : stat.streak > 0 ? (
-                          <span className="text-[10px] font-semibold" style={{ color: '#FB923C' }}>
+                          <span
+                            className="text-[10px] font-semibold tabular-nums"
+                            style={streakStyle(stat.streak, dp.domain.color)}
+                          >
                             🔥 {stat.streak}
                           </span>
                         ) : (
@@ -307,9 +347,15 @@ export function DashboardClient({
               )}
 
               {todayHabits.length === 0 && (
-                <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  {t('noHabitsYet')}
-                </div>
+                <EmptyState
+                  emoji="🌱"
+                  title={t('noHabitsYet')}
+                  description={isRTL
+                    ? 'התחל מהרגל אחד של 2 דקות — קטן, יומיומי, אפשרי'
+                    : 'Start with one 2-minute habit — small, daily, possible'}
+                  actionLabel={t('addHabit')}
+                  onAction={() => router.push('/domains')}
+                />
               )}
             </div>
 
