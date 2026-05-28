@@ -94,11 +94,11 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
   if (view === 'create' || (view === 'edit' && selected)) {
     const isEdit = view === 'edit'
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div className="flex items-center justify-between">
           <button
             onClick={() => isEdit ? setView('view') : setView('list')}
-            className="text-xs transition-colors"
+            className="text-xs transition-opacity hover:opacity-70"
             style={{ color: 'var(--muted-foreground)' }}
           >
             {t('cancel')}
@@ -113,7 +113,7 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             <input
               value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="כותרת הסיכום"
-              className="w-full bg-transparent text-sm py-1 outline-none text-right"
+              className="w-full bg-transparent text-sm py-1 outline-none text-right font-medium"
               style={{ color: 'var(--foreground)' }}
               dir="rtl"
             />
@@ -133,18 +133,18 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             <div className="relative">
               <button
                 onClick={() => setShowFolderPicker((v) => !v)}
-                className="flex items-center gap-1.5 text-sm text-right"
+                className="flex items-center gap-1.5 text-sm text-right font-medium"
                 style={{ color: TORAH_COLOR }}
               >
                 {folder} <ChevronDown size={13} />
               </button>
               {showFolderPicker && (
                 <div className="absolute top-7 right-0 z-20 rounded-xl p-2 flex flex-col gap-1 min-w-36"
-                  style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
                   {DEFAULT_FOLDERS.map((f) => (
                     <button key={f} onClick={() => { setFolder(f); setShowFolderPicker(false) }}
-                      className="text-sm text-right px-3 py-1.5 rounded-lg transition-colors"
-                      style={{ color: folder === f ? TORAH_COLOR : 'var(--muted-foreground)' }}>
+                      className="text-sm text-right px-3 py-2 rounded-lg transition-colors"
+                      style={{ color: folder === f ? TORAH_COLOR : 'var(--muted-foreground)', background: folder === f ? `${TORAH_COLOR}10` : 'transparent' }}>
                       {f}
                     </button>
                   ))}
@@ -168,7 +168,7 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             <textarea
               value={content} onChange={(e) => setContent(e.target.value)}
               placeholder="כתוב כאן את הסיכום שלך..."
-              rows={8}
+              rows={9}
               className="w-full bg-transparent text-sm outline-none text-right resize-none leading-relaxed border-b"
               style={{ color: 'var(--foreground)', borderColor: 'var(--border)' }}
               dir="rtl"
@@ -179,8 +179,12 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
         <button
           onClick={isEdit ? updateSummary : createSummary}
           disabled={!title.trim() || !content.trim() || saving}
-          className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-30"
-          style={{ background: TORAH_COLOR, color: '#fff' }}
+          className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-30 active:scale-[0.99]"
+          style={{
+            background: TORAH_COLOR,
+            color: '#fff',
+            boxShadow: (title.trim() && content.trim()) ? `0 4px 16px ${TORAH_COLOR}40` : 'none',
+          }}
         >
           {t('save')}
         </button>
@@ -190,13 +194,15 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
 
   if (view === 'view' && selected) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            <button onClick={() => toggleFavorite(selected)} className="transition-opacity hover:opacity-70">
+            <button onClick={() => toggleFavorite(selected)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95"
+              style={{ background: 'var(--secondary)' }}>
               {selected.is_favorite
-                ? <Star size={18} style={{ color: GOLD }} fill={GOLD} />
-                : <StarOff size={18} style={{ color: 'var(--muted-foreground)' }} />
+                ? <Star size={17} style={{ color: GOLD }} fill={GOLD} />
+                : <StarOff size={17} style={{ color: 'var(--muted-foreground)' }} />
               }
             </button>
             <button
@@ -205,31 +211,36 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
                 setSource(selected.source ?? ''); setFolder(selected.folder)
                 setTagsInput(selected.tags.join(', ')); setView('edit')
               }}
-              style={{ color: 'var(--muted-foreground)' }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95"
+              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
             >
-              <Pencil size={17} />
+              <Pencil size={16} />
             </button>
-            <button onClick={() => deleteSummary(selected.id)} style={{ color: 'var(--muted-foreground)' }}>
-              <Trash2 size={17} />
+            <button
+              onClick={() => deleteSummary(selected.id)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95"
+              style={{ background: 'rgba(239,68,68,0.10)', color: 'rgba(239,68,68,0.65)' }}
+            >
+              <Trash2 size={16} />
             </button>
           </div>
-          <button onClick={() => setView('list')} className="text-xs transition-colors"
+          <button onClick={() => setView('list')} className="text-xs font-medium transition-opacity hover:opacity-70"
             style={{ color: 'var(--muted-foreground)' }}>
             ← חזרה
           </button>
         </div>
 
         <div>
-          <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-2"
-            style={{ background: `${TORAH_COLOR}20`, color: TORAH_COLOR }}>
+          <span className="inline-block text-xs px-2.5 py-1 rounded-full mb-3"
+            style={{ background: `${TORAH_COLOR}18`, color: TORAH_COLOR }}>
             {selected.folder}
           </span>
-          <h2 className="text-lg font-semibold text-right leading-snug mb-1"
+          <h2 className="text-xl font-bold text-right leading-snug mb-2"
             style={{ color: 'var(--foreground)' }}>
             {selected.title}
           </h2>
           {selected.source && (
-            <p className="text-xs text-right mb-4" style={{ color: 'var(--muted-foreground)' }}>{selected.source}</p>
+            <p className="text-xs text-right mb-5" style={{ color: 'var(--muted-foreground)' }}>{selected.source}</p>
           )}
           <p className="text-sm leading-relaxed text-right whitespace-pre-wrap"
             style={{ color: 'var(--foreground)' }}>
@@ -238,9 +249,9 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
         </div>
 
         {selected.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-end pt-1">
             {selected.tags.map((tag) => (
-              <span key={tag} className="text-xs px-2 py-0.5 rounded-full"
+              <span key={tag} className="text-xs px-2.5 py-1 rounded-full"
                 style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}>
                 #{tag}
               </span>
@@ -257,12 +268,12 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
       <div className="flex gap-2">
         <button
           onClick={() => setView('create')}
-          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
-          style={{ background: TORAH_COLOR }}
+          className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:opacity-80 active:scale-95"
+          style={{ background: TORAH_COLOR, boxShadow: `0 2px 10px ${TORAH_COLOR}40` }}
         >
-          <Plus size={16} color="#fff" />
+          <Plus size={17} color="#fff" />
         </button>
-        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 h-9"
+        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 h-10"
           style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}>
           <Search size={14} className="shrink-0" style={{ color: 'var(--muted-foreground)' }} />
           <input
@@ -284,9 +295,9 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => setFavOnly((v) => !v)}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
           style={favOnly
-            ? { background: `${GOLD}22`, color: GOLD }
+            ? { background: `${GOLD}20`, color: GOLD }
             : { background: 'var(--secondary)', color: 'var(--muted-foreground)' }
           }
         >
@@ -295,9 +306,9 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
         </button>
         {allFolders.map((f) => (
           <button key={f} onClick={() => setFolderFilter(f)}
-            className="shrink-0 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all"
+            className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all"
             style={folderFilter === f
-              ? { background: `${TORAH_COLOR}22`, color: TORAH_COLOR }
+              ? { background: `${TORAH_COLOR}20`, color: TORAH_COLOR }
               : { background: 'var(--secondary)', color: 'var(--muted-foreground)' }
             }
           >
@@ -308,15 +319,15 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="py-12 text-center">
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+        <div className="py-14 text-center">
+          <p className="text-sm mb-1" style={{ color: 'var(--muted-foreground)' }}>
             {summaries.length === 0 ? t('noSummariesYet') : 'אין תוצאות'}
           </p>
           {summaries.length === 0 && (
             <button
               onClick={() => setView('create')}
-              className="mt-4 text-xs px-4 py-2 rounded-full transition-opacity hover:opacity-80"
-              style={{ background: `${TORAH_COLOR}22`, color: TORAH_COLOR }}
+              className="mt-4 text-xs px-5 py-2.5 rounded-full transition-opacity hover:opacity-80"
+              style={{ background: `${TORAH_COLOR}18`, color: TORAH_COLOR }}
             >
               + {t('newSummary')}
             </button>
@@ -328,20 +339,46 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             <button
               key={s.id}
               onClick={() => { setSelected(s); setView('view') }}
-              className="w-full text-right rounded-2xl p-4 transition-opacity hover:opacity-80"
+              className="w-full text-right rounded-2xl overflow-hidden transition-all hover:opacity-80 active:scale-[0.99]"
               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  {s.is_favorite && <Star size={13} style={{ color: GOLD }} fill={GOLD} />}
-                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{formatDate(s.created_at)}</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium mb-1 leading-snug" style={{ color: 'var(--foreground)' }}>{s.title}</p>
-                  <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>{s.content}</p>
-                  <div className="flex items-center gap-2 mt-2 justify-end">
-                    <span className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ background: `${TORAH_COLOR}18`, color: `${TORAH_COLOR}cc` }}>
+              <div className="flex items-stretch">
+                {/* Teal accent strip */}
+                <div className="w-1 shrink-0" style={{ background: `${TORAH_COLOR}50` }} />
+                <div className="flex-1 p-4">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2 shrink-0">
+                      {s.is_favorite && <Star size={13} style={{ color: GOLD }} fill={GOLD} />}
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                        {formatDate(s.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--foreground)' }}>
+                      {s.title}
+                    </p>
+                  </div>
+                  <p className="text-xs line-clamp-2 leading-relaxed text-right mb-2.5"
+                    style={{ color: 'var(--muted-foreground)' }}>
+                    {s.content}
+                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    {s.tags.length > 0 ? (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {s.tags.slice(0, 2).map((tag) => (
+                          <span key={tag} className="text-xs px-1.5 py-0.5 rounded"
+                            style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}>
+                            #{tag}
+                          </span>
+                        ))}
+                        {s.tags.length > 2 && (
+                          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                            +{s.tags.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    ) : <span />}
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0"
+                      style={{ background: `${TORAH_COLOR}15`, color: `${TORAH_COLOR}cc` }}>
                       {s.folder}
                     </span>
                   </div>
@@ -357,8 +394,8 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="p-3 rounded-xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-      <p className="text-xs mb-1.5 text-right" style={{ color: 'var(--muted-foreground)' }}>{label}</p>
+    <div className="p-4 rounded-xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+      <p className="text-xs mb-2 text-right font-medium" style={{ color: 'var(--muted-foreground)' }}>{label}</p>
       {children}
     </div>
   )
