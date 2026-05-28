@@ -88,14 +88,11 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
   const scanInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [])
 
   function startTimer() {
     if (!textTitle.trim()) return
-    // eslint-disable-next-line react-hooks/purity -- event handler, not render
     startTimeRef.current = Date.now() - elapsed * 1000
     setRunning(true)
     timerRef.current = setInterval(() => {
@@ -112,86 +109,53 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
     if (!textTitle.trim()) return
     const { data } = await supabase
       .from('learning_sessions')
-      .insert({
-        user_id: userId,
-        text_title: textTitle.trim(),
-        text_category: category,
-        duration_seconds: 0,
-      })
-      .select()
-      .single()
-    if (data) {
-      setActiveSession(data as LearningSession)
-      startTimer()
-    }
+      .insert({ user_id: userId, text_title: textTitle.trim(), text_category: category, duration_seconds: 0 })
+      .select().single()
+    if (data) { setActiveSession(data as LearningSession); startTimer() }
   }
 
   async function endSession() {
     if (!activeSession) return
     setSaving(true)
     if (running) pauseTimer()
-
     const { data } = await supabase
       .from('learning_sessions')
       .update({ ended_at: new Date().toISOString(), duration_seconds: elapsed })
-      .eq('id', activeSession.id)
-      .select()
-      .single()
-
-    if (data) {
-      onSessionSaved(data as LearningSession, elapsed)
-    }
-
-    setActiveSession(null)
-    setElapsed(0)
-    setTextTitle('')
-    setNotes([])
-    setSaving(false)
+      .eq('id', activeSession.id).select().single()
+    if (data) onSessionSaved(data as LearningSession, elapsed)
+    setActiveSession(null); setElapsed(0); setTextTitle(''); setNotes([]); setSaving(false)
   }
 
   async function addNote() {
     if (!noteInput.trim() || !activeSession) return
     const { data } = await supabase
       .from('learning_notes')
-      .insert({
-        user_id: userId,
-        session_id: activeSession.id,
-        content: noteInput.trim(),
-        type: noteType,
-      })
-      .select()
-      .single()
+      .insert({ user_id: userId, session_id: activeSession.id, content: noteInput.trim(), type: noteType })
+      .select().single()
     if (data) setNotes((prev) => [data as LearningNote, ...prev])
     setNoteInput('')
   }
 
   async function searchSefaria() {
     if (!sefariaQuery.trim()) return
-    setSefariaLoading(true)
-    setSefariaResult(null)
+    setSefariaLoading(true); setSefariaResult(null)
     try {
-      const r = await fetch(
-        `https://www.sefaria.org/api/texts/${encodeURIComponent(sefariaQuery.trim())}?context=0&pad=0`
-      )
+      const r = await fetch(`https://www.sefaria.org/api/texts/${encodeURIComponent(sefariaQuery.trim())}?context=0&pad=0`)
       const data = await r.json()
       const verses = flattenHe(data.he).filter(Boolean).slice(0, 20)
       setSefariaResult({ ref: data.ref ?? sefariaQuery, heTitle: data.heTitle ?? sefariaQuery, verses })
-    } catch {
-      setSefariaResult(null)
-    }
+    } catch { setSefariaResult(null) }
     setSefariaLoading(false)
   }
 
   function openReaderAndStartSession(ref: string) {
-    setTextTitle(ref)
-    setReaderRef(null)
+    setTextTitle(ref); setReaderRef(null)
   }
 
   async function handleScan(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setScanning(true)
-    e.target.value = ''
+    setScanning(true); e.target.value = ''
     const reader = new FileReader()
     reader.onload = async () => {
       const dataUrl = reader.result as string
@@ -199,15 +163,12 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
       const mediaType = (file.type || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp'
       try {
         const res = await fetch('/api/torah/scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageBase64: base64, mediaType }),
         })
         const { ref } = await res.json()
         if (ref) setReaderRef(ref)
-      } finally {
-        setScanning(false)
-      }
+      } finally { setScanning(false) }
     }
     reader.readAsDataURL(file)
   }
@@ -216,8 +177,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
     setDeletingId(id)
     await supabase.from('learning_notes').delete().eq('session_id', id)
     await supabase.from('learning_sessions').delete().eq('id', id)
-    onSessionDeleted(id)
-    setDeletingId(null)
+    onSessionDeleted(id); setDeletingId(null)
   }
 
   const visibleNotes = notes.filter((n) => (noteTab === 'notes' ? n.type === 'note' : n.type === 'question'))
@@ -235,22 +195,20 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       {!activeSession ? (
         <>
           {/* Start new session */}
-          <div
-            className="rounded-2xl p-4 space-y-3"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-          >
-            <p className="text-sm font-medium text-white/70 text-right">{t('whatLearning')}</p>
+          <div className="rounded-2xl p-4 space-y-3"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <p className="text-sm font-medium text-right" style={{ color: 'var(--muted-foreground)' }}>{t('whatLearning')}</p>
 
             <input
               value={textTitle}
               onChange={(e) => setTextTitle(e.target.value)}
               placeholder="ברכות ב:א — הגמרא על קריאת שמע..."
-              className="w-full bg-transparent text-white placeholder-white/20 text-sm py-2 border-b outline-none text-right"
-              style={{ borderColor: 'rgba(255,255,255,0.1)' }}
+              className="w-full bg-transparent text-sm py-2 border-b outline-none text-right"
+              style={{ color: 'var(--foreground)', borderColor: 'var(--border)' }}
               dir="rtl"
             />
 
@@ -265,16 +223,14 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                 <ChevronDown size={12} />
               </button>
               {showCatPicker && (
-                <div
-                  className="absolute top-8 right-0 z-20 rounded-xl p-2 flex flex-col gap-1 min-w-32"
-                  style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
-                >
+                <div className="absolute top-8 right-0 z-20 rounded-xl p-2 flex flex-col gap-1 min-w-32"
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                   {CATEGORIES.map((c) => (
                     <button
                       key={c.value}
                       onClick={() => { setCategory(c.value); setShowCatPicker(false) }}
-                      className="text-sm text-right px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
-                      style={{ color: category === c.value ? TORAH_COLOR : 'var(--c-text-2)' }}
+                      className="text-sm text-right px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ color: category === c.value ? TORAH_COLOR : 'var(--muted-foreground)' }}
                     >
                       {c.labelHe}
                     </button>
@@ -294,38 +250,30 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
           </div>
 
           {/* Sefaria panel */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{ border: '1px solid rgba(245,158,11,0.22)' }}
-          >
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(245,158,11,0.3)' }}>
             <button
               onClick={() => setSefariaOpen((v) => !v)}
               className="w-full flex items-center justify-between px-4 py-3 transition-colors"
               style={{ background: 'rgba(245,158,11,0.09)' }}
             >
-              <div className="flex items-center gap-1.5 text-amber-400/60">
+              <div className="flex items-center gap-1.5" style={{ color: 'rgba(245,158,11,0.6)' }}>
                 {sefariaOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-amber-300 text-sm font-semibold">ספריא</span>
+                <span className="text-amber-400 text-sm font-semibold">ספריא</span>
                 <span className="text-base">📚</span>
               </div>
             </button>
 
             {sefariaOpen && (
-              <div className="p-4 space-y-4" style={{ background: 'rgba(245,158,11,0.03)' }}>
-                {/* Text search + scanner */}
+              <div className="p-4 space-y-4" style={{ background: 'var(--card)' }}>
                 <div className="space-y-2">
-                  <p className="text-xs text-white/40 text-right">חיפוש מראה מקום</p>
+                  <p className="text-xs text-right" style={{ color: 'var(--muted-foreground)' }}>חיפוש מראה מקום</p>
                   <div className="flex gap-2">
-                    {/* Hidden camera input */}
                     <input
                       ref={scanInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={handleScan}
+                      type="file" accept="image/*" capture="environment"
+                      className="hidden" onChange={handleScan}
                     />
                     <button
                       onClick={() => scanInputRef.current?.click()}
@@ -349,26 +297,22 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                       onChange={(e) => setSefariaQuery(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') searchSefaria() }}
                       placeholder="ברכות ב:א — Berakhot 2a"
-                      className="flex-1 bg-transparent text-sm text-white placeholder-white/20 outline-none text-right border-b"
-                      style={{ borderColor: 'rgba(245,158,11,0.2)' }}
+                      className="flex-1 bg-transparent text-sm outline-none text-right border-b"
+                      style={{ color: 'var(--foreground)', borderColor: 'rgba(245,158,11,0.2)' }}
                       dir="rtl"
                     />
                   </div>
 
                   {sefariaLoading && (
-                    <p className="text-white/30 text-xs text-right">טוען...</p>
+                    <p className="text-xs text-right" style={{ color: 'var(--muted-foreground)' }}>טוען...</p>
                   )}
 
                   {sefariaResult && (
-                    <div
-                      className="rounded-xl p-3 space-y-2"
-                      style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)' }}
-                    >
+                    <div className="rounded-xl p-3 space-y-2"
+                      style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.22)' }}>
                       <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => setSefariaResult(null)}
-                          className="text-white/30 hover:text-white/60 transition-colors"
-                        >
+                        <button onClick={() => setSefariaResult(null)}
+                          style={{ color: 'var(--muted-foreground)' }}>
                           <X size={14} />
                         </button>
                         <p className="text-amber-400 text-xs font-semibold">{sefariaResult.heTitle}</p>
@@ -384,7 +328,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                       <button
                         onClick={() => { setTextTitle(sefariaResult.ref); setSefariaResult(null) }}
                         className="w-full text-xs py-2 rounded-lg transition-opacity hover:opacity-80"
-                        style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--c-text-muted)' }}
+                        style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
                         dir="rtl"
                       >
                         התחל שיעור בלי לקרוא ←
@@ -393,9 +337,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                   )}
                 </div>
 
-                <div style={{ borderTop: '1px solid rgba(245,158,11,0.1)' }} />
-
-                {/* Personal daily schedule */}
+                <div style={{ borderTop: '1px solid var(--border)' }} />
                 <TorahDailySchedule userId={userId} initialTracks={initialTracks} onOpenReader={setReaderRef} />
               </div>
             )}
@@ -404,14 +346,11 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
           {/* Recent sessions */}
           {recentSessions.length > 0 && (
             <section>
-              <p className="text-xs text-white/40 mb-3 text-right">{t('recentSessions')}</p>
+              <p className="text-xs mb-3 text-right" style={{ color: 'var(--muted-foreground)' }}>{t('recentSessions')}</p>
               <div className="space-y-2">
                 {recentSessions.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between p-3 rounded-xl"
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                  >
+                  <div key={s.id} className="flex items-center justify-between p-3 rounded-xl"
+                    style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                     <button
                       onClick={() => deleteSession(s.id)}
                       disabled={deletingId === s.id}
@@ -421,8 +360,8 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                       <Trash2 size={13} />
                     </button>
                     <div className="text-right flex-1 mx-2">
-                      <p className="text-sm text-white/85">{s.text_title}</p>
-                      <p className="text-xs text-white/35 mt-0.5">
+                      <p className="text-sm" style={{ color: 'var(--foreground)' }}>{s.text_title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
                         {CATEGORIES.find((c) => c.value === s.text_category)?.labelHe} · {formatDuration(s.duration_seconds)} · {timeAgo(s.created_at)}
                       </p>
                     </div>
@@ -435,10 +374,8 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
       ) : (
         <>
           {/* Active session */}
-          <div
-            className="rounded-2xl p-4"
-            style={{ background: `${TORAH_COLOR}14`, border: `1px solid ${TORAH_COLOR}33` }}
-          >
+          <div className="rounded-2xl p-4"
+            style={{ background: `${TORAH_COLOR}14`, border: `1px solid ${TORAH_COLOR}33` }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex gap-2">
                 <button
@@ -449,20 +386,17 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                   {running ? <Square size={14} color="#fff" /> : <Play size={14} color="#fff" />}
                 </button>
                 <button
-                  onClick={endSession}
-                  disabled={saving}
+                  onClick={endSession} disabled={saving}
                   className="px-3 py-1.5 rounded-full text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--c-text-2)' }}
+                  style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
                 >
                   {t('endSession')}
                 </button>
               </div>
               <div className="text-right">
-                <p className="text-xs text-white/40 mb-0.5">{activeSession.text_title}</p>
-                <p
-                  className="text-2xl font-mono font-bold tracking-wider"
-                  style={{ color: running ? TORAH_COLOR : 'var(--c-text-subtle)' }}
-                >
+                <p className="text-xs mb-0.5" style={{ color: 'var(--muted-foreground)' }}>{activeSession.text_title}</p>
+                <p className="text-2xl font-mono font-bold tracking-wider"
+                  style={{ color: running ? TORAH_COLOR : 'var(--muted-foreground)' }}>
                   {formatTime(elapsed)}
                 </p>
               </div>
@@ -470,12 +404,9 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
           </div>
 
           {/* Notes area */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{ border: '1px solid rgba(255,255,255,0.07)' }}
-          >
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
             {/* Note type tabs */}
-            <div className="flex" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex" style={{ borderBottom: '1px solid var(--border)' }}>
               {(['notes', 'questions'] as NoteTab[]).map((tab) => (
                 <button
                   key={tab}
@@ -483,7 +414,7 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                   className="flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                   style={{
                     background: noteTab === tab ? `${TORAH_COLOR}15` : 'transparent',
-                    color: noteTab === tab ? TORAH_COLOR : 'var(--c-text-subtle)',
+                    color: noteTab === tab ? TORAH_COLOR : 'var(--muted-foreground)',
                     borderBottom: noteTab === tab ? `2px solid ${TORAH_COLOR}` : '2px solid transparent',
                   }}
                 >
@@ -509,24 +440,22 @@ export function TorahLearnTab({ userId, recentSessions, initialTracks, onSession
                   onChange={(e) => setNoteInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { setNoteType(noteTab === 'notes' ? 'note' : 'question'); addNote() } }}
                   placeholder={noteTab === 'notes' ? t('addNote') : t('addQuestion')}
-                  className="flex-1 bg-transparent text-sm text-white placeholder-white/20 outline-none text-right"
+                  className="flex-1 bg-transparent text-sm outline-none text-right"
+                  style={{ color: 'var(--foreground)' }}
                   dir="rtl"
                 />
               </div>
 
               <div className="space-y-2 max-h-52 overflow-y-auto">
                 {visibleNotes.length === 0 ? (
-                  <p className="text-xs text-white/25 text-center py-4">
+                  <p className="text-xs text-center py-4" style={{ color: 'var(--muted-foreground)' }}>
                     {noteTab === 'notes' ? 'הוסף הערות תוך כדי הלימוד' : 'רשום שאלות שעולות בלימוד'}
                   </p>
                 ) : (
                   visibleNotes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="p-2.5 rounded-lg text-right"
-                      style={{ background: 'rgba(255,255,255,0.04)' }}
-                    >
-                      <p className="text-sm text-white/80">{note.content}</p>
+                    <div key={note.id} className="p-2.5 rounded-lg text-right"
+                      style={{ background: 'var(--secondary)' }}>
+                      <p className="text-sm" style={{ color: 'var(--foreground)' }}>{note.content}</p>
                     </div>
                   ))
                 )}

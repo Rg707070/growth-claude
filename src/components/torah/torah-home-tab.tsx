@@ -52,22 +52,11 @@ export function TorahHomeTab({
   async function toggleHabit(habit: Habit) {
     const today = new Date().toISOString().split('T')[0]
     const isDone = completed.has(habit.id)
-
     if (isDone) {
-      await supabase
-        .from('habit_logs')
-        .delete()
-        .eq('habit_id', habit.id)
-        .eq('completed_at', today)
-      setCompleted((prev) => {
-        const next = new Set(prev)
-        next.delete(habit.id)
-        return next
-      })
+      await supabase.from('habit_logs').delete().eq('habit_id', habit.id).eq('completed_at', today)
+      setCompleted((prev) => { const next = new Set(prev); next.delete(habit.id); return next })
     } else {
-      await supabase
-        .from('habit_logs')
-        .insert({ user_id: userId, habit_id: habit.id, completed_at: today })
+      await supabase.from('habit_logs').insert({ user_id: userId, habit_id: habit.id, completed_at: today })
       setCompleted((prev) => new Set([...prev, habit.id]))
     }
     router.refresh()
@@ -79,23 +68,15 @@ export function TorahHomeTab({
   const allDone = habits.length > 0 && doneCount === habits.length
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="space-y-5">
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          icon={<Clock size={15} />}
-          label={t('minutesToday')}
-          value={String(todayMinutes)}
-        />
-        <StatCard
-          icon={<BookOpen size={15} />}
-          label={t('sessionsToday')}
-          value={String(todaySessionCount)}
-        />
+        <StatCard icon={<Clock size={15} />} label={t('minutesToday')} value={String(todayMinutes)} />
+        <StatCard icon={<BookOpen size={15} />} label={t('sessionsToday')} value={String(todaySessionCount)} />
       </div>
 
-      {/* Continue / Start learning CTA */}
+      {/* Continue / Start CTA */}
       {lastSession ? (
         <button
           onClick={() => onNavigate('learn')}
@@ -108,9 +89,7 @@ export function TorahHomeTab({
             </div>
             <div className="flex-1 text-right">
               <p className="text-white/70 text-xs mb-0.5">{t('continuelearning')}</p>
-              <p className="text-white text-sm font-semibold leading-tight line-clamp-1">
-                {lastSession.text_title}
-              </p>
+              <p className="text-white text-sm font-semibold leading-tight line-clamp-1">{lastSession.text_title}</p>
               <p className="text-white/60 text-xs mt-0.5">{timeAgo(lastSession.created_at)}</p>
             </div>
           </div>
@@ -130,18 +109,14 @@ export function TorahHomeTab({
       {habits.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-white/40 font-medium">{doneCount}/{habits.length}</span>
-            <p className="text-xs text-white/50 font-semibold uppercase tracking-wider">{t('todayHabits')}</p>
+            <span className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>{doneCount}/{habits.length}</span>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>{t('todayHabits')}</p>
           </div>
 
-          {/* Progress bar */}
-          <div className="h-1 rounded-full bg-white/10 mb-3 overflow-hidden">
+          <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background: 'var(--secondary)' }}>
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${habits.length > 0 ? (doneCount / habits.length) * 100 : 0}%`,
-                background: GREEN_LIGHT,
-              }}
+              style={{ width: `${habits.length > 0 ? (doneCount / habits.length) * 100 : 0}%`, background: GREEN_LIGHT }}
             />
           </div>
 
@@ -154,29 +129,24 @@ export function TorahHomeTab({
                   onClick={() => toggleHabit(habit)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl text-right transition-all"
                   style={{
-                    background: isDone ? `${GREEN}15` : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${isDone ? GREEN + '45' : 'rgba(255,255,255,0.08)'}`,
+                    background: isDone ? `${GREEN}15` : 'var(--card)',
+                    border: `1px solid ${isDone ? GREEN + '45' : 'var(--border)'}`,
                   }}
                 >
-                  {isDone ? (
-                    <CheckCircle2 size={18} className="shrink-0" style={{ color: GREEN_LIGHT }} />
-                  ) : (
-                    <Circle size={18} className="text-white/25 shrink-0" />
-                  )}
+                  {isDone
+                    ? <CheckCircle2 size={18} className="shrink-0" style={{ color: GREEN_LIGHT }} />
+                    : <Circle size={18} className="shrink-0" style={{ color: 'var(--muted-foreground)' }} />
+                  }
                   <span
                     className="text-sm flex-1 text-right font-medium"
                     style={{
-                      color: isDone ? 'var(--c-text-subtle)' : 'var(--c-text)',
+                      color: isDone ? 'var(--muted-foreground)' : 'var(--foreground)',
                       textDecoration: isDone ? 'line-through' : 'none',
                     }}
                   >
                     {habit.name}
                   </span>
-                  {isDone && (
-                    <span className="text-xs font-semibold shrink-0" style={{ color: GREEN_LIGHT }}>
-                      ✓
-                    </span>
-                  )}
+                  {isDone && <span className="text-xs font-semibold shrink-0" style={{ color: GREEN_LIGHT }}>✓</span>}
                 </button>
               )
             })}
@@ -186,14 +156,10 @@ export function TorahHomeTab({
 
       {/* All done banner */}
       {allDone && (
-        <div
-          className="rounded-2xl p-4 flex items-center gap-3"
-          style={{ background: `${GREEN}18`, border: `1px solid ${GREEN}40` }}
-        >
+        <div className="rounded-2xl p-4 flex items-center gap-3"
+          style={{ background: `${GREEN}18`, border: `1px solid ${GREEN}40` }}>
           <Flame size={20} style={{ color: GREEN_LIGHT }} />
-          <p className="text-sm font-semibold" style={{ color: GREEN_LIGHT }}>
-            כל ההרגלים הושלמו היום 🎉
-          </p>
+          <p className="text-sm font-semibold" style={{ color: GREEN_LIGHT }}>כל ההרגלים הושלמו היום 🎉</p>
         </div>
       )}
 
@@ -208,22 +174,16 @@ export function TorahHomeTab({
             >
               הכל <ChevronLeft size={12} />
             </button>
-            <p className="text-xs text-white/50 font-semibold uppercase tracking-wider">
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
               {t('torahSummaries')}
             </p>
           </div>
           <div className="space-y-2">
             {recentSummaries.map((s) => (
-              <div
-                key={s.id}
-                className="p-3 rounded-xl"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <p className="text-sm font-semibold text-white mb-1">{s.title}</p>
-                <p className="text-xs text-white/45 line-clamp-2">{s.content}</p>
+              <div key={s.id} className="p-3 rounded-xl"
+                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--foreground)' }}>{s.title}</p>
+                <p className="text-xs line-clamp-2" style={{ color: 'var(--muted-foreground)' }}>{s.content}</p>
               </div>
             ))}
           </div>
@@ -235,15 +195,12 @@ export function TorahHomeTab({
 
 function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div
-      className="rounded-2xl p-4"
-      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-    >
-      <div className="flex items-center gap-1.5 mb-2 text-white/50">
+    <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-1.5 mb-2" style={{ color: 'var(--muted-foreground)' }}>
         {icon}
         <span className="text-xs font-medium">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{value}</p>
     </div>
   )
 }
