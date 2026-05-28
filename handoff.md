@@ -1,111 +1,122 @@
 # GROWTH App — AI Agent Handoff Document
 
-This document is written for a fresh AI agent picking up this project. Read it fully before touching any code.
+This document is for a fresh AI agent picking up the project. Read it fully before touching any code. Also read `CLAUDE.md` (project conventions) and `AGENTS.md` (Next.js 16 / Tailwind v4 warning).
 
 ---
 
 ## The User
 
-**Rotem** — a yeshiva student, ~1.5 weeks of coding experience. Learns by doing. Communicates primarily in Hebrew. Prefers to be given exact instructions to paste/run rather than explanations. Does not need to understand every detail — just needs clear, step-by-step guidance. Built this entire app collaboratively with Claude Code over several sessions.
-
-**Working directory:** `C:\Users\Yarden\OneDrive\Documents\רותם החמוד\growth-claude`
+**Rotem** — yeshiva student, beginner coder. Learns by doing. Communicates primarily in Hebrew. Prefers exact instructions to paste/run rather than long explanations. Built the app collaboratively with Claude Code over many sessions.
 
 ---
 
-## What the App Is
+## What the App Is (current reality)
 
-GROWTH is a personal optimization app — a gamified habit tracker with:
-- 7 life domains (family, friends, torah, secular, sports, finance, music)
-- XP + leveling system drawn from *Mesillat Yesharim* (9 levels)
-- Streak tracking, achievements, weekly charts, 84-day heat map
-- AI coaching via Claude Haiku
-- Personalized yeshiva schedule display
-- Bilingual: Hebrew (RTL, default) + English
+GROWTH is a personal optimization app — a habit tracker plus dedicated workspaces for Torah learning, reading, journaling, and family management. Mobile-first; bilingual (Hebrew RTL default + English); deployed on Vercel.
 
-**Live URL:** Deployed on Vercel (check Vercel dashboard for the URL — project is `Rg707070/growth-claude` on GitHub).
+**Currently in the app:**
+- 7 life domains (family, friends, torah, secular, sports, finance, music) with per-domain habits
+- Streak tracking + per-domain completion % + 14-day heat map + weekly bar chart
+- Hardcoded weekly schedule with per-item check-offs and daily reflection notes
+- Family workspace: tasks (with rotation), habits (with frequency-aware streaks), adventures
+- Torah workspace: daily tracks, learning sessions with timer, notes, TipTap summaries with folders/tags/favorites, Sefaria reader, image → Sefaria reference scan
+- Reading (Books) module: page/chapter tracking, target date, inline notes, read/want-to-read tabs
+- Journal: long-form TipTap writing, weekly photo album with public share tokens, insights tab
+- Night check-in modal after 9 PM (mood / productive / gratitude)
+- Light/Dark mode (light-first); HE/EN toggle
+- Floating-pill bottom nav with drag-to-reorder
+
+**Removed / not in the app (despite older docs claiming so):**
+- ❌ XP system, level system, *Mesillat Yesharim* leveling — removed PR #38
+- ❌ Achievement badges, weekly XP chart, confetti, 84-day heat map (replaced by 14-day)
+- ❌ AI insights endpoint, AI chat endpoint, daily-plan endpoint — never built (or removed)
+- ❌ Anthropic SDK / Claude integration — replaced by Google Gemini (Gemini 2.0 Flash via `@google/generative-ai`)
+- ❌ `/progress` route — does not exist
+- ❌ `xp-bar.tsx`, `streak-badge.tsx`, `achievements-display.tsx`, `mesillat-quote.tsx`, `weekly-challenge.tsx`, `ai-insights.tsx`, `confetti.tsx` — none of these files exist anymore
+
+Do not reintroduce removed features without an explicit instruction from Rotem.
 
 ---
 
 ## Tech Stack (exact versions matter)
 
-- **Next.js 16.2.6** — App Router, not Pages Router. Server components by default.
+- **Next.js 16.2.6** — App Router only. Server components by default. **Has breaking changes vs. earlier versions — read `node_modules/next/dist/docs/` before writing routing/caching code.**
 - **React 19.2.4**
 - **TypeScript 5** (strict mode — zero-error policy)
-- **Tailwind CSS v4** — new API, no `tailwind.config.js`, configuration is in `globals.css` via `@theme inline`
+- **Tailwind CSS v4** — new API; **no `tailwind.config.js`**; design tokens in `@theme inline` inside `src/app/globals.css`
 - **Supabase** (`@supabase/ssr` + `@supabase/supabase-js`) — SSR auth with cookie-based sessions
-- **shadcn/ui** — components in `src/components/ui/`
-- **Lucide React v1.16** — icon library
-- **`@anthropic-ai/sdk`** — used only in `/api/insights/route.ts` (server-side)
-- **`canvas-confetti`** — celebration effect when all habits complete
+- **shadcn/ui** — in `src/components/ui/`
+- **Lucide React v1.16** — icons
+- **TipTap 3** — rich text (writing tab, Torah summaries)
+- **`@dnd-kit/core` + `/sortable`** — bottom-nav drag-to-reorder
+- **`@google/generative-ai`** — used only in `/api/torah/scan/route.ts` (server-side, Gemini 2.0 Flash)
+- **`canvas-confetti`** — installed but not currently used (was for old XP system)
 
 ---
 
 ## Critical Patterns — Follow These Exactly
 
-### 1. Server vs. Client components
+### 1. Server vs. client components
 
 Pages that fetch Supabase data are **server components** (no `'use client'` at top). They pass data down to a `*-client.tsx` companion which is a client component. This avoids loading states and flickers.
 
 ```
-page.tsx      ← 'async function', uses createClient from @/lib/supabase/server
-  └── *-client.tsx  ← 'use client', receives props, handles all interactivity
+page.tsx           ← async function, uses createClient from @/lib/supabase/server
+  └── *-client.tsx ← 'use client', receives props, handles all interactivity
 ```
 
 Never call `createClient()` from `@/lib/supabase/client` inside a server component. Never call `createClient()` from `@/lib/supabase/server` inside a client component.
 
 ### 2. Supabase auth pattern
 
-The dashboard layout (`src/app/(dashboard)/layout.tsx`) checks auth and redirects to `/login` if not authenticated. Individual dashboard pages do NOT re-check auth — they trust the layout.
+`src/app/(dashboard)/layout.tsx` checks auth and redirects to `/login` if unauthenticated. Individual dashboard pages do NOT re-check auth — they trust the layout. `middleware.ts` refreshes the Supabase session on every request.
 
-```ts
-// Server component pattern
-import { createClient } from '@/lib/supabase/server'
-const supabase = await createClient()
-const { data: { user } } = await supabase.auth.getUser()
-if (!user) redirect('/login')
-```
+### 3. Tailwind CSS v4 — no arbitrary oklch/hex in class names
 
-### 3. Tailwind CSS v4 — no arbitrary oklch in class names
-
-Tailwind v4 cannot interpolate runtime oklch values. **Never** write `className="bg-[oklch(0.75 0.17 205)]"` with dynamic values — it won't work. Instead, use `style={{ background: 'oklch(0.75 0.17 205)' }}` for any color that is dynamic or domain-specific.
-
-Static oklch values that Tailwind v4 knows about (defined in `globals.css` as CSS variables) can be referenced via `bg-primary`, `text-foreground`, etc.
+Tailwind v4 cannot interpolate runtime values. **Never** write `className="bg-[${domain.color}]"` — it won't resolve. Use `style={{ background: domain.color }}` for dynamic or domain-specific colors. Tokens defined in `globals.css` can still be referenced via `bg-primary`, `text-foreground`, etc.
 
 ### 4. RTL / language
 
-The app is RTL by default (Hebrew). The `useLang()` hook returns `{ t, lang, toggleLang, isRTL }`.
-- Use `isRTL` to conditionally flip layouts: `className={isRTL ? 'flex-row-reverse' : 'flex-row'}`
-- For tab/day ordering, use `dir="rtl"` on the container instead of reversing arrays — reversing arrays twice breaks things.
-- Never hardcode Hebrew strings outside of `src/lib/lang.tsx` (use the `t()` function).
-- Exception: the schedule is fully Hebrew and hardcoded in `src/lib/schedule.ts` — that's intentional.
+App is RTL by default (Hebrew). `useLang()` from `src/lib/lang.tsx` returns `{ t, lang, toggleLang, isRTL }`.
+- For layout direction flips, set `dir="rtl"` on the container — do NOT reverse arrays.
+- All user-facing strings live in `src/lib/lang.tsx`. Exception: `src/lib/schedule.ts` is intentionally all Hebrew.
+- Never hardcode `dark:` Tailwind prefixes — theming is class-based via `html.dark` / `html.light`, not media-query.
 
 ### 5. Domain colors
 
-Each domain in `src/lib/domains.ts` has:
+Each domain in `src/lib/domains.ts`:
 ```ts
 {
-  color: '#38BDF8',           // hex — used in inline style props
-  gradient: 'from-sky-400/25 to-sky-600/5',  // Tailwind — used in className
-  glowColor: 'rgba(56,189,248,0.22)',         // rgba — used in box-shadow
+  color: '#4F46E5',                            // hex — inline style props
+  gradient: 'from-indigo-600/20 to-indigo-700/5', // Tailwind className
+  glowColor: 'rgba(79,70,229,0.20)',           // rgba — box-shadow
 }
 ```
-Use `domain.color` for inline styles, `domain.gradient` for className, `domain.glowColor` for box-shadow glows.
 
-### 6. XP updates
+### 6. Writes → `router.refresh()`
 
-Always use the Supabase RPC — never update the `xp` column directly:
-```ts
-await supabase.rpc('update_profile_xp', { uid: user.id, xp_delta: 10 })
-```
-This is atomic and prevents race conditions.
+After any Supabase write (toggle habit, add habit, etc.), call `router.refresh()` to re-run the server component. There is no global state library (no react-query, swr, zustand, jotai). For the family module, `src/lib/family/realtime.ts` additionally pushes `router.refresh()` on cross-device events.
 
-### 7. Theme (dark/light)
+### 7. RPCs that exist
 
-- `ThemeProvider` in `src/lib/theme.tsx` manages theme state.
-- It toggles the `dark` / `light` class on `<html>`.
-- `globals.css` has `.dark { ... }` and `html.light { ... }` blocks.
-- The light mode overrides Tailwind utility classes like `.text-white/60` via `!important` rules.
-- Never hardcode `dark:` prefix classes — the app uses class-based theming, not the `prefers-color-scheme` media query.
+In `supabase-schema.sql`:
+- `advance_family_habit_streak(habit_id uuid, uid uuid) returns int`
+- `advance_task_rotation(task_id uuid, uid uuid, max_members int default 2) returns int`
+- `handle_new_user()` (trigger on `auth.users` insert)
+- `touch_updated_at()` (generic updated-at trigger)
+
+There is no XP RPC. If you need atomic counters, write a new RPC instead of doing read-modify-write from the client.
+
+### 8. Theme (dark / light)
+
+- `ThemeProvider` in `src/lib/theme.tsx` manages state.
+- Toggles `dark` / `light` class on `<html>`.
+- `globals.css` has `:root { ... }` (light, primary) and `.dark { ... }` blocks.
+- Persisted to `localStorage` under `growth-theme`.
+
+### 9. Module pattern — Books
+
+PR #45 / commit `7c4a6b4` aligned Habits, Schedule, and Torah on the structure first built for the Reading (Books) module. Use that pattern (canonical example: `src/app/(dashboard)/reading/reading-client.tsx`) for any new top-level module — see `CLAUDE.md` for the exact JSX skeleton.
 
 ---
 
@@ -113,32 +124,36 @@ This is atomic and prevents race conditions.
 
 | File | What it does |
 |---|---|
-| `src/app/layout.tsx` | Root layout: wraps everything in ThemeProvider + LangProvider, sets PWA metadata |
-| `src/app/(dashboard)/layout.tsx` | Dashboard shell: auth check, BottomNav, FAB, NightCheckIn |
-| `src/app/globals.css` | All CSS: oklch theme variables, light mode overrides, keyframe animations |
-| `src/lib/domains.ts` | Single source of truth for all 8 domains |
-| `src/lib/mesillat.ts` | XP level logic — `getLevelFromXp()`, `getXpProgress()` |
-| `src/lib/lang.tsx` | All translations + `useLang()` hook |
-| `src/lib/theme.tsx` | Dark/light theme + `useTheme()` hook |
-| `src/lib/schedule.ts` | Hardcoded weekly schedule for Rotem's yeshiva timetable |
+| `src/app/layout.tsx` | Root layout: ThemeProvider + LangProvider, PWA metadata |
+| `src/app/(dashboard)/layout.tsx` | Dashboard shell: auth check, bottom-nav, night check-in |
+| `src/app/globals.css` | All CSS: `@theme inline` tokens, light/dark blocks, brand gradient |
+| `src/lib/domains.ts` | Single source of truth for the 7 domains |
+| `src/lib/schedule.ts` | Hardcoded weekly schedule (Hebrew) |
+| `src/lib/lang.tsx` | LangProvider + `useLang()` |
+| `src/lib/theme.tsx` | ThemeProvider + `useTheme()` |
+| `src/lib/family/realtime.ts` | Supabase realtime subscription for family_* tables |
+| `src/lib/supabase/server.ts` | Server-side Supabase client (cookies) |
+| `src/lib/supabase/client.ts` | Browser Supabase client |
+| `middleware.ts` | Supabase session refresh on every request |
 | `src/types/index.ts` | All TypeScript interfaces |
-| `supabase-schema.sql` | Full DB schema — run in Supabase SQL Editor to set up |
-| `src/app/api/insights/route.ts` | Server route: calls Claude Haiku with weekly stats, returns Hebrew coaching |
+| `supabase-schema.sql` | Full DB schema (consolidated source of truth — PR #27) |
+| `src/app/api/torah/scan/route.ts` | POST: image (base64 + mime) → Sefaria reference via Gemini |
+| `src/components/bottom-nav.tsx` | Floating pill nav with drag-to-reorder |
+| `src/components/habit-row.tsx` | Habit row: checkbox, reminders, edit, delete |
 
 ---
 
-## Database Tables
+## Database Tables (high level — full DDL in `supabase-schema.sql`)
 
-```sql
-profiles        -- id (uuid, FK auth.users), full_name, xp, current_streak, longest_streak, last_activity_date
-habits          -- id, user_id, domain_slug, name, description, frequency ('daily'|'weekly'), xp_reward, is_active
-habit_logs      -- id, user_id, habit_id, completed_at (date), UNIQUE(habit_id, completed_at)
-journal_entries -- id, user_id, domain_slug, date, text, UNIQUE(user_id, domain_slug, date)
-night_checkins  -- id, user_id, date, mood, productive, gratitude, UNIQUE(user_id, date)
-user_schedule   -- id, user_id, day_of_week (0-6), time, label, type, sort_order
-```
+Core: `profiles`, `habits`, `habit_logs`, `journal_entries`, `journal_documents`, `photo_entries`, `album_shares`, `night_checkins`, `user_schedule` (unused), `schedule_reflections`, `activity_checks`.
 
-All tables have RLS enabled — users only see their own rows.
+Torah workspace: `learning_sessions`, `learning_notes`, `learning_summaries`, `torah_lessons`, `saved_lessons`, `torah_daily_tracks`.
+
+Reading: `reading_books`.
+
+Family workspace: `family_tasks`, `family_habits`, `routine_breakers`.
+
+All RLS-scoped to `auth.uid()`. Exceptions: `torah_lessons` is readable by any authenticated user; `album_shares` rows are public-by-token.
 
 ---
 
@@ -148,196 +163,183 @@ All tables have RLS enabled — users only see their own rows.
 ['family', 'friends', 'torah', 'secular', 'sports', 'finance', 'music']
 ```
 
-Domain pages at `/domain/[slug]` are dynamic. The `domain-detail-client.tsx` renders domain-specific extras:
-- `torah` slug: shows `SefariaWidget`
-- `sports` / `music` slugs: show `ConnectPlaceholder`
+Domain pages at `/domain/[slug]` are dynamic and render `domain-detail-client.tsx`. Domain-specific extras come from `src/lib/domain-integrations.ts`:
+- `torah` → `SefariaWidget`
+- `sports`, `music` → `ConnectPlaceholder` (Garmin / Spotify CTA)
 
-`family` has its own dedicated route at `/domain/family` with tasks, rituals, and adventures.
+`family` has its own dedicated route at `/domain/family` with three tabs: **tasks**, **habits**, **adventures** (`type Tab = 'tasks' | 'habits' | 'adventures'` in `family-client.tsx`). The middle tab is `habits` — older docs called it "rituals," that name was never in code.
 
 ---
 
 ## Environment Variables
 
 ```
-NEXT_PUBLIC_SUPABASE_URL      — from Supabase project settings → API
-NEXT_PUBLIC_SUPABASE_ANON_KEY — the "Publishable key" in newer Supabase dashboards
-ANTHROPIC_API_KEY             — server-only, for /api/insights
+NEXT_PUBLIC_SUPABASE_URL       — Supabase project settings → API
+NEXT_PUBLIC_SUPABASE_ANON_KEY  — "Publishable key" in newer Supabase dashboards
+GOOGLE_AI_API_KEY              — server-only, used by /api/torah/scan
 ```
 
-Set in `.env.local` for local dev and in Vercel project settings for production.
+Set in `.env.local` for local dev and in Vercel project settings for production. There is no `ANTHROPIC_API_KEY` and no `SUPABASE_SERVICE_ROLE_KEY` in this project.
 
 ---
 
 ## Design System Quick Reference
 
-**Ocean Dark (default)**
+**Brand gradient (light-first)**
 ```
-Background:  oklch(0.08 0.035 240)   — deep navy
-Cards:       oklch(0.12 0.04 238)    — dark blue-gray
-Primary:     oklch(0.75 0.17 205)    — ocean cyan
-Borders:     oklch(0.75 0.12 210 / 14%)
-Muted text:  oklch(0.55 0.05 230)
+#0B2447 → #1E5F74 → #0E9F6E → #65A30D
+deep navy → teal → emerald → lime
 ```
+Available as `--brand-gradient` and `--brand-gradient-soft`.
 
-**CSS Animations defined in globals.css**
-- `.animate-wave-slow` / `.animate-wave-fast` — horizontal translateX loop for waves
-- `.animate-flame` — scale + brightness pulse for streak flames
-- `.animate-fab-ring` — pulsing glow ring for FAB button
-- `.animate-swipe-done` — translateX bump for swipe gesture feedback
-
-**Time-of-day background classes** (set by `TimeBackground` component on body)
-- `.bg-dawn`, `.bg-morning`, `.bg-noon`, `.bg-sunset`, `.bg-night`
-
----
-
-## Mesillat Yesharim XP Levels
-
+**Light theme (primary, `:root`)**
 ```
-Level 1  זהירות  Watchfulness   0–100 XP      emoji: 👁️
-Level 2  זריזות  Alacrity       100–250 XP    emoji: ⚡
-Level 3  נקיות   Cleanliness    250–500 XP    emoji: ✨
-Level 4  פרישות  Separation     500–800 XP    emoji: 🌿
-Level 5  טהרה   Purity         800–1200 XP   emoji: 💧
-Level 6  חסידות  Piety          1200–1700 XP  emoji: ❤️
-Level 7  ענווה   Humility       1700–2300 XP  emoji: 🕊️
-Level 8  יראת חטא Fear of Sin  2300–3000 XP  emoji: 🌟
-Level 9  קדושה   Holiness       3000+ XP      emoji: 👑
+--background: oklch(0.985 0.005 230);  /* near-white with cool tint */
+--foreground: oklch(0.18 0.04 245);
+--primary:    oklch(0.45 0.10 220);
+--card:       oklch(1 0 0);
 ```
+Dark theme (`.dark`) defined in same file. Toggle is class-based via `src/lib/theme.tsx`.
 
----
-
-## Schedule Data Structure
-
-The schedule is **hardcoded** in `src/lib/schedule.ts` (not from DB) because it's personal to Rotem. The `WEEKLY_SCHEDULE` object maps day numbers (0=Sunday, 6=Saturday) to arrays of `{ time, label, type }`. Days 5–6 (Friday/Saturday) have reduced content.
-
-Schedule item types: `'torah' | 'prayer' | 'shiur' | 'sports' | 'break' | 'other'`
-
-The schedule page renders as a **horizontal-scroll table** with sticky time column on the right (RTL), today's column highlighted cyan.
-
----
-
-## Achievements
-
-8 achievements defined in `src/lib/achievements.ts`, checked against `AchievementData`:
-- `first_habit` — has at least 1 habit
-- `streak_7` — current_streak ≥ 7
-- `streak_30` — current_streak ≥ 30
-- `xp_100` — max XP in a single day ≥ 100
-- `xp_500` — total XP ≥ 500
-- `all_domains` — has habits in all 8 domains
-- `torah_streak_3` — torah domain streak ≥ 3
-- `habits_10` — total habit count ≥ 10
+**Radius scale** — base `--radius: 0.875rem`, multipliers `sm`(0.6) `md`(0.8) `lg`(1) `xl`(1.4) `2xl`(1.8) `3xl`(2.2) `4xl`(2.6).
 
 ---
 
 ## Components That Use localStorage (not Supabase)
 
-- `night-checkin.tsx` — stores `growth-checkin-{date}` to prevent showing twice
-- `theme.tsx` — stores `growth-theme` ('dark' | 'light')
-- `lang.tsx` — stores `growth-lang` ('he' | 'en')
+- `night-checkin.tsx` — `growth-checkin-{date}` to prevent showing twice per day
+- `theme.tsx` — `growth-theme` (`dark` | `light`)
+- `lang.tsx` — `growth-lang` (`he` | `en`)
+- `bottom-nav.tsx` — `growth-nav-order` (user's drag-reordered nav order)
 
 ---
 
 ## Known Quirks / Watch Out For
 
-1. **`user_schedule` table exists but is unused** — The schedule page was switched to use the hardcoded `WEEKLY_SCHEDULE` from `src/lib/schedule.ts`. The DB table remains for future use.
+1. **`user_schedule` table exists but is unused** — the schedule view uses the hardcoded `WEEKLY_SCHEDULE` from `src/lib/schedule.ts`. Table remains for future editable-schedule work.
 
-2. **Supabase "Publishable key"** — Newer Supabase dashboards renamed "anon key" to "Publishable key". They are the same value. The env var name stays `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+2. **Supabase "Publishable key"** — newer dashboards renamed "anon key" to "Publishable key". Same value. Env var name stays `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
-3. **No `SUPABASE_SERVICE_ROLE_KEY` needed** — This app does not use admin/service role access. All operations go through the anon key with RLS.
+3. **No `SUPABASE_SERVICE_ROLE_KEY` needed** — no admin/service role access. All operations go through the anon key with RLS.
 
-4. **RTL tab ordering** — Never use array reversal to achieve RTL ordering in flex containers. Use `dir="rtl"` on the parent element instead. Array reversal + flex-row-reverse double-reverses.
+4. **RTL ordering** — never reverse arrays. Use `dir="rtl"` on the container. Reversing + `flex-row-reverse` double-reverses.
 
-5. **`router.refresh()` after mutations** — After any Supabase write (toggle habit, add habit, etc.), call `router.refresh()` to re-run the server component and get fresh data. This is the data refresh pattern — there is no global state management.
+5. **`router.refresh()` after mutations** — only data refresh pattern in the app. No global state.
 
-6. **Tailwind v4 breaking changes** — This is NOT standard Tailwind v3. There is no `tailwind.config.js`. The `@theme inline` block in `globals.css` defines all design tokens. Read `AGENTS.md` at the project root for a warning about this.
+6. **Tailwind v4 breaking changes** — no `tailwind.config.js`. The `@theme inline` block in `globals.css` defines all design tokens.
 
-7. **`AGENTS.md`** — The project root has an `AGENTS.md` (included via `CLAUDE.md`) that warns: "This version has breaking changes — APIs, conventions, and file structure may all differ from your training data." Heed this before writing Next.js code.
+7. **`AGENTS.md`** — project root has it (included via `CLAUDE.md`). Warns about Next.js 16 breaking changes. Heed it before writing Next.js code.
 
-8. **No `loading.tsx` files** — Data is always fetched server-side in page.tsx. There are no loading states to implement.
+8. **No `loading.tsx` files** — data is always fetched server-side in `page.tsx`. No loading states needed.
 
-9. **Confetti fires once per session** — `confettiFired` is a `useRef` in `dashboard-client.tsx`, preventing re-firing on re-renders. It resets on page navigation.
+9. **Bottom-nav clearance** — mobile content needs `pb-24` so the floating pill doesn't overlap. Desktop uses `md:pb-6`.
+
+10. **`fab.tsx` is vestigial** — near-empty placeholder. The add-habit affordance now lives inside `bottom-nav.tsx`.
+
+11. **Schema consolidation** — `supabase-family-schema.sql`, `supabase-migrations.sql`, `supabase-schema-trading.sql` were merged into `supabase-schema.sql` in PR #27. Don't read the deleted files; they're gone.
+
+12. **`canvas-confetti` is installed but unused** — leftover from the removed XP completion celebration.
 
 ---
 
 ## Git & Deployment
 
-- Repo: `https://github.com/Rg707070/growth-claude` (branch: `main`)
+- Repo: `https://github.com/Rg707070/growth-claude` (default branch: `main`)
 - Git user: `granot12312@gmail.com`
 - Vercel: connected to GitHub, auto-deploys on push to `main`
-- Local dev server runs on port 3000 (or 3001 if 3000 is taken)
+- Local dev server runs on port 3000 (or 3001 if taken)
 
 ```bash
 # Standard workflow
-git add <files>
-git commit -m "description"
-git push
-# → Vercel auto-deploys
+git add <specific files>            # never `git add -A` blindly
+git commit -m "verb: description"   # e.g. "Add reading calendar"
+git push                            # → Vercel auto-deploy (when on main)
 ```
+
+When working on a feature branch (e.g. `claude/...`), stay on it — don't push to `main` without permission.
 
 ---
 
-## What Has Been Built (Complete Feature List)
+## What Has Been Built (current feature list)
 
 **Core**
 - [x] Supabase auth (email/password login + signup)
-- [x] Profile with XP, streak, longest streak
-- [x] Habits (create, toggle, delete) per domain
-- [x] Habit logs with XP reward on completion
-- [x] Atomic XP updates via stored procedure
+- [x] Profile with streak + longest streak
+- [x] Habits (create, toggle, delete, edit) per domain
+- [x] Habit logs (one per habit per day)
+- [x] 14-day per-domain streak computation (server-side)
 
 **Dashboard**
-- [x] Hero header card with greeting, XP bar, streak badge
-- [x] Time-based background gradient (dawn/morning/noon/sunset/night)
-- [x] Domain cards grid (2 columns) with progress rings + completion bar
-- [x] Today's habit list with swipe-to-toggle + haptic feedback
-- [x] Today's schedule widget
-- [x] Weekly XP chart (7 bars)
-- [x] Weekly challenge widget
+- [x] Hero greeting + today's habit list
+- [x] Per-domain progress cards
+- [x] Today's schedule preview
+- [x] Weekly chart of completions
+- [x] Time-based background gradient
 - [x] Animated wave at bottom
-- [x] Confetti on completing all habits
 
 **Domain Detail**
-- [x] Habit list with add/delete
-- [x] Pomodoro timer (25/5 min, SVG ring)
+- [x] Habit list with add / edit / delete
+- [x] Pomodoro timer (25/5)
 - [x] One-line daily journal
-- [x] Domain-specific extras (Sefaria for torah, Connect placeholders for sports/music)
+- [x] Domain-specific extras (Sefaria for torah, placeholders for sports / music)
 
-**Progress**
-- [x] 84-day completion heat map
-- [x] Weekly XP chart
-- [x] Achievement badges (8 total)
-- [x] Mesillat Yesharim levels display
-- [x] Weekly summary (Sundays only)
-- [x] Friday Shabbat summary (Fridays only)
-- [x] AI insights (Claude Haiku, lazy-loaded)
+**Family workspace** (`/domain/family`)
+- [x] Tasks with category, urgency, status, optional rotation
+- [x] Habits with frequency-aware streaks (daily/weekly/monthly windows)
+- [x] Adventures (routine_breakers) with type, cost_tier, target_date, media_links
+- [x] Realtime sync across devices
+
+**Torah workspace**
+- [x] Daily learning tracks (checklist)
+- [x] Learning sessions with timer + notes
+- [x] TipTap rich-text summaries with folders, tags, favorites
+- [x] Saved global lessons (admin-seeded)
+- [x] Sefaria reader
+- [x] Image → Sefaria reference scan (Gemini 2.0 Flash)
+
+**Reading (Books)**
+- [x] Books by page or chapter with target date
+- [x] Inline notes
+- [x] Read / want-to-read tabs
+- [x] Monthly calendar with reading schedule calculator
+
+**Journal**
+- [x] Long-form writing (TipTap) — `journal_documents`
+- [x] Weekly photo album with public share token + slideshow
+- [x] Insights tab
 
 **Schedule**
-- [x] Full weekly timetable (hardcoded from Rotem's yeshiva schedule)
-- [x] Horizontal-scroll table, today highlighted
-- [x] Color-coded by activity type
+- [x] Full weekly timetable (hardcoded for Rotem's yeshiva schedule)
+- [x] Per-item check-offs (`activity_checks`)
+- [x] Per-day reflection notes (`schedule_reflections`)
 
 **Settings**
 - [x] Dark / Light mode toggle (persisted)
-- [x] Language toggle He/En (persisted)
+- [x] HE / EN toggle (persisted)
 - [x] Logout
 
 **Global**
-- [x] FAB (floating +) → quick-add habit to any domain
-- [x] Night check-in modal (after 9 PM, gated by localStorage)
+- [x] Floating-pill bottom nav with drag-to-reorder + center add button
+- [x] Night check-in modal after 9 PM (gated by localStorage)
 - [x] PWA manifest
-- [x] Bilingual He/En with RTL support
-- [x] Ocean dark + light ocean themes
+- [x] Bilingual HE / EN with RTL support
+- [x] Light + Dark themes (light-first)
 
 ---
 
 ## Possible Next Features (not yet built)
 
 - Editable schedule via DB (the `user_schedule` table is ready)
-- Push notifications for habit reminders
+- Push notifications for habit reminders (currently in-browser only via `use-notifications.ts`)
 - Weekly email summary
-- Social/sharing features
-- Spotify / Google Calendar deep-link integrations (placeholders exist in `connect-placeholder.tsx`)
 - Profile photo
-- Friends / leaderboard
+- Social / sharing features beyond album share
+- Real Garmin / Spotify deep-link integrations (placeholders exist in `connect-placeholder.tsx`)
 - Export data to CSV
+- AI features (chat, daily plan, insights) — older docs referenced these but they were never built; the only AI surface today is the Sefaria OCR scan
+
+---
+
+## When in doubt
+
+Read the current code, not these docs. If anything in `handoff.md`, `README.md`, or `CLAUDE.md` conflicts with the live code, the live code wins — and `CLAUDE.md` is the file to update first.
