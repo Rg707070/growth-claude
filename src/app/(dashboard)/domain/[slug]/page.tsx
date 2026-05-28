@@ -1,9 +1,10 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDomainBySlug } from '@/lib/domains'
-import { DomainDetailClient } from './domain-detail-client'
+import { DomainEcosystemClient } from './domain-ecosystem-client'
 import { TorahWorkspaceClient } from '@/components/torah/torah-workspace-client'
 import type { Habit, HabitLog, LearningSession, LearningSummary, TorahLesson, DailyTrack } from '@/types'
+import type { DomainTask, DomainGoal } from '@/types/ecosystem'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -101,7 +102,7 @@ export default async function DomainPage({ params }: Props) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  const [habitsRes, logsRes] = await Promise.all([
+  const [habitsRes, logsRes, tasksRes, goalsRes] = await Promise.all([
     supabase
       .from('habits')
       .select('*')
@@ -114,18 +115,36 @@ export default async function DomainPage({ params }: Props) {
       .select('*')
       .eq('user_id', user.id)
       .eq('completed_at', today),
+    supabase
+      .from('domain_tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('domain_slug', slug)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('domain_goals')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('domain_slug', slug)
+      .order('created_at', { ascending: false }),
   ])
 
   const habits = (habitsRes.data as Habit[]) ?? []
   const todayLogs = (logsRes.data as HabitLog[]) ?? []
   const completedIds = todayLogs.map((l) => l.habit_id)
+  const tasks = (tasksRes.data as DomainTask[]) ?? []
+  const goals = (goalsRes.data as DomainGoal[]) ?? []
+  const schemaReady = !tasksRes.error && !goalsRes.error
 
   return (
-    <DomainDetailClient
-      domain={domain}
+    <DomainEcosystemClient
+      domain={domain!}
       habits={habits}
       completedIds={completedIds}
       userId={user.id}
+      tasks={tasks}
+      goals={goals}
+      schemaReady={schemaReady}
     />
   )
 }
