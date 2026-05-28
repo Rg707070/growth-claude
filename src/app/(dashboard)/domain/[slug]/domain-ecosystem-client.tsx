@@ -148,8 +148,6 @@ export function DomainEcosystemClient({
             domain={domain}
             userId={userId}
             onHabitAdded={(h) => setHabits((prev) => [...prev, h])}
-            isRTL={isRTL}
-            t={t}
           />
         )}
         {tab === 'tasks' && (
@@ -237,14 +235,13 @@ interface HabitsTabProps {
   domain: Domain
   userId: string
   onHabitAdded: (h: Habit) => void
-  isRTL: boolean
-  t: (k: string) => string
 }
 
 function HabitsTab({
-  habits, completedSet, domain, userId, onHabitAdded, isRTL, t,
+  habits, completedSet, domain, userId, onHabitAdded,
 }: HabitsTabProps) {
   const router = useRouter()
+  const { t, isRTL } = useLang()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [time, setTime] = useState('')
