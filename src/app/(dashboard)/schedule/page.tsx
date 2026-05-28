@@ -45,7 +45,9 @@ export default async function SchedulePage() {
     { data: scheduleRows },
     { data: checkRows },
     scheduledHabitsRes,
-    todayHabitLogsRes,
+    allHabitsRes,
+    weekHabitLogsRes,
+    weekActivityChecksRes,
   ] = await Promise.all([
     supabase
       .from('user_schedule')
@@ -65,10 +67,20 @@ export default async function SchedulePage() {
       .eq('is_active', true)
       .not('schedule_time', 'is', null),
     supabase
-      .from('habit_logs')
-      .select('habit_id')
+      .from('habits')
+      .select('id, name, domain_slug, frequency, schedule_time')
       .eq('user_id', user.id)
-      .eq('completed_at', todayDate),
+      .eq('is_active', true),
+    supabase
+      .from('habit_logs')
+      .select('habit_id, completed_at')
+      .eq('user_id', user.id)
+      .in('completed_at', weekDates),
+    supabase
+      .from('activity_checks')
+      .select('date, time')
+      .eq('user_id', user.id)
+      .in('date', weekDates),
   ])
 
   const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null }[]> = {}
@@ -81,7 +93,17 @@ export default async function SchedulePage() {
   }
 
   const scheduledHabits = (scheduledHabitsRes.data ?? []) as { id: string; name: string; domain_slug: string; schedule_time: string }[]
-  const todayCompletedHabitIds: string[] = (todayHabitLogsRes.data ?? []).map((r: { habit_id: string }) => r.habit_id)
+  const todayCompletedHabitIds: string[] = (weekHabitLogsRes.data ?? [])
+    .filter((r: { habit_id: string; completed_at: string }) => r.completed_at === todayDate)
+    .map((r: { habit_id: string }) => r.habit_id)
+
+  type HabitForCalendar = { id: string; name: string; domain_slug: string; frequency: 'daily' | 'weekly'; schedule_time: string | null }
+  type HabitLogEntry    = { habit_id: string; completed_at: string }
+  type ActivityCheckEntry = { date: string; time: string }
+
+  const allHabits         = (allHabitsRes.data ?? []) as HabitForCalendar[]
+  const weekHabitLogs     = (weekHabitLogsRes.data ?? []) as HabitLogEntry[]
+  const weekActivityChecks = (weekActivityChecksRes.data ?? []) as ActivityCheckEntry[]
 
   return (
     <SchedulePageClient
@@ -91,6 +113,9 @@ export default async function SchedulePage() {
       todayChecks={(checkRows ?? []).map((r: { time: string; note: string | null }) => ({ time: r.time, note: r.note }))}
       scheduledHabits={scheduledHabits}
       todayCompletedHabitIds={todayCompletedHabitIds}
+      allHabits={allHabits}
+      weekHabitLogs={weekHabitLogs}
+      weekActivityChecks={weekActivityChecks}
     />
   )
 }
