@@ -52,6 +52,17 @@ function getWeekDate(dayOfWeek: number): string {
   return d.toISOString().split('T')[0]
 }
 
+function dateKey(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function sameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
 function activityColor(item: ScheduleItem): string {
   return item.color ?? TYPE_COLORS[item.type] ?? 'rgba(255,255,255,0.30)'
 }
@@ -291,6 +302,121 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── MonthCalendar ────────────────────────────────────────────────────────────
+function MonthCalendar({ allItems, habits, onDayClick }: {
+  allItems: AllItem[]
+  habits: ScheduledHabit[]
+  onDayClick: (date: Date) => void
+}) {
+  const { isDark } = useTheme()
+  const today = new Date()
+  const [monthRef, setMonthRef] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
+
+  const firstDay = new Date(monthRef.getFullYear(), monthRef.getMonth(), 1)
+  const startOffset = firstDay.getDay()
+  const gridStart = new Date(firstDay)
+  gridStart.setDate(1 - startOffset)
+
+  const cells: Date[] = []
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart)
+    d.setDate(gridStart.getDate() + i)
+    cells.push(d)
+  }
+
+  const recurringByDow: Record<number, number> = {}
+  const bySpecificDate: Record<string, number> = {}
+  for (const item of allItems) {
+    if (item.specific_date) bySpecificDate[item.specific_date] = (bySpecificDate[item.specific_date] ?? 0) + 1
+    else recurringByDow[item.day_of_week] = (recurringByDow[item.day_of_week] ?? 0) + 1
+  }
+  const habitsCount = habits.length
+
+  function countForDate(d: Date): number {
+    const dow = d.getDay()
+    const key = dateKey(d)
+    const recurring = dow === 6 ? 0 : recurringByDow[dow] ?? 0
+    const specific  = bySpecificDate[key] ?? 0
+    const habit     = dow === 6 ? 0 : habitsCount
+    return recurring + specific + habit
+  }
+
+  const monthLabel = monthRef.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' })
+  const dayHeaders = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']
+
+  return (
+    <div className="px-4 pt-2 pb-6" dir="rtl">
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setMonthRef(new Date(monthRef.getFullYear(), monthRef.getMonth() - 1, 1))}
+          className="p-2 rounded-lg"
+          style={{ color: w(0.6, isDark) }}
+        >
+          <ChevronRight size={20} />
+        </button>
+        <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{monthLabel}</p>
+        <button
+          onClick={() => setMonthRef(new Date(monthRef.getFullYear(), monthRef.getMonth() + 1, 1))}
+          className="p-2 rounded-lg"
+          style={{ color: w(0.6, isDark) }}
+        >
+          <ChevronLeft size={20} />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {dayHeaders.map((h, i) => (
+          <div
+            key={i}
+            className="text-center text-[11px] font-bold py-1"
+            style={{ color: i === 6 ? w(0.25, isDark) : 'var(--muted-foreground)' }}
+          >{h}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((d, i) => {
+          const isCurMonth = d.getMonth() === monthRef.getMonth()
+          const isToday    = sameDay(d, today)
+          const count      = isCurMonth ? countForDate(d) : 0
+          const isShabbat  = d.getDay() === 6
+          return (
+            <button
+              key={i}
+              onClick={() => onDayClick(d)}
+              disabled={!isCurMonth || isShabbat}
+              className="aspect-square rounded-xl flex flex-col items-center justify-center transition-all active:scale-95 disabled:active:scale-100"
+              style={{
+                background:  isToday ? 'rgba(34,211,238,0.15)' : isCurMonth ? 'var(--c-surface-2)' : 'transparent',
+                border:      isToday ? '1px solid rgba(34,211,238,0.30)' : `1px solid ${isCurMonth ? 'var(--c-border)' : 'transparent'}`,
+                opacity:     isCurMonth ? (isShabbat ? 0.45 : 1) : 0.25,
+                cursor:      isCurMonth && !isShabbat ? 'pointer' : 'default',
+              }}
+            >
+              <span className="text-sm font-semibold" style={{ color: isToday ? 'rgb(103,232,249)' : 'var(--foreground)' }}>
+                {d.getDate()}
+              </span>
+              {count > 0 && (
+                <span
+                  className="text-[9px] font-mono mt-0.5 px-1.5 rounded-full"
+                  style={{
+                    color:      isToday ? 'rgb(103,232,249)' : 'var(--muted-foreground)',
+                    background: isToday ? 'rgba(34,211,238,0.10)' : 'transparent',
+                  }}
+                >{count}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="text-[10px] text-center mt-4" style={{ color: 'var(--muted-foreground)' }}>
+        לחצי על יום כדי לעבור לתצוגת הלוז שלו
+      </p>
     </div>
   )
 }
@@ -679,6 +805,20 @@ export function SchedulePageClient({
     />
   )
 
+  const calendarView = (
+    <MonthCalendar
+      allItems={allItems}
+      habits={scheduledHabits}
+      onDayClick={(d) => {
+        const dow = d.getDay()
+        if (dow >= 0 && dow <= 5) {
+          setDay(dow)
+          setTab('schedule')
+        }
+      }}
+    />
+  )
+
   return (
     <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
 
@@ -703,14 +843,8 @@ export function SchedulePageClient({
       {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
       <div className="md:hidden flex flex-col" style={{ height: 'calc(100dvh - 180px)' }}>
         <div className="flex-shrink-0 px-4 pb-3">{tabBar}</div>
-        <div className="flex-1 overflow-hidden">
-          {tab === 'calendar' && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-              <span style={{ fontSize: 52 }}>📅</span>
-              <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה</p>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.28)' }}>תצוגת לוח שנה חודשי — בפיתוח</p>
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto">
+          {tab === 'calendar' && calendarView}
           {tab === 'schedule' && tableView}
         </div>
       </div>
@@ -718,12 +852,7 @@ export function SchedulePageClient({
       {/* ── DESKTOP ─────────────────────────────────────────────────────────── */}
       <div className="hidden md:block max-w-2xl mx-auto px-4">
         <div className="mb-5 w-fit">{tabBar}</div>
-        {tab === 'calendar' && (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <span style={{ fontSize: 52 }}>📅</span>
-            <p className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>לוח שנה — בפיתוח</p>
-          </div>
-        )}
+        {tab === 'calendar' && calendarView}
         {tab === 'schedule' && tableView}
       </div>
 
