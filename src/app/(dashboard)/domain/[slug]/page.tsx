@@ -6,11 +6,15 @@ import { TorahWorkspaceClient } from '@/components/torah/torah-workspace-client'
 import { FinanceClient } from './finance-client'
 import { FriendsClient } from './friends-client'
 import { SportsClient } from './sports-client'
+import { SecularClient } from './secular-client'
+import { MusicClient } from './music-client'
 import type { Habit, HabitLog, LearningSession, LearningSummary, TorahLesson, DailyTrack } from '@/types'
 import type { DomainTask, DomainGoal } from '@/types/ecosystem'
 import type { FinanceTransaction, FinanceWishlistItem } from '@/types/finance'
 import type { FriendContact, FriendInteraction } from '@/types/friends'
 import type { SportWorkoutLog, SportFoodRestriction, SportChallenge } from '@/types/sports'
+import type { SecularBook, SecularProject } from '@/types/secular'
+import type { MusicPracticeLog, MusicSong } from '@/types/music'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -184,6 +188,58 @@ export default async function DomainPage({ params }: Props) {
         workoutLogs={workoutLogs}
         foodRestrictions={foodRestrictions}
         challenges={challenges}
+        schemaReady={schemaReady}
+      />
+    )
+  }
+
+  if (slug === 'secular') {
+    const today = new Date().toISOString().split('T')[0]
+    const [habitsRes, logsRes, booksRes, projectsRes] = await Promise.all([
+      supabase.from('habits').select('*').eq('user_id', user.id).eq('domain_slug', 'secular').eq('is_active', true).order('created_at', { ascending: true }),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
+      supabase.from('secular_books').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('secular_projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    ])
+    const habits = (habitsRes.data as Habit[]) ?? []
+    const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
+    const books = (booksRes.data as SecularBook[]) ?? []
+    const projects = (projectsRes.data as SecularProject[]) ?? []
+    const schemaReady = !booksRes.error && !projectsRes.error
+    return (
+      <SecularClient
+        domain={domain!}
+        habits={habits}
+        completedIds={completedIds}
+        userId={user.id}
+        books={books}
+        projects={projects}
+        schemaReady={schemaReady}
+      />
+    )
+  }
+
+  if (slug === 'music') {
+    const today = new Date().toISOString().split('T')[0]
+    const [habitsRes, logsRes, practiceRes, songsRes] = await Promise.all([
+      supabase.from('habits').select('*').eq('user_id', user.id).eq('domain_slug', 'music').eq('is_active', true).order('created_at', { ascending: true }),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
+      supabase.from('music_practice_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(365),
+      supabase.from('music_songs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    ])
+    const habits = (habitsRes.data as Habit[]) ?? []
+    const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
+    const practiceLogs = (practiceRes.data as MusicPracticeLog[]) ?? []
+    const songs = (songsRes.data as MusicSong[]) ?? []
+    const schemaReady = !practiceRes.error && !songsRes.error
+    return (
+      <MusicClient
+        domain={domain!}
+        habits={habits}
+        completedIds={completedIds}
+        userId={user.id}
+        practiceLogs={practiceLogs}
+        songs={songs}
         schemaReady={schemaReady}
       />
     )
