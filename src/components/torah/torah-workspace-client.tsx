@@ -1,14 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Home, BookOpen, Rss, FileText, User } from 'lucide-react'
+import { ArrowRight, BookOpen, FileText, Home } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { TorahHomeTab } from './torah-home-tab'
 import { TorahLearnTab } from './torah-learn-tab'
-import { TorahFeedTab } from './torah-feed-tab'
 import { TorahSummariesTab } from './torah-summaries-tab'
-import { TorahProfileTab } from './torah-profile-tab'
-import type { Habit, LearningSession, LearningSummary, TorahLesson, DailyTrack } from '@/types'
+import type { Habit, LearningSession, LearningSummary, DailyTrack } from '@/types'
 
 interface Props {
   userId: string
@@ -16,18 +15,14 @@ interface Props {
   completedIds: string[]
   sessions: LearningSession[]
   summaries: LearningSummary[]
-  totalSeconds: number
   todaySeconds: number
   todaySessionCount: number
-  lessons: TorahLesson[]
-  savedLessonIds: string[]
   dailyTracks: DailyTrack[]
 }
 
-type Tab = 'home' | 'learn' | 'feed' | 'summaries' | 'profile'
+type Tab = 'home' | 'learn' | 'summaries'
 
-const TORAH_COLOR = '#0f766e'
-const TORAH_TINT = 'rgba(15,118,110,0.12)'
+const COLOR = '#0F766E'
 
 export function TorahWorkspaceClient({
   userId,
@@ -35,28 +30,17 @@ export function TorahWorkspaceClient({
   completedIds,
   sessions,
   summaries,
-  totalSeconds,
   todaySeconds,
   todaySessionCount,
-  lessons,
-  savedLessonIds,
   dailyTracks,
 }: Props) {
+  const router = useRouter()
   const { t, isRTL } = useLang()
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [localSummaries, setLocalSummaries] = useState<LearningSummary[]>(summaries)
   const [localSessions, setLocalSessions] = useState<LearningSession[]>(sessions)
   const [localTodaySeconds, setLocalTodaySeconds] = useState(todaySeconds)
   const [localTodayCount, setLocalTodayCount] = useState(todaySessionCount)
-  const [localSavedIds, setLocalSavedIds] = useState<string[]>(savedLessonIds)
-
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'home', label: t('torahHome'), icon: <Home size={18} /> },
-    { id: 'learn', label: t('torahLearn'), icon: <BookOpen size={18} /> },
-    { id: 'feed', label: t('torahFeed'), icon: <Rss size={18} /> },
-    { id: 'summaries', label: t('torahSummaries'), icon: <FileText size={18} /> },
-    { id: 'profile', label: t('torahProfile'), icon: <User size={18} /> },
-  ]
 
   function onSessionSaved(session: LearningSession, addedSeconds: number) {
     setLocalSessions((prev) => [session, ...prev.slice(0, 9)])
@@ -80,55 +64,60 @@ export function TorahWorkspaceClient({
     setLocalSessions((prev) => prev.filter((s) => s.id !== id))
   }
 
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'home',      label: t('torahHome'),      icon: <Home size={16} /> },
+    { id: 'learn',     label: t('torahLearn'),     icon: <BookOpen size={16} /> },
+    { id: 'summaries', label: t('torahSummaries'), icon: <FileText size={16} /> },
+  ]
+
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
-      {/* Header */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-8">
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4 space-y-5 md:max-w-none md:px-0 md:pt-8">
+
+        {/* Header — same style as all other domain clients */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-xl flex-shrink-0"
+            style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
+          >
+            <ArrowRight size={20} style={{ color: 'var(--foreground)', transform: isRTL ? 'none' : 'rotate(180deg)' }} />
+          </button>
           <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl"
-            style={{ background: TORAH_TINT, color: TORAH_COLOR }}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
+            style={{ background: `${COLOR}22` }}
           >
             📖
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
-              {t('torahWorkspace')}
+              {isRTL ? 'לימודי קודש' : 'Torah Study'}
             </h1>
             <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              {isRTL ? 'ניהול לימוד יומי' : 'Daily learning management'}
+              {isRTL ? 'ניהול לימוד יומי' : 'Daily learning'}
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Internal tab bar */}
-      <div
-        className="flex overflow-x-auto scrollbar-hide px-3 py-2 gap-1 sticky top-0 z-10"
-        style={{ background: 'var(--c-surface)', borderBottom: `1px solid ${TORAH_TINT}` }}
-      >
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-          return (
+        {/* Tab bar */}
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0"
-              style={
-                isActive
-                  ? { background: TORAH_COLOR, color: '#fff' }
-                  : { background: 'transparent', color: 'var(--c-text-muted)' }
-              }
+              className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{
+                background: activeTab === tab.id ? COLOR : 'transparent',
+                color: activeTab === tab.id ? 'white' : 'var(--muted-foreground)',
+              }}
             >
               {tab.icon}
               {tab.label}
             </button>
-          )
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* Tab content */}
-      <div className="max-w-2xl mx-auto">
+        {/* Tab content */}
         {activeTab === 'home' && (
           <TorahHomeTab
             habits={habits}
@@ -150,14 +139,6 @@ export function TorahWorkspaceClient({
             initialTracks={dailyTracks}
           />
         )}
-        {activeTab === 'feed' && (
-          <TorahFeedTab
-            userId={userId}
-            lessons={lessons}
-            savedLessonIds={localSavedIds}
-            onSavedChange={setLocalSavedIds}
-          />
-        )}
         {activeTab === 'summaries' && (
           <TorahSummariesTab
             userId={userId}
@@ -167,15 +148,7 @@ export function TorahWorkspaceClient({
             onDeleted={onSummaryDeleted}
           />
         )}
-        {activeTab === 'profile' && (
-          <TorahProfileTab
-            habits={habits}
-            completedIds={completedIds}
-            sessions={localSessions}
-            summaries={localSummaries}
-            totalSeconds={totalSeconds + (localTodaySeconds - todaySeconds)}
-          />
-        )}
+
       </div>
     </div>
   )

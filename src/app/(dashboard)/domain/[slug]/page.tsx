@@ -8,7 +8,7 @@ import { FriendsClient } from './friends-client'
 import { SportsClient } from './sports-client'
 import { SecularClient } from './secular-client'
 import { MusicClient } from './music-client'
-import type { Habit, HabitLog, LearningSession, LearningSummary, TorahLesson, DailyTrack } from '@/types'
+import type { Habit, HabitLog, LearningSession, LearningSummary, DailyTrack } from '@/types'
 import type { DomainTask, DomainGoal } from '@/types/ecosystem'
 import type { FinanceTransaction, FinanceWishlistItem } from '@/types/finance'
 import type { FriendContact, FriendInteraction } from '@/types/friends'
@@ -33,64 +33,20 @@ export default async function DomainPage({ params }: Props) {
 
   if (slug === 'torah') {
     const today = new Date().toISOString().split('T')[0]
-    const [habitsRes, logsRes, sessionsRes, summariesRes, statsRes, lessonsRes, savedRes, tracksRes] =
-      await Promise.all([
-        supabase
-          .from('habits')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('domain_slug', 'torah')
-          .eq('is_active', true)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('habit_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('completed_at', today),
-        supabase
-          .from('learning_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('learning_summaries')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('updated_at', { ascending: false })
-          .limit(20),
-        supabase
-          .from('learning_sessions')
-          .select('duration_seconds')
-          .eq('user_id', user.id),
-        supabase
-          .from('torah_lessons')
-          .select('*')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('saved_lessons')
-          .select('lesson_id')
-          .eq('user_id', user.id),
-        supabase
-          .from('torah_daily_tracks')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('sort_order', { ascending: true }),
-      ])
+    const [habitsRes, logsRes, sessionsRes, summariesRes, tracksRes] = await Promise.all([
+      supabase.from('habits').select('*').eq('user_id', user.id).eq('domain_slug', 'torah').eq('is_active', true).order('created_at', { ascending: true }),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
+      supabase.from('learning_sessions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+      supabase.from('learning_summaries').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(20),
+      supabase.from('torah_daily_tracks').select('*').eq('user_id', user.id).order('sort_order', { ascending: true }),
+    ])
 
     const habits = (habitsRes.data as Habit[]) ?? []
-    const todayLogs = (logsRes.data as HabitLog[]) ?? []
-    const completedIds = todayLogs.map((l) => l.habit_id)
+    const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
     const sessions = (sessionsRes.data as LearningSession[]) ?? []
     const summaries = (summariesRes.data as LearningSummary[]) ?? []
-    const allSessions = (statsRes.data as { duration_seconds: number }[]) ?? []
-    const totalSeconds = allSessions.reduce((acc, s) => acc + s.duration_seconds, 0)
     const todaySessions = sessions.filter((s) => s.created_at.startsWith(today))
     const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration_seconds, 0)
-    const lessons = (lessonsRes.data as TorahLesson[]) ?? []
-    const savedLessonIds = ((savedRes.data as { lesson_id: string }[]) ?? []).map(
-      (r) => r.lesson_id
-    )
     const dailyTracks = (tracksRes.data as DailyTrack[]) ?? []
 
     return (
@@ -100,11 +56,8 @@ export default async function DomainPage({ params }: Props) {
         completedIds={completedIds}
         sessions={sessions}
         summaries={summaries}
-        totalSeconds={totalSeconds}
         todaySeconds={todaySeconds}
         todaySessionCount={todaySessions.length}
-        lessons={lessons}
-        savedLessonIds={savedLessonIds}
         dailyTracks={dailyTracks}
       />
     )
