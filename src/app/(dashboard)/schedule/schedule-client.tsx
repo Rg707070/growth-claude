@@ -12,7 +12,7 @@ import { useLang } from '@/lib/lang'
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
 const HOUR_END = 23
-const ROW_H = 64
+const ROW_H = 28
 const DAYS = [0, 1, 2, 3, 4, 5]
 
 const PRESET_COLORS = [
@@ -345,28 +345,30 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
   const clr = activityColor(item)
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all"
+      className="flex items-center gap-1 rounded-lg border transition-all overflow-hidden"
       style={{
+        height: 22,
         background:  isChecked ? 'rgba(52,211,153,0.06)' : hexBg(clr),
         borderColor: isChecked ? 'rgba(52,211,153,0.25)' : hexBorder(clr),
+        borderRightWidth: 3,
+        borderRightColor: clr,
         opacity:     isChecked ? 0.55 : 1,
       }}
     >
-      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: clr }} />
-      <button onClick={onEdit} className="flex-1 min-w-0 text-right">
-        <p className="text-sm font-semibold truncate" style={{ color: isChecked ? 'var(--muted-foreground)' : clr, textDecoration: isChecked ? 'line-through' : 'none' }}>{item.label}</p>
-        <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{item.time}</p>
+      <button onClick={onEdit} className="flex-1 min-w-0 flex items-center gap-1 px-1.5 h-full overflow-hidden" dir="rtl">
+        <span className="text-[10px] font-semibold truncate flex-1" style={{ color: isChecked ? 'var(--muted-foreground)' : clr, textDecoration: isChecked ? 'line-through' : 'none' }}>{item.label}</span>
+        <span className="text-[9px] font-mono flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>{item.time.slice(0,5)}</span>
       </button>
       {isToday && (
         <button
           onClick={onToggle}
-          className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
+          className="w-5 h-full px-1 flex items-center justify-center flex-shrink-0 transition-all border-r"
           style={{
             background:  isChecked ? 'rgba(52,211,153,0.20)' : 'transparent',
-            borderColor: isChecked ? 'rgba(52,211,153,0.60)' : 'var(--c-border)',
+            borderColor: isChecked ? 'rgba(52,211,153,0.30)' : 'var(--c-border)',
           }}
         >
-          {isChecked && <Check size={10} className="text-emerald-400" />}
+          {isChecked && <Check size={8} className="text-emerald-400" />}
         </button>
       )}
     </div>
@@ -384,28 +386,31 @@ function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
   const clr = domain?.color ?? '#6366F1'
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all"
+      className="flex items-center gap-1 rounded-lg border transition-all overflow-hidden"
       style={{
+        height: 22,
         background:  isCompleted ? 'rgba(52,211,153,0.06)' : `${clr}18`,
         borderColor: isCompleted ? 'rgba(52,211,153,0.25)' : `${clr}40`,
+        borderRightWidth: 3,
+        borderRightColor: clr,
         opacity:     isCompleted ? 0.55 : 1,
       }}
     >
-      <span className="text-sm flex-shrink-0">{domain?.icon ?? '✦'}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate" style={{ color: isCompleted ? 'var(--muted-foreground)' : clr, textDecoration: isCompleted ? 'line-through' : 'none' }}>{habit.name}</p>
-        <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{habit.schedule_time.slice(0, 5)}</p>
+      <div className="flex-1 min-w-0 flex items-center gap-1 px-1.5 h-full overflow-hidden" dir="rtl">
+        <span className="text-xs flex-shrink-0 leading-none">{domain?.icon ?? '✦'}</span>
+        <span className="text-[10px] font-semibold truncate flex-1" style={{ color: isCompleted ? 'var(--muted-foreground)' : clr, textDecoration: isCompleted ? 'line-through' : 'none' }}>{habit.name}</span>
+        <span className="text-[9px] font-mono flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>{habit.schedule_time.slice(0, 5)}</span>
       </div>
       {isToday && (
         <button
           onClick={onToggle}
-          className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
+          className="w-5 h-full px-1 flex items-center justify-center flex-shrink-0 transition-all border-r"
           style={{
             background:  isCompleted ? 'rgba(52,211,153,0.20)' : 'transparent',
-            borderColor: isCompleted ? 'rgba(52,211,153,0.60)' : `${clr}60`,
+            borderColor: isCompleted ? 'rgba(52,211,153,0.30)' : `${clr}40`,
           }}
         >
-          {isCompleted && <Check size={10} className="text-emerald-400" />}
+          {isCompleted && <Check size={8} className="text-emerald-400" />}
         </button>
       )}
     </div>
@@ -547,15 +552,15 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
               )}
 
               {/* Hour label */}
-              <div className="w-12 flex-shrink-0 flex items-start justify-center pt-2" style={{ direction: 'ltr' }}>
-                <span className="text-[10px] font-mono" style={{ color: isCurHour ? 'rgb(103,232,249)' : w(0.18, isDark) }}>
-                  {String(h).padStart(2, '0')}:00
+              <div className="w-8 flex-shrink-0 flex items-start justify-center pt-1" style={{ direction: 'ltr' }}>
+                <span className="text-[9px] font-mono" style={{ color: isCurHour ? 'rgb(103,232,249)' : w(0.18, isDark) }}>
+                  {String(h).padStart(2, '0')}
                 </span>
               </div>
 
               {/* Activities + Habits */}
               <div
-                className="flex-1 flex flex-col gap-1 py-1.5 px-2"
+                className="flex-1 flex flex-col gap-0.5 py-0.5 px-1"
                 dir="rtl"
                 onClick={() => { if (isEmpty) onAdd(h) }}
                 style={{ cursor: isEmpty ? 'pointer' : 'default' }}
@@ -586,13 +591,13 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
       </div>
 
       {/* Add button */}
-      <div className="px-4 py-3 border-t flex-shrink-0" style={{ borderColor: w(0.06, isDark) }} dir="rtl">
+      <div className="px-3 py-2 border-t flex-shrink-0" style={{ borderColor: w(0.06, isDark) }} dir="rtl">
         <button
           onClick={() => onAdd(null)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95"
           style={{ background: 'rgba(34,211,238,0.08)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.20)' }}
         >
-          <Plus size={16} />
+          <Plus size={13} />
           הוסף ל{DAY_NAMES_HE[dayOfWeek]}
         </button>
       </div>
