@@ -51,7 +51,7 @@ export default async function SchedulePage() {
   ] = await Promise.all([
     supabase
       .from('user_schedule')
-      .select('id, day_of_week, time, label, type, color, specific_date')
+      .select('id, day_of_week, time, label, type, color, specific_date, recurrence')
       .eq('user_id', user.id)
       .or(`specific_date.is.null,specific_date.in.(${weekDates.join(',')})`)
       .order('time'),
@@ -83,13 +83,14 @@ export default async function SchedulePage() {
       .in('date', weekDates),
   ])
 
-  const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null }[]> = {}
+  const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null; recurrence: string }[]> = {}
   for (const row of scheduleRows ?? []) {
     const d = row.specific_date
       ? new Date(row.specific_date + 'T12:00:00').getDay()
       : (row.day_of_week as number)
     if (!userItems[d]) userItems[d] = []
-    userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, color: (row.color as string | null) ?? null, specificDate: row.specific_date ?? null })
+    const inferredRecurrence = row.specific_date ? 'once' : 'weekly'
+    userItems[d].push({ id: row.id, time: row.time, label: row.label, type: row.type, color: (row.color as string | null) ?? null, specificDate: row.specific_date ?? null, recurrence: (row.recurrence as string | null) ?? inferredRecurrence })
   }
 
   const scheduledHabits = (scheduledHabitsRes.data ?? []) as { id: string; name: string; domain_slug: string; schedule_time: string }[]

@@ -39,6 +39,17 @@ const TYPE_OPTIONS = [
   { value: 'other',  label: 'אחר'   },
 ]
 
+const RECURRENCE_OPTIONS = [
+  { value: 'daily',    label: 'יומי',    labelEn: 'Daily',    icon: '🔁', color: 'rgba(34,211,238,0.18)',  border: 'rgba(34,211,238,0.35)',  text: 'rgb(103,232,249)'   },
+  { value: 'weekdays', label: 'ימי חול', labelEn: 'Weekdays', icon: '📅', color: 'rgba(99,102,241,0.18)',  border: 'rgba(99,102,241,0.35)',  text: 'rgb(165,180,252)'   },
+  { value: 'weekly',   label: 'שבועי',   labelEn: 'Weekly',   icon: '🗓️', color: 'rgba(52,211,153,0.15)',  border: 'rgba(52,211,153,0.30)',  text: 'rgb(110,231,183)'   },
+  { value: 'monthly',  label: 'חודשי',   labelEn: 'Monthly',  icon: '📆', color: 'rgba(245,158,11,0.18)',  border: 'rgba(245,158,11,0.35)',  text: 'rgb(252,211,77)'    },
+  { value: 'yearly',   label: 'שנתי',    labelEn: 'Yearly',   icon: '🎯', color: 'rgba(239,68,68,0.18)',   border: 'rgba(239,68,68,0.35)',   text: 'rgb(252,165,165)'   },
+  { value: 'once',     label: 'חד פעמי', labelEn: 'Once',     icon: '⚡', color: 'rgba(139,92,246,0.18)',  border: 'rgba(139,92,246,0.35)',  text: 'rgb(196,181,253)'   },
+] as const
+
+type RecurrenceType = typeof RECURRENCE_OPTIONS[number]['value']
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toMin(t: string): number {
   const [h, m] = t.split(':').map(Number)
@@ -76,6 +87,7 @@ interface ScheduleItem {
   type: string
   color?: string | null
   specificDate: string | null
+  recurrence: string
 }
 
 interface AllItem {
@@ -195,21 +207,55 @@ function ColorPicker({ value, onChange }: { value: string | null; onChange: (c: 
   )
 }
 
+// ─── RecurrencePicker ─────────────────────────────────────────────────────────
+function RecurrencePicker({ value, onChange }: { value: RecurrenceType; onChange: (r: RecurrenceType) => void }) {
+  return (
+    <div>
+      <p className="text-[11px] mb-2.5 font-semibold" style={{ color: 'var(--muted-foreground)' }}>חזרה</p>
+      <div className="grid grid-cols-3 gap-2">
+        {RECURRENCE_OPTIONS.map(opt => {
+          const isSelected = value === opt.value
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-2xl border transition-all active:scale-95"
+              style={{
+                background:  isSelected ? opt.color : 'rgba(255,255,255,0.04)',
+                borderColor: isSelected ? opt.border : 'rgba(255,255,255,0.08)',
+                boxShadow:   isSelected ? `0 0 12px ${opt.border}` : 'none',
+              }}
+            >
+              <span className="text-base leading-none">{opt.icon}</span>
+              <span className="text-[10px] font-semibold leading-none" style={{ color: isSelected ? opt.text : 'rgba(255,255,255,0.45)' }}>
+                {opt.label}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── EditSheet ────────────────────────────────────────────────────────────────
 function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClose }: {
   item: ScheduleItem
   dayOfWeek: number
   getDuplicateCount: (label: string, day: number) => number
-  onSave: (id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, color: string | null, dayOfWeek: number) => Promise<void>
+  onSave: (id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, color: string | null, dayOfWeek: number, recurrence: RecurrenceType) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onClose: () => void
 }) {
-  const [editTime,  setEditTime]  = useState(item.time)
-  const [editLabel, setEditLabel] = useState(item.label)
-  const [editType,  setEditType]  = useState(item.type)
-  const [editColor, setEditColor] = useState<string | null>(item.color ?? null)
-  const [showScope, setShowScope] = useState(false)
-  const [busy,      setBusy]      = useState(false)
+  const [editTime,       setEditTime]       = useState(item.time)
+  const [editLabel,      setEditLabel]      = useState(item.label)
+  const [editType,       setEditType]       = useState(item.type)
+  const [editColor,      setEditColor]      = useState<string | null>(item.color ?? null)
+  const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>(
+    (RECURRENCE_OPTIONS.find(r => r.value === item.recurrence)?.value ?? 'weekly')
+  )
+  const [showScope,      setShowScope]      = useState(false)
+  const [busy,           setBusy]           = useState(false)
 
   function handleSave() {
     if (!editLabel.trim() || !editTime) return
@@ -219,7 +265,8 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
 
   async function confirmSave(scope: 'single' | 'all' | 'once') {
     setShowScope(false); setBusy(true)
-    await onSave(item.id, scope, editTime, editLabel.trim(), editType, editColor, dayOfWeek)
+    const finalRecurrence: RecurrenceType = scope === 'once' ? 'once' : editRecurrence
+    await onSave(item.id, scope, editTime, editLabel.trim(), editType, editColor, dayOfWeek, finalRecurrence)
     setBusy(false); onClose()
   }
 
@@ -256,6 +303,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
             <select value={editType} onChange={e => setEditType(e.target.value)} className="rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-2.5 focus:outline-none">
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            <RecurrencePicker value={editRecurrence} onChange={setEditRecurrence} />
             <div>
               <p className="text-[11px] mb-2" style={{ color: 'var(--muted-foreground)' }}>צבע</p>
               <ColorPicker value={editColor} onChange={setEditColor} />
@@ -270,20 +318,21 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
 // ─── AddSheet ─────────────────────────────────────────────────────────────────
 function AddSheet({ defaultHour, onAdd, onClose }: {
   defaultHour: number | null
-  onAdd: (time: string, label: string, type: string, color: string | null) => Promise<void>
+  onAdd: (time: string, label: string, type: string, color: string | null, recurrence: RecurrenceType) => Promise<void>
   onClose: () => void
 }) {
   const defaultTime = defaultHour !== null ? `${String(defaultHour).padStart(2, '0')}:00` : ''
-  const [time,  setTime]  = useState(defaultTime)
-  const [label, setLabel] = useState('')
-  const [type,  setType]  = useState('other')
-  const [color, setColor] = useState<string | null>(null)
-  const [busy,  setBusy]  = useState(false)
+  const [time,       setTime]       = useState(defaultTime)
+  const [label,      setLabel]      = useState('')
+  const [type,       setType]       = useState('other')
+  const [color,      setColor]      = useState<string | null>(null)
+  const [recurrence, setRecurrence] = useState<RecurrenceType>('weekly')
+  const [busy,       setBusy]       = useState(false)
 
   async function handleAdd() {
     if (!time || !label.trim()) return
     setBusy(true)
-    await onAdd(time, label.trim(), type, color)
+    await onAdd(time, label.trim(), type, color, recurrence)
     setBusy(false); onClose()
   }
 
@@ -306,6 +355,7 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
           <select value={type} onChange={e => setType(e.target.value)} className="rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-2.5 focus:outline-none">
             {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+          <RecurrencePicker value={recurrence} onChange={setRecurrence} />
           <div>
             <p className="text-[11px] mb-2" style={{ color: 'var(--muted-foreground)' }}>צבע</p>
             <ColorPicker value={color} onChange={setColor} />
@@ -325,6 +375,7 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
   onToggle: () => void
 }) {
   const clr = activityColor(item)
+  const rec = RECURRENCE_OPTIONS.find(r => r.value === item.recurrence)
   return (
     <div
       className="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all"
@@ -337,7 +388,17 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: clr }} />
       <button onClick={onEdit} className="flex-1 min-w-0 text-right">
         <p className="text-sm font-semibold truncate" style={{ color: isChecked ? 'var(--muted-foreground)' : clr, textDecoration: isChecked ? 'line-through' : 'none' }}>{item.label}</p>
-        <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{item.time}</p>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <p className="text-[10px] font-mono" style={{ color: 'var(--muted-foreground)' }}>{item.time}</p>
+          {rec && (
+            <span
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold leading-none"
+              style={{ background: rec.color, color: rec.text, border: `1px solid ${rec.border}` }}
+            >
+              {rec.icon} {rec.label}
+            </span>
+          )}
+        </div>
       </button>
       {isToday && (
         <button
@@ -646,17 +707,17 @@ export function SchedulePageClient({
     return allItems.filter(i => i.label === label && i.day_of_week !== currentDay && i.specific_date === null).length
   }
 
-  async function saveEdit(id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, color: string | null, dayOfWeek: number) {
+  async function saveEdit(id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, color: string | null, dayOfWeek: number, recurrence: RecurrenceType) {
     const sb = createClient()
     if (scope === 'single') {
-      await sb.from('user_schedule').update({ time, label, type, color }).eq('id', id)
+      await sb.from('user_schedule').update({ time, label, type, color, recurrence }).eq('id', id)
     } else if (scope === 'all') {
       const orig = allItems.find(i => i.id === id)
       if (!orig) return
       for (const mid of allItems.filter(i => i.label === orig.label && i.specific_date === null).map(i => i.id))
-        await sb.from('user_schedule').update({ time, label, type, color }).eq('id', mid)
+        await sb.from('user_schedule').update({ time, label, type, color, recurrence }).eq('id', mid)
     } else {
-      await sb.from('user_schedule').insert({ user_id: userId, day_of_week: dayOfWeek, time, label, type, color, sort_order: 0, specific_date: getWeekDate(dayOfWeek) })
+      await sb.from('user_schedule').insert({ user_id: userId, day_of_week: dayOfWeek, time, label, type, color, recurrence: 'once', sort_order: 0, specific_date: getWeekDate(dayOfWeek) })
     }
     router.refresh()
   }
@@ -666,8 +727,8 @@ export function SchedulePageClient({
     router.refresh()
   }
 
-  async function addItem(time: string, label: string, type: string, color: string | null) {
-    await createClient().from('user_schedule').insert({ user_id: userId, day_of_week: day, time, label, type, color, sort_order: 0 })
+  async function addItem(time: string, label: string, type: string, color: string | null, recurrence: RecurrenceType) {
+    await createClient().from('user_schedule').insert({ user_id: userId, day_of_week: day, time, label, type, color, recurrence, sort_order: 0 })
     router.refresh()
   }
 

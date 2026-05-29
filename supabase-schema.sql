@@ -196,8 +196,12 @@ create table if not exists public.user_schedule (
   sort_order integer not null default 0,
   specific_date date,
   color text,
+  recurrence text not null default 'weekly',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migration for existing databases:
+-- ALTER TABLE public.user_schedule ADD COLUMN IF NOT EXISTS recurrence text NOT NULL DEFAULT 'weekly';
 
 alter table public.user_schedule enable row level security;
 create policy "Users can view own schedule"
