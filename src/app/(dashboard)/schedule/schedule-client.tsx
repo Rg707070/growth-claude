@@ -708,14 +708,18 @@ function WeeklyOverview({ weekData, dailyHabits, userItems, isDark, onSelectDayA
 }
 
 // ─── MonthlyView ──────────────────────────────────────────────────────────────
-function MonthlyView({ userId, allHabits, isDark }: {
+function MonthlyView({ userId, allHabits, isDark, monthOffset, onMonthOffsetChange, onSelectDate }: {
   userId: string
   allHabits: HabitFull[]
   isDark: boolean
+  monthOffset: number
+  onMonthOffsetChange: (o: number) => void
+  onSelectDate: (dateStr: string) => void
 }) {
-  const [monthOffset, setMonthOffset] = useState(0)
   const [dayData, setDayData] = useState<Record<string, { habits: number; activities: number }>>({})
   const [loading, setLoading] = useState(true)
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
+  const [clickedCell, setClickedCell] = useState<string | null>(null)
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
@@ -764,18 +768,23 @@ function MonthlyView({ userId, allHabits, isDark }: {
   ]
   while (cells.length % 7 !== 0) cells.push(null)
 
+  function handleCellClick(dateStr: string) {
+    setClickedCell(dateStr)
+    setTimeout(() => { setClickedCell(null); onSelectDate(dateStr) }, 180)
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3" dir="rtl">
       {/* Month navigation */}
       <div className="flex items-center justify-between">
-        <button onClick={() => setMonthOffset(o => o - 1)} className="p-1.5 rounded-lg"
+        <button onClick={() => onMonthOffsetChange(monthOffset - 1)} className="p-1.5 rounded-lg"
           style={{ color: w(0.5, isDark) }}>
           <ChevronLeft size={18} />
         </button>
         <span className="text-sm font-bold" style={{ color: w(0.85, isDark) }}>
           {MONTH_NAMES_HE[month]} {year}
         </span>
-        <button onClick={() => setMonthOffset(o => o + 1)} disabled={monthOffset >= 0}
+        <button onClick={() => onMonthOffsetChange(monthOffset + 1)} disabled={monthOffset >= 0}
           className="p-1.5 rounded-lg disabled:opacity-20"
           style={{ color: w(0.5, isDark) }}>
           <ChevronRight size={18} />
@@ -807,23 +816,39 @@ function MonthlyView({ userId, allHabits, isDark }: {
             const isToday   = dateStr === todayStr
             const isFuture  = dateStr > todayStr
             const isShabbat = new Date(`${dateStr}T12:00:00`).getDay() === 6
+            const isClickable = !isFuture && !isShabbat
             const entry = dayData[dateStr]
             const habitRate = dailyHabitCount > 0 && entry ? Math.min(1, entry.habits / dailyHabitCount) : 0
+            const isHovered = hoveredCell === dateStr
+            const isClicked = clickedCell === dateStr
 
             let bg = 'transparent'
-            if (!isFuture && !isShabbat && entry) {
-              bg = `rgba(34,211,238,${0.06 + habitRate * 0.25})`
-            }
+            if (!isFuture && !isShabbat && entry) bg = `rgba(34,211,238,${0.06 + habitRate * 0.25})`
             if (isShabbat) bg = 'rgba(248,113,113,0.06)'
+            if (isToday)   bg = 'rgba(34,211,238,0.15)'
 
             return (
-              <div key={idx}
+              <div
+                key={idx}
+                onClick={() => isClickable && handleCellClick(dateStr)}
+                onMouseEnter={() => isClickable && setHoveredCell(dateStr)}
+                onMouseLeave={() => setHoveredCell(null)}
                 className="aspect-square flex flex-col items-center justify-center rounded-xl"
                 style={{
-                  background: isToday ? 'rgba(34,211,238,0.15)' : bg,
-                  border: isToday ? '1px solid rgba(34,211,238,0.40)' : '1px solid transparent',
+                  background: bg,
+                  border: isToday
+                    ? '1px solid rgba(34,211,238,0.40)'
+                    : isHovered && isClickable
+                      ? '1px solid rgba(34,211,238,0.28)'
+                      : '1px solid transparent',
                   opacity: isFuture ? 0.35 : 1,
-                }}>
+                  cursor: isClickable ? 'pointer' : 'default',
+                  transform: isClicked ? 'scale(1.18)' : isHovered && isClickable ? 'scale(1.06)' : 'scale(1)',
+                  transition: 'transform 160ms cubic-bezier(.34,1.56,.64,1), border-color 120ms ease',
+                  zIndex: isClicked || isHovered ? 1 : 0,
+                  position: 'relative',
+                }}
+              >
                 <span className="text-[11px] font-bold leading-none"
                   style={{ color: isToday ? 'rgb(103,232,249)' : isShabbat ? 'rgba(248,113,113,0.7)' : w(0.7, isDark) }}>
                   {day}
@@ -845,7 +870,7 @@ function MonthlyView({ userId, allHabits, isDark }: {
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-4 justify-center pt-1 pb-2" dir="ltr">
+      <div className="flex items-center gap-3 justify-center pt-1 pb-2 flex-wrap" dir="ltr">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full" style={{ background: 'rgb(52,211,153)' }} />
           <span className="text-[10px]" style={{ color: w(0.4, isDark) }}>הרגלים</span>
@@ -858,16 +883,141 @@ function MonthlyView({ userId, allHabits, isDark }: {
           <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(248,113,113,0.5)' }} />
           <span className="text-[10px]" style={{ color: w(0.4, isDark) }}>שבת</span>
         </div>
+        <span className="text-[9px] opacity-40" style={{ color: w(0.5, isDark) }}>· לחץ ליומי</span>
       </div>
     </div>
   )
 }
 
+// ─── YearlyTooltip ────────────────────────────────────────────────────────────
+function YearlyTooltip({ dateStr, count, dailyHabitCount, isDark }: {
+  dateStr: string
+  count: number
+  dailyHabitCount: number
+  isDark: boolean
+}) {
+  const d = new Date(dateStr + 'T12:00:00')
+  const rate = dailyHabitCount > 0 ? Math.round((count / dailyHabitCount) * 100) : 0
+  return (
+    <div style={{
+      padding: '7px 11px',
+      borderRadius: 10,
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      background: isDark ? 'rgba(6,14,26,0.90)' : 'rgba(238,248,255,0.92)',
+      border: '1px solid rgba(34,211,238,0.30)',
+      boxShadow: '0 8px 28px rgba(0,0,0,0.38), 0 0 0 1px rgba(34,211,238,0.08)',
+      direction: 'rtl',
+      whiteSpace: 'nowrap',
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgb(103,232,249)' }}>
+        {DAY_SHORT_HE[d.getDay()]} {d.getDate()} {MONTH_NAMES_HE[d.getMonth()]}
+      </div>
+      <div style={{ fontSize: 9, marginTop: 2, color: count > 0 ? w(0.65, isDark) : w(0.32, isDark) }}>
+        {d.getDay() === 6 ? 'שבת' : count > 0 ? `${count} הרגלים${dailyHabitCount > 0 ? ` · ${rate}%` : ''}` : 'אין פעילות'}
+      </div>
+    </div>
+  )
+}
+
+// ─── QuarterHeatmap ───────────────────────────────────────────────────────────
+function QuarterHeatmap({ weeks, byDay, dailyHabitCount, todayStr, isDark, onCellClick }: {
+  weeks: string[][]
+  byDay: Record<string, number>
+  dailyHabitCount: number
+  todayStr: string
+  isDark: boolean
+  onCellClick: (dateStr: string) => void
+}) {
+  const [tooltip, setTooltip] = useState<{ dateStr: string; top: number; left: number } | null>(null)
+  const [clickedCell, setClickedCell] = useState<string | null>(null)
+
+  function getCellColor(dateStr: string): string {
+    if (dateStr > todayStr) return w(0.04, isDark)
+    const dow = new Date(dateStr + 'T12:00:00').getDay()
+    if (dow === 6) return 'rgba(248,113,113,0.10)'
+    const count = byDay[dateStr] ?? 0
+    if (count === 0) return w(0.07, isDark)
+    const rate = dailyHabitCount > 0 ? count / dailyHabitCount : 0.5
+    if (rate <= 0.25) return 'rgba(34,211,238,0.22)'
+    if (rate <= 0.5)  return 'rgba(34,211,238,0.44)'
+    if (rate <= 0.75) return 'rgba(34,211,238,0.64)'
+    return 'rgba(52,211,153,0.84)'
+  }
+
+  function handleMouseEnter(e: React.MouseEvent<HTMLDivElement>, dateStr: string) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltip({ dateStr, top: rect.top, left: rect.left + rect.width / 2 })
+  }
+
+  function handleClick(dateStr: string) {
+    const d = new Date(dateStr + 'T12:00:00')
+    if (dateStr > todayStr || d.getDay() === 6) return
+    setTooltip(null)
+    setClickedCell(dateStr)
+    setTimeout(() => { setClickedCell(null); onCellClick(dateStr) }, 200)
+  }
+
+  return (
+    <div style={{ direction: 'ltr', position: 'relative' }}>
+      {[0, 1, 2, 3, 4, 5, 6].map(dayIdx => (
+        <div key={dayIdx} className="flex items-center" style={{ gap: 2, marginBottom: 2 }}>
+          <div style={{
+            width: 12, fontSize: 7, flexShrink: 0, textAlign: 'right', paddingRight: 2,
+            color: dayIdx === 6 ? 'rgba(248,113,113,0.45)' : w(0.22, isDark),
+          }}>
+            {DAY_SHORT_HE[dayIdx].replace('׳', '')}
+          </div>
+          {weeks.map((week, wIdx) => {
+            const dateStr = week[dayIdx]
+            const d = new Date(dateStr + 'T12:00:00')
+            const isClickable = dateStr <= todayStr && d.getDay() !== 6
+            const isClicked = clickedCell === dateStr
+            return (
+              <div
+                key={wIdx}
+                onMouseEnter={e => handleMouseEnter(e, dateStr)}
+                onMouseLeave={() => setTooltip(null)}
+                onClick={() => handleClick(dateStr)}
+                style={{
+                  width: 9, height: 9, flexShrink: 0, borderRadius: 2,
+                  background: getCellColor(dateStr),
+                  cursor: isClickable ? 'pointer' : 'default',
+                  transform: isClicked ? 'scale(1.7)' : 'scale(1)',
+                  transition: 'transform 200ms cubic-bezier(.34,1.56,.64,1)',
+                  position: 'relative', zIndex: isClicked ? 3 : 1,
+                }}
+              />
+            )
+          })}
+        </div>
+      ))}
+      {tooltip && (
+        <div style={{
+          position: 'fixed',
+          top: tooltip.top - 62,
+          left: Math.max(4, Math.min(tooltip.left - 58, (typeof window !== 'undefined' ? window.innerWidth : 400) - 125)),
+          zIndex: 300,
+          pointerEvents: 'none',
+        }}>
+          <YearlyTooltip
+            dateStr={tooltip.dateStr}
+            count={byDay[tooltip.dateStr] ?? 0}
+            dailyHabitCount={dailyHabitCount}
+            isDark={isDark}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── YearlyView ───────────────────────────────────────────────────────────────
-function YearlyView({ userId, allHabits, isDark }: {
+function YearlyView({ userId, allHabits, isDark, onSelectDate }: {
   userId: string
   allHabits: HabitFull[]
   isDark: boolean
+  onSelectDate: (dateStr: string) => void
 }) {
   const [byDay, setByDay] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -903,8 +1053,7 @@ function YearlyView({ userId, allHabits, isDark }: {
         for (let i = 0; i < 365; i++) {
           const ds = cur.toISOString().split('T')[0]
           if (ds < startDate) break
-          const dow = cur.getDay()
-          if (dow !== 6) {
+          if (cur.getDay() !== 6) {
             if (bd[ds] && bd[ds] >= Math.max(1, Math.floor(dailyHabitCount * 0.5))) s++
             else break
           }
@@ -915,8 +1064,7 @@ function YearlyView({ userId, allHabits, isDark }: {
       })
   }, [userId, startDate, todayStr, dailyHabitCount])
 
-  // Build week columns starting from Sunday before startDate
-  const weeks = useMemo(() => {
+  const allWeeks = useMemo(() => {
     const startSun = new Date(startDate + 'T12:00:00')
     startSun.setDate(startSun.getDate() - startSun.getDay())
     const end = new Date(todayStr + 'T12:00:00')
@@ -933,41 +1081,35 @@ function YearlyView({ userId, allHabits, isDark }: {
     return result
   }, [startDate, todayStr])
 
-  const monthLabels = useMemo(() => {
-    const labels: Record<number, string> = {}
-    weeks.forEach((week, idx) => {
+  type QuarterData = { key: string; label: string; monthRange: string; weeks: string[][]; total: number }
+
+  const quarters = useMemo((): QuarterData[] => {
+    const QLABELS = ['Q1', 'Q2', 'Q3', 'Q4']
+    const QRANGES = ['ינ׳–מרץ', 'אפ׳–יוני', 'יול׳–ספ׳', 'אוק׳–דצ׳']
+    const map = new Map<string, QuarterData>()
+    for (const week of allWeeks) {
       const d = new Date(week[0] + 'T12:00:00')
-      if (d.getDate() <= 7) labels[idx] = MONTH_NAMES_HE[d.getMonth()].slice(0, 3)
-    })
-    return labels
-  }, [weeks])
+      const y = d.getFullYear()
+      const qi = Math.floor(d.getMonth() / 3)
+      const key = `${y}-Q${qi + 1}`
+      if (!map.has(key)) map.set(key, { key, label: `${QLABELS[qi]} ${y}`, monthRange: QRANGES[qi], weeks: [], total: 0 })
+      const q = map.get(key)!
+      q.weeks.push(week)
+      for (const ds of week) q.total += byDay[ds] ?? 0
+    }
+    return [...map.values()].sort((a, b) => a.key.localeCompare(b.key))
+  }, [allWeeks, byDay])
 
   const activeDayCount = useMemo(() => Object.keys(byDay).length, [byDay])
   const totalDays = useMemo(() => {
     let count = 0
     const cur = new Date(startDate + 'T12:00:00')
     const end = new Date(todayStr + 'T12:00:00')
-    while (cur <= end) {
-      if (cur.getDay() !== 6) count++
-      cur.setDate(cur.getDate() + 1)
-    }
+    while (cur <= end) { if (cur.getDay() !== 6) count++; cur.setDate(cur.getDate() + 1) }
     return count
   }, [startDate, todayStr])
 
-  function cellColor(dateStr: string): string {
-    if (dateStr > todayStr) return w(0.04, isDark)
-    const dow = new Date(dateStr + 'T12:00:00').getDay()
-    if (dow === 6) return 'rgba(248,113,113,0.08)'
-    const count = byDay[dateStr] ?? 0
-    if (count === 0) return w(0.06, isDark)
-    const rate = dailyHabitCount > 0 ? count / dailyHabitCount : 0.5
-    if (rate <= 0.25) return 'rgba(34,211,238,0.20)'
-    if (rate <= 0.5)  return 'rgba(34,211,238,0.40)'
-    if (rate <= 0.75) return 'rgba(34,211,238,0.60)'
-    return 'rgba(52,211,153,0.80)'
-  }
-
-  const LEGEND_COLORS = [w(0.06, isDark), 'rgba(34,211,238,0.20)', 'rgba(34,211,238,0.40)', 'rgba(34,211,238,0.60)', 'rgba(52,211,153,0.80)']
+  const LEGEND_COLORS = [w(0.07, isDark), 'rgba(34,211,238,0.22)', 'rgba(34,211,238,0.44)', 'rgba(34,211,238,0.64)', 'rgba(52,211,153,0.84)']
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-4" dir="rtl">
@@ -994,50 +1136,49 @@ function YearlyView({ userId, allHabits, isDark }: {
           <span className="text-sm" style={{ color: w(0.3, isDark) }}>טוען...</span>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl p-3" style={{ background: w(0.03, isDark), border: `1px solid ${w(0.05, isDark)}` }}>
-          <div style={{ direction: 'ltr', display: 'inline-block', minWidth: 'max-content' }}>
-            {/* Month labels */}
-            <div className="flex mb-1" style={{ paddingRight: 24, gap: 3 }}>
-              {weeks.map((_, idx) => (
-                <div key={idx} style={{ width: 11, flexShrink: 0 }}>
-                  {monthLabels[idx] && (
-                    <span style={{ fontSize: 8, color: w(0.4, isDark), whiteSpace: 'nowrap' }}>{monthLabels[idx]}</span>
-                  )}
+        <>
+          {/* Q1–Q4 grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {quarters.map(q => (
+              <div key={q.key} className="rounded-2xl overflow-hidden"
+                style={{ background: w(0.03, isDark), border: `1px solid ${w(0.06, isDark)}` }}>
+                {/* Quarter header */}
+                <div className="px-3 py-2 flex items-center justify-between"
+                  style={{ background: w(0.04, isDark), borderBottom: `1px solid ${w(0.05, isDark)}` }}>
+                  <div>
+                    <div className="text-[10px] font-bold" style={{ color: 'rgb(103,232,249)' }}>{q.label}</div>
+                    <div className="text-[8px]" style={{ color: w(0.32, isDark) }}>{q.monthRange}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[13px] font-bold leading-none" style={{ color: w(0.75, isDark) }}>{q.total}</div>
+                    <div className="text-[8px]" style={{ color: w(0.28, isDark) }}>הרגלים</div>
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Heatmap rows */}
-            {[0, 1, 2, 3, 4, 5, 6].map(dayIdx => (
-              <div key={dayIdx} className="flex items-center" style={{ gap: 3, marginBottom: 3 }}>
-                <div style={{ width: 20, textAlign: 'right', fontSize: 8, color: dayIdx === 6 ? 'rgba(248,113,113,0.5)' : w(0.3, isDark), flexShrink: 0, paddingRight: 4 }}>
-                  {DAY_SHORT_HE[dayIdx].replace('׳', '')}
-                </div>
-                {weeks.map((week, wIdx) => (
-                  <div
-                    key={wIdx}
-                    style={{
-                      width: 11, height: 11, flexShrink: 0,
-                      borderRadius: 2,
-                      background: cellColor(week[dayIdx]),
-                    }}
-                    title={week[dayIdx]}
+                {/* Mini heatmap */}
+                <div className="p-2 overflow-x-auto">
+                  <QuarterHeatmap
+                    weeks={q.weeks}
+                    byDay={byDay}
+                    dailyHabitCount={dailyHabitCount}
+                    todayStr={todayStr}
+                    isDark={isDark}
+                    onCellClick={onSelectDate}
                   />
-                ))}
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Legend */}
-      <div className="flex items-center gap-2 justify-center" dir="ltr">
-        <span style={{ fontSize: 10, color: w(0.35, isDark) }}>פחות</span>
-        {LEGEND_COLORS.map((clr, i) => (
-          <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: clr, flexShrink: 0 }} />
-        ))}
-        <span style={{ fontSize: 10, color: w(0.35, isDark) }}>יותר</span>
-      </div>
+          {/* Legend */}
+          <div className="flex items-center gap-2 justify-center" dir="ltr">
+            <span style={{ fontSize: 10, color: w(0.35, isDark) }}>פחות</span>
+            {LEGEND_COLORS.map((clr, i) => (
+              <div key={i} style={{ width: 9, height: 9, borderRadius: 2, background: clr, flexShrink: 0 }} />
+            ))}
+            <span style={{ fontSize: 10, color: w(0.35, isDark) }}>יותר · לחץ לחודשי</span>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -1052,8 +1193,9 @@ export function SchedulePageClient({
   const todayDay   = new Date().getDay()
   const todayDate  = new Date().toISOString().split('T')[0]
 
-  const [view,     setView]     = useState<CalendarView>('daily')
-  const [day,      setDay]      = useState(todayDay < 6 ? todayDay : 0)
+  const [view,        setView]        = useState<CalendarView>('daily')
+  const [day,         setDay]         = useState(todayDay < 6 ? todayDay : 0)
+  const [monthOffset, setMonthOffset] = useState(0)
   const [editItem, setEditItem] = useState<ScheduleItem | null>(null)
   const [addHour,  setAddHour]  = useState<number | null | false>(false)
   const [checked,  setChecked]  = useState<Set<string>>(new Set(todayChecks.map(c => c.time)))
@@ -1101,6 +1243,20 @@ export function SchedulePageClient({
   const weekHabitTotal = pastAndToday.reduce((s, d) => s + d.habitTotal, 0)
   const weekActDone    = pastAndToday.reduce((s, d) => s + d.activityDone, 0)
   const weekActTotal   = pastAndToday.reduce((s, d) => s + d.activityTotal, 0)
+
+  // ── Drill-down handlers ──────────────────────────────────────────────────────
+  function drillFromYearly(dateStr: string) {
+    const today = new Date()
+    const d = new Date(dateStr + 'T12:00:00')
+    const offset = (d.getFullYear() - today.getFullYear()) * 12 + (d.getMonth() - today.getMonth())
+    setMonthOffset(offset)
+    setView('monthly')
+  }
+
+  function drillFromMonthly(dateStr: string) {
+    const dow = new Date(dateStr + 'T12:00:00').getDay()
+    if (dow < 6) { setDay(dow); setView('daily') }
+  }
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   function getDuplicateCount(label: string, currentDay: number) {
@@ -1340,7 +1496,14 @@ export function SchedulePageClient({
       {view === 'monthly' && (
         <div className="flex-1 min-h-0 max-w-2xl mx-auto w-full flex flex-col"
           style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
-          <MonthlyView userId={userId} allHabits={allHabits} isDark={isDark} />
+          <MonthlyView
+            userId={userId}
+            allHabits={allHabits}
+            isDark={isDark}
+            monthOffset={monthOffset}
+            onMonthOffsetChange={setMonthOffset}
+            onSelectDate={drillFromMonthly}
+          />
         </div>
       )}
 
@@ -1348,7 +1511,7 @@ export function SchedulePageClient({
       {view === 'yearly' && (
         <div className="flex-1 min-h-0 max-w-2xl mx-auto w-full flex flex-col"
           style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
-          <YearlyView userId={userId} allHabits={allHabits} isDark={isDark} />
+          <YearlyView userId={userId} allHabits={allHabits} isDark={isDark} onSelectDate={drillFromYearly} />
         </div>
       )}
 
