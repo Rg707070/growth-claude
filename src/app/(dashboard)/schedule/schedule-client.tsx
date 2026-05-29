@@ -484,16 +484,16 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
   return (
     <div className="flex flex-col flex-1 min-h-0">
 
-      {/* Date header with prev/next arrows */}
+      {/* Date header — RTL: first child = RIGHT = earlier (Sunday dir), last child = LEFT = later (Friday dir) */}
       <div className="flex items-center justify-between px-4 py-2 flex-shrink-0" dir="rtl"
         style={{ borderBottom: `1px solid ${w(0.06, isDark)}` }}>
         <button
-          onClick={() => onSelectDay(Math.min(5, dayOfWeek + 1))}
-          disabled={dayOfWeek === 5}
+          onClick={() => onSelectDay(Math.max(0, dayOfWeek - 1))}
+          disabled={dayOfWeek === 0}
           className="p-1.5 rounded-lg disabled:opacity-20"
           style={{ color: w(0.4, isDark) }}
         >
-          <ChevronLeft size={18} />
+          <ChevronRight size={18} />
         </button>
         <div className="text-center">
           <span className="text-sm font-bold" style={{ color: isToday ? 'rgb(103,232,249)' : w(0.7, isDark) }}>
@@ -505,12 +505,12 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
           )}
         </div>
         <button
-          onClick={() => onSelectDay(Math.max(0, dayOfWeek - 1))}
-          disabled={dayOfWeek === 0}
+          onClick={() => onSelectDay(Math.min(5, dayOfWeek + 1))}
+          disabled={dayOfWeek === 5}
           className="p-1.5 rounded-lg disabled:opacity-20"
           style={{ color: w(0.4, isDark) }}
         >
-          <ChevronRight size={18} />
+          <ChevronLeft size={18} />
         </button>
       </div>
 
@@ -775,11 +775,11 @@ function MonthlyView({ userId, allHabits, isDark, monthOffset, onMonthOffsetChan
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3" dir="rtl">
-      {/* Month navigation */}
+      {/* Month navigation — RTL: first child = RIGHT = go to earlier month */}
       <div className="flex items-center justify-between">
         <button onClick={() => onMonthOffsetChange(monthOffset - 1)} className="p-1.5 rounded-lg"
           style={{ color: w(0.5, isDark) }}>
-          <ChevronLeft size={18} />
+          <ChevronRight size={18} />
         </button>
         <span className="text-sm font-bold" style={{ color: w(0.85, isDark) }}>
           {MONTH_NAMES_HE[month]} {year}
@@ -787,12 +787,12 @@ function MonthlyView({ userId, allHabits, isDark, monthOffset, onMonthOffsetChan
         <button onClick={() => onMonthOffsetChange(monthOffset + 1)} disabled={monthOffset >= 0}
           className="p-1.5 rounded-lg disabled:opacity-20"
           style={{ color: w(0.5, isDark) }}>
-          <ChevronRight size={18} />
+          <ChevronLeft size={18} />
         </button>
       </div>
 
-      {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 gap-1" style={{ direction: 'ltr' }}>
+      {/* Day-of-week headers — RTL: index 0 (Sunday/א׳) on right, index 6 (Shabbat) on left */}
+      <div className="grid grid-cols-7 gap-1">
         {DAY_SHORT_HE.map((name, i) => (
           <div key={i} className="text-center text-[10px] font-semibold py-1"
             style={{ color: i === 6 ? 'rgba(248,113,113,0.6)' : w(0.35, isDark) }}>
@@ -807,7 +807,7 @@ function MonthlyView({ userId, allHabits, isDark, monthOffset, onMonthOffsetChan
           <span className="text-sm" style={{ color: w(0.3, isDark) }}>טוען...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-7 gap-1" style={{ direction: 'ltr' }}>
+        <div className="grid grid-cols-7 gap-1">
           {cells.map((day, idx) => {
             if (day === null) return <div key={idx} />
             const mm = String(month + 1).padStart(2, '0')
@@ -870,7 +870,7 @@ function MonthlyView({ userId, allHabits, isDark, monthOffset, onMonthOffsetChan
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-3 justify-center pt-1 pb-2 flex-wrap" dir="ltr">
+      <div className="flex items-center gap-3 justify-center pt-1 pb-2 flex-wrap">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full" style={{ background: 'rgb(52,211,153)' }} />
           <span className="text-[10px]" style={{ color: w(0.4, isDark) }}>הרגלים</span>
@@ -1169,13 +1169,13 @@ function YearlyView({ userId, allHabits, isDark, onSelectDate }: {
             ))}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-2 justify-center" dir="ltr">
-            <span style={{ fontSize: 10, color: w(0.35, isDark) }}>פחות</span>
-            {LEGEND_COLORS.map((clr, i) => (
+          {/* Legend — RTL: יותר on right, פחות on left */}
+          <div className="flex items-center gap-2 justify-center">
+            <span style={{ fontSize: 10, color: w(0.35, isDark) }}>יותר · לחץ לחודשי</span>
+            {[...LEGEND_COLORS].reverse().map((clr, i) => (
               <div key={i} style={{ width: 9, height: 9, borderRadius: 2, background: clr, flexShrink: 0 }} />
             ))}
-            <span style={{ fontSize: 10, color: w(0.35, isDark) }}>יותר · לחץ לחודשי</span>
+            <span style={{ fontSize: 10, color: w(0.35, isDark) }}>פחות</span>
           </div>
         </>
       )}
