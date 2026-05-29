@@ -255,7 +255,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
       )}
       <div className="fixed inset-0 z-40 flex items-end" dir="rtl">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+        <div className="relative z-10 w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
           <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4" />
           <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b" style={{ borderColor: 'var(--c-border)' }}>
             <button onClick={handleSave} disabled={busy || !editLabel.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30" style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}>
@@ -308,7 +308,7 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
   return (
     <div className="fixed inset-0 z-40 flex items-end" dir="rtl">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+      <div className="relative z-10 w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
         <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4" />
         <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b" style={{ borderColor: 'var(--c-border)' }}>
           <button onClick={handleAdd} disabled={busy || !label.trim() || !time} className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30" style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}>
