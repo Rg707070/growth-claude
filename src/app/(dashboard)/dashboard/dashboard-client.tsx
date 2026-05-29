@@ -70,6 +70,25 @@ export function DashboardClient({
   const pendingHabits = todayHabits.filter((h) => !completedSet.has(h.id))
   const doneHabits = todayHabits.filter((h) => completedSet.has(h.id))
 
+  const journalCard = (
+    <button
+      onClick={() => router.push('/journal')}
+      className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-all duration-150 hover:brightness-105 hover:-translate-y-0.5 active:scale-[0.98]"
+      style={{ background: 'var(--c-card)', border: '1px solid var(--c-card-border)' }}
+    >
+      <span className="text-2xl">✍️</span>
+      <div>
+        <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+          {isRTL ? 'יומן' : 'Journal'}
+        </p>
+        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
+        </p>
+      </div>
+      <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
+    </button>
+  )
+
   return (
     <TimeBackground>
       <div className="px-4 pt-12 pb-32 md:px-0 md:pt-8 md:pb-12">
@@ -173,7 +192,7 @@ export function DashboardClient({
                       <button
                         key={dp.domain.slug}
                         onClick={() => router.push(`/domain/${dp.domain.slug}`)}
-                        className="w-full flex items-center gap-3 p-3.5 rounded-2xl text-start transition-all hover:brightness-110 active:scale-[0.98]"
+                        className="w-full flex items-center gap-3 p-3.5 rounded-2xl text-start transition-all duration-150 hover:brightness-105 hover:-translate-y-0.5 active:scale-[0.98]"
                         style={{
                           background: 'rgba(249,115,22,0.07)',
                           border: '1px solid rgba(249,115,22,0.25)',
@@ -211,7 +230,7 @@ export function DashboardClient({
               >
                 {t('allDomains')}
               </h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {domainsToShow.map((dp) => {
                   const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }
                   const isFailing = stat.failingDays >= 3
@@ -221,7 +240,7 @@ export function DashboardClient({
                     <button
                       key={dp.domain.slug}
                       onClick={() => router.push(`/domain/${dp.domain.slug}`)}
-                      className="relative flex flex-col p-3.5 rounded-2xl text-start transition-all hover:brightness-110 active:scale-[0.97] overflow-hidden"
+                      className="relative flex flex-col p-3.5 rounded-2xl text-start transition-all duration-150 hover:brightness-105 hover:-translate-y-0.5 active:scale-[0.97] overflow-hidden"
                       style={{
                         background: 'var(--c-card)',
                         border: isFailing
@@ -316,22 +335,7 @@ export function DashboardClient({
             {/* Mobile/tablet-only: schedule + journal + chart */}
             <div className="space-y-6 lg:hidden">
               <ScheduleToday />
-              <button
-                onClick={() => router.push('/journal')}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
-                style={{ background: 'var(--c-card)', border: '1px solid var(--c-card-border)' }}
-              >
-                <span className="text-2xl">✍️</span>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                    {isRTL ? 'יומן' : 'Journal'}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                    {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
-                  </p>
-                </div>
-                <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
-              </button>
+              {journalCard}
               <WeeklyChart days={weeklyActivity} />
             </div>
           </div>
@@ -340,22 +344,7 @@ export function DashboardClient({
           <div className="hidden lg:flex flex-col gap-6 sticky top-8">
             <WeeklyChart days={weeklyActivity} />
             <ScheduleToday />
-            <button
-              onClick={() => router.push('/journal')}
-              className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
-              style={{ background: 'var(--c-card)', border: '1px solid var(--c-card-border)' }}
-            >
-              <span className="text-2xl">✍️</span>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                  {isRTL ? 'יומן' : 'Journal'}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
-                </p>
-              </div>
-              <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
-            </button>
+            {journalCard}
           </div>
 
         </div>

@@ -27,7 +27,7 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
   ]
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen pb-24 animate-fade-up" style={{ background: 'var(--background)' }}>
       <div className="max-w-5xl mx-auto px-4 pt-8">
         {/* Header */}
         <div className="mb-6">

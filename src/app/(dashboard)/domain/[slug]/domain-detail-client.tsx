@@ -141,7 +141,7 @@ export function DomainDetailClient({
   )
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6 animate-fade-up">
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 md:max-w-none md:px-0 md:py-8">
 
         {/* Header */}
@@ -149,7 +149,7 @@ export function DomainDetailClient({
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.back()}
-              className="p-2 rounded-xl transition-colors"
+              className="p-2 rounded-xl transition-all duration-150 hover:brightness-105 active:scale-[0.96]"
               style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
             >
               <ArrowRight
@@ -252,7 +252,7 @@ export function DomainDetailClient({
             ) : (
               <button
                 onClick={() => setAdding(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all duration-150 hover:brightness-105 active:scale-[0.98]"
                 style={{
                   borderColor: 'var(--border)',
                   color: 'var(--muted-foreground)',

@@ -10,7 +10,7 @@ export default function DomainsPage() {
   const router = useRouter()
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6 animate-fade-up">
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 md:max-w-none md:px-0 md:py-8">
         <div className="flex items-center gap-3">
           <div
