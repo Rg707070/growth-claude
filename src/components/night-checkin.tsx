@@ -18,8 +18,11 @@ export function NightCheckIn() {
   const leftRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour < 21) return
+    const now = new Date()
+    const hour = now.getHours()
+    const day = now.getDay() // 0=Sun, 5=Fri, 6=Sat
+    const minHour = day === 5 ? 14 : day === 6 ? 21 : 19
+    if (hour < minHour) return
 
     const today = new Date().toISOString().split('T')[0]
     if (localStorage.getItem(`night_checkin_${today}`)) return
