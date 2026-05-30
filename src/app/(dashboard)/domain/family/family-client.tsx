@@ -4,8 +4,8 @@ import { useState, useTransition, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight, Plus, X, Check, Trash2, Calendar, ListChecks,
-  Plane, Utensils, MapPin, Activity, Star, Tag, Cake,
-  ChevronLeft, ChevronRight, RotateCcw, Clock,
+  Plane, Utensils, Activity, Star, Tag, Cake, Flame,
+  ChevronLeft, ChevronRight, RotateCcw,
 } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { Button } from '@/components/ui/button'
@@ -13,9 +13,11 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import {
   createFamilyTask, updateFamilyTaskStatus, deleteFamilyTask,
+  createFamilyHabit, completeFamilyHabit, deleteFamilyHabit,
   createFamilyEvent, updateFamilyEventStatus, deleteFamilyEvent,
 } from './actions'
 import { subscribeFamilyRealtime } from '@/lib/family/realtime'
+import { isStreakAlive } from '@/lib/family/streak-engine'
 import {
   buildMonthGrid, getHebrewMonthYearForMonth, getGregorianMonthLabel,
   getHebrewDateStr, getGregorianDateStr, todayDateString, HEBREW_DAY_HEADERS,
@@ -23,12 +25,13 @@ import {
 import type { Domain } from '@/types'
 import type {
   FamilyTask, FamilyTaskCategory, FamilyTaskUrgency,
+  FamilyHabit, FamilyHabitFrequency, FamilyHabitAccountability,
   FamilyEvent, FamilyEventCategory, FamilyEventRecurrence,
 } from '@/types/family'
 
 // ─── Constants ────────────────────────────────────────────────
 
-type Tab = 'tasks' | 'events'
+type Tab = 'tasks' | 'habits' | 'events'
 
 const TASK_CATEGORIES: { value: FamilyTaskCategory; he: string; en: string }[] = [
   { value: 'household', he: 'בית', en: 'Household' },
@@ -74,11 +77,12 @@ interface Props {
   domain: Domain
   userId: string
   tasks: FamilyTask[]
+  habits: FamilyHabit[]
   events: FamilyEvent[]
   schemaReady: boolean
 }
 
-export function FamilyClient({ domain, tasks, events, schemaReady }: Props) {
+export function FamilyClient({ domain, tasks, habits, events, schemaReady }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
   const [tab, setTab] = useState<Tab>('tasks')
@@ -92,15 +96,12 @@ export function FamilyClient({ domain, tasks, events, schemaReady }: Props) {
 
   useEffect(() => {
     if (!schemaReady) return
-    return subscribeFamilyRealtime(['family_tasks', 'family_events'], () => router.refresh())
+    return subscribeFamilyRealtime(['family_tasks', 'family_habits', 'family_events'], () => router.refresh())
   }, [router, schemaReady])
 
   const openTasks = tasks.filter((t) => t.status !== 'done').length
+  const bestStreak = habits.reduce((m, h) => Math.max(m, h.current_streak), 0)
   const upcomingEvents = events.filter((e) => e.status === 'upcoming' && e.event_date >= today).length
-  const todayItems = [
-    ...events.filter((e) => e.event_date === today),
-    ...tasks.filter((t) => t.due_date === today && t.status !== 'done'),
-  ].length
 
   const prevMonth = () =>
     setCalDate((p) => p.month === 1 ? { year: p.year - 1, month: 12 } : { ...p, month: p.month - 1 })
@@ -138,16 +139,19 @@ export function FamilyClient({ domain, tasks, events, schemaReady }: Props) {
       <div className="grid grid-cols-3 gap-2">
         <StatTile color={domain.color} icon={<ListChecks size={16} />}
           label={isRTL ? 'משימות' : 'Tasks'} value={openTasks} />
+        <StatTile color={domain.color} icon={<Flame size={16} />}
+          label={isRTL ? 'רצף הטוב' : 'Best Streak'} value={bestStreak} />
         <StatTile color={domain.color} icon={<Calendar size={16} />}
-          label={isRTL ? 'ארועים קרובים' : 'Upcoming'} value={upcomingEvents} />
-        <StatTile color={domain.color} icon={<Star size={16} />}
-          label={isRTL ? 'היום' : 'Today'} value={todayItems} />
+          label={isRTL ? 'ארועים' : 'Events'} value={upcomingEvents} />
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
         <TabButton active={tab === 'tasks'} onClick={() => setTab('tasks')} color={domain.color}>
           {isRTL ? 'משימות' : 'Tasks'}
+        </TabButton>
+        <TabButton active={tab === 'habits'} onClick={() => setTab('habits')} color={domain.color}>
+          {isRTL ? 'הרגלים' : 'Habits'}
         </TabButton>
         <TabButton active={tab === 'events'} onClick={() => setTab('events')} color={domain.color}>
           {isRTL ? 'ארועים' : 'Events'}
@@ -156,6 +160,9 @@ export function FamilyClient({ domain, tasks, events, schemaReady }: Props) {
 
       {tab === 'tasks' && (
         <TasksTab tasks={tasks} accentColor={domain.color} isRTL={isRTL} today={today} />
+      )}
+      {tab === 'habits' && (
+        <HabitsTab habits={habits} accentColor={domain.color} isRTL={isRTL} />
       )}
       {tab === 'events' && (
         <EventsTab events={events} accentColor={domain.color} isRTL={isRTL} today={today} />
@@ -406,6 +413,172 @@ function TaskCard({ task, isRTL, today }: { task: FamilyTask; isRTL: boolean; to
       >
         <Trash2 size={14} />
       </button>
+    </Card>
+  )
+}
+
+// ─── Habits Tab ───────────────────────────────────────────────
+
+function HabitsTab({ habits, accentColor, isRTL }: {
+  habits: FamilyHabit[]; accentColor: string; isRTL: boolean
+}) {
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [frequency, setFrequency] = useState<FamilyHabitFrequency>('daily')
+  const [accountability, setAccountability] = useState<FamilyHabitAccountability>('shared_streak')
+  const [anchor, setAnchor] = useState('')
+  const [pending, startTransition] = useTransition()
+
+  const submit = () => {
+    if (!name.trim()) return
+    startTransition(async () => {
+      await createFamilyHabit({
+        name: name.trim(),
+        frequency,
+        accountability_type: accountability,
+        context_anchor: anchor.trim() || null,
+      })
+      setName(''); setAnchor(''); setFrequency('daily'); setAccountability('shared_streak')
+      setAdding(false)
+    })
+  }
+
+  return (
+    <div className="space-y-3">
+      {habits.length === 0 && !adding && (
+        <p className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'אין הרגלים — הוסף ראשון' : 'No habits yet — add one'}
+        </p>
+      )}
+
+      {habits.map((habit) => (
+        <HabitCard key={habit.id} habit={habit} accentColor={accentColor} isRTL={isRTL} />
+      ))}
+
+      {adding ? (
+        <Card className="p-4 space-y-3">
+          <Input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={isRTL ? 'שם ההרגל (למשל: ארוחה משפחתית)' : 'Habit name'}
+          />
+          <Input
+            value={anchor}
+            onChange={(e) => setAnchor(e.target.value)}
+            placeholder={isRTL ? 'עוגן הקשר (למשל: אחרי ארוחת ערב)' : 'Context anchor (optional)'}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={frequency}
+              onChange={(e) => setFrequency(e.target.value as FamilyHabitFrequency)}
+              className="rounded-lg px-3 py-2 text-sm"
+              style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+            >
+              <option value="daily">{isRTL ? 'יומי' : 'Daily'}</option>
+              <option value="weekly">{isRTL ? 'שבועי' : 'Weekly'}</option>
+              <option value="monthly">{isRTL ? 'חודשי' : 'Monthly'}</option>
+            </select>
+            <select
+              value={accountability}
+              onChange={(e) => setAccountability(e.target.value as FamilyHabitAccountability)}
+              className="rounded-lg px-3 py-2 text-sm"
+              style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+            >
+              <option value="shared_streak">{isRTL ? 'רצף משותף' : 'Shared streak'}</option>
+              <option value="individual">{isRTL ? 'אישי' : 'Individual'}</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={submit} disabled={pending || !name.trim()} className="flex-1"
+              style={{ background: accentColor, color: 'white' }}>
+              {isRTL ? 'שמור' : 'Save'}
+            </Button>
+            <button
+              onClick={() => { setAdding(false); setName(''); setAnchor('') }}
+              className="p-2 rounded-lg"
+              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </Card>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
+          style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
+        >
+          <Plus size={18} />
+          <span className="text-sm">{isRTL ? 'הוסף הרגל' : 'Add Habit'}</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+function HabitCard({ habit, accentColor, isRTL }: {
+  habit: FamilyHabit; accentColor: string; isRTL: boolean
+}) {
+  const [pending, startTransition] = useTransition()
+  const alive = isStreakAlive(habit)
+  const freqLabel = habit.frequency === 'daily'
+    ? (isRTL ? 'יומי' : 'daily')
+    : habit.frequency === 'weekly'
+      ? (isRTL ? 'שבועי' : 'weekly')
+      : (isRTL ? 'חודשי' : 'monthly')
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-start gap-3">
+        <button
+          onClick={() => startTransition(async () => { await completeFamilyHabit(habit.id) })}
+          disabled={pending}
+          className="flex-shrink-0 px-3 py-2 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all"
+          style={{
+            background: alive ? accentColor : `${accentColor}22`,
+            color: alive ? 'white' : accentColor,
+          }}
+        >
+          <Flame size={14} />
+          {habit.current_streak}
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+            {habit.name}
+          </p>
+          <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            <span>{freqLabel}</span>
+            <span>·</span>
+            <span>
+              {habit.accountability_type === 'shared_streak'
+                ? (isRTL ? 'רצף משותף' : 'shared')
+                : (isRTL ? 'אישי' : 'individual')}
+            </span>
+            {!alive && habit.current_streak > 0 && (
+              <>
+                <span>·</span>
+                <span style={{ color: '#ef4444' }}>{isRTL ? 'פג תוקף' : 'lapsed'}</span>
+              </>
+            )}
+          </div>
+          {habit.context_anchor && (
+            <p className="text-[11px] mt-1 italic" style={{ color: 'var(--muted-foreground)' }}>
+              {habit.context_anchor}
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={() => startTransition(async () => { await deleteFamilyHabit(habit.id) })}
+          disabled={pending}
+          className="p-1.5"
+          style={{ color: 'var(--muted-foreground)' }}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
     </Card>
   )
 }
