@@ -8,7 +8,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
-import { HabitRow } from '@/components/habit-row'
+import { DomainHabitRow } from '@/components/domain-habit-row'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -427,7 +427,7 @@ function HabitsTab({ habits, completedSet, domain, userId, onAdded, isRTL }: {
         </p>
       )}
       {habits.map((h) => (
-        <HabitRow key={h.id} habit={h} isCompleted={completedSet.has(h.id)} />
+        <DomainHabitRow key={h.id} habit={h} isCompleted={completedSet.has(h.id)} />
       ))}
       {adding ? (
         <div className="flex gap-2">

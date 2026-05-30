@@ -9,7 +9,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
-import { HabitRow } from '@/components/habit-row'
+import { DomainHabitRow } from '@/components/domain-habit-row'
 import { ProgressRing } from '@/components/progress-ring'
 import { DomainJournal } from '@/components/domain-journal'
 import { Button } from '@/components/ui/button'
@@ -294,7 +294,7 @@ function HabitsTab({
         </p>
       )}
       {habits.map((habit) => (
-        <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
+        <DomainHabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
       ))}
 
       {adding ? (

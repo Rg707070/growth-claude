@@ -6,7 +6,7 @@ import { ArrowRight, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
-import { HabitRow } from '@/components/habit-row'
+import { DomainHabitRow } from '@/components/domain-habit-row'
 import { ProgressRing } from '@/components/progress-ring'
 import { QuickLinks } from '@/components/integrations/quick-links'
 import { SefariaWidget } from '@/components/integrations/sefaria-widget'
@@ -198,7 +198,7 @@ export function DomainDetailClient({
                 </div>
               )}
               {habits.map((habit) => (
-                <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
+                <DomainHabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
               ))}
             </div>
 
