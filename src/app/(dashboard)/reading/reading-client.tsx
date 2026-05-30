@@ -813,7 +813,7 @@ function ReadingCalendar({ books, isRTL }: ReadingCalendarProps) {
                 {day}
               </span>
               <div className="flex flex-col gap-[2px] mt-0.5">
-                {booksThisDay.slice(0, 2).map(({ book, pages }) => (
+                {booksThisDay.map(({ book, pages }) => (
                   <div
                     key={book.id}
                     className="rounded text-[9px] font-bold text-center px-0.5 leading-tight py-[1px]"
@@ -823,11 +823,6 @@ function ReadingCalendar({ books, isRTL }: ReadingCalendarProps) {
                     {pages}{isRTL ? 'ע' : 'p'}
                   </div>
                 ))}
-                {booksThisDay.length > 2 && (
-                  <div className="text-[9px] text-center font-medium" style={{ color: 'var(--muted-foreground)' }}>
-                    +{booksThisDay.length - 2}
-                  </div>
-                )}
               </div>
             </div>
           )
