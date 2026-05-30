@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Bell, BellOff, X, Trash2 } from 'lucide-react'
+import { Check, Bell, BellOff, X, Trash2, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getDomainBySlug } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
@@ -373,18 +373,29 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
             : (isRTL ? 'לחץ לסימון כבוצע' : 'Tap to complete')}
         </span>
 
-        <button
-          type="button"
-          onClick={openReminderPicker}
-          className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-90"
-          style={{
-            color: reminder ? accentColor : 'var(--muted-foreground)',
-            background: reminder ? `${accentColor}18` : 'transparent',
-          }}
-          aria-label={t('setReminder')}
-        >
-          {reminder ? <Bell size={14} /> : <BellOff size={14} />}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-90"
+            style={{ color: 'var(--muted-foreground)', background: 'transparent' }}
+            aria-label={t('deleteHabit')}
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={openReminderPicker}
+            className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-90"
+            style={{
+              color: reminder ? accentColor : 'var(--muted-foreground)',
+              background: reminder ? `${accentColor}18` : 'transparent',
+            }}
+            aria-label={t('setReminder')}
+          >
+            {reminder ? <Bell size={14} /> : <BellOff size={14} />}
+          </button>
+        </div>
       </div>
 
       {/* Reminder picker */}
