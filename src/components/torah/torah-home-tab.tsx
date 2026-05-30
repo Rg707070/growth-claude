@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
-import { BookOpen, Clock, Flame, ChevronLeft, CheckCircle2, Circle, Plus } from 'lucide-react'
+import { type ReactNode } from 'react'
+import { BookOpen, Clock, Flame, ChevronLeft, Plus } from 'lucide-react'
 import { useLang } from '@/lib/lang'
-import { createClient } from '@/lib/supabase/client'
+import { DomainHabitRow } from '@/components/domain-habit-row'
 import type { Habit, LearningSession, LearningSummary } from '@/types'
 
 const GREEN = '#16a34a'
@@ -37,7 +36,7 @@ function timeAgo(iso: string) {
 export function TorahHomeTab({
   habits,
   completedIds: initialCompleted,
-  userId,
+  userId: _userId,
   recentSessions,
   recentSummaries,
   todaySeconds,
@@ -45,25 +44,10 @@ export function TorahHomeTab({
   onNavigate,
 }: Props) {
   const { t } = useLang()
-  const router = useRouter()
-  const [completed, setCompleted] = useState(new Set(initialCompleted))
-  const supabase = createClient()
-
-  async function toggleHabit(habit: Habit) {
-    const today = new Date().toISOString().split('T')[0]
-    const isDone = completed.has(habit.id)
-    if (isDone) {
-      await supabase.from('habit_logs').delete().eq('habit_id', habit.id).eq('completed_at', today)
-      setCompleted((prev) => { const next = new Set(prev); next.delete(habit.id); return next })
-    } else {
-      await supabase.from('habit_logs').insert({ user_id: userId, habit_id: habit.id, completed_at: today })
-      setCompleted((prev) => new Set([...prev, habit.id]))
-    }
-    router.refresh()
-  }
 
   const lastSession = recentSessions[0]
-  const doneCount = habits.filter((h) => completed.has(h.id)).length
+  const completedSet = new Set(initialCompleted)
+  const doneCount = habits.filter((h) => completedSet.has(h.id)).length
   const todayMinutes = formatMinutes(todaySeconds)
   const allDone = habits.length > 0 && doneCount === habits.length
 
@@ -128,35 +112,9 @@ export function TorahHomeTab({
           </div>
 
           <div className="space-y-2">
-            {habits.map((habit) => {
-              const isDone = completed.has(habit.id)
-              return (
-                <button
-                  key={habit.id}
-                  onClick={() => toggleHabit(habit)}
-                  className="w-full flex items-center gap-3 px-4 rounded-xl text-right transition-all active:scale-[0.99]"
-                  style={{
-                    background: isDone ? `${GREEN}12` : 'var(--card)',
-                    border: `1px solid ${isDone ? GREEN + '40' : 'var(--border)'}`,
-                    minHeight: '52px',
-                  }}
-                >
-                  {isDone
-                    ? <CheckCircle2 size={20} className="shrink-0" style={{ color: GREEN_LIGHT }} />
-                    : <Circle size={20} className="shrink-0" style={{ color: 'var(--muted-foreground)' }} />
-                  }
-                  <span
-                    className="text-sm flex-1 text-right font-medium py-3.5"
-                    style={{
-                      color: isDone ? 'var(--muted-foreground)' : 'var(--foreground)',
-                      textDecoration: isDone ? 'line-through' : 'none',
-                    }}
-                  >
-                    {habit.name}
-                  </span>
-                </button>
-              )
-            })}
+            {habits.map((habit) => (
+              <DomainHabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
+            ))}
           </div>
         </section>
       )}
