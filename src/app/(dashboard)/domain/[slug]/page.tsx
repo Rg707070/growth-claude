@@ -11,7 +11,7 @@ import { MusicClient } from './music-client'
 import type { Habit, HabitLog, LearningSession, LearningSummary, DailyTrack } from '@/types'
 import type { DomainTask, DomainGoal } from '@/types/ecosystem'
 import type { FinanceTransaction, FinanceWishlistItem } from '@/types/finance'
-import type { FriendContact, FriendInteraction } from '@/types/friends'
+import type { FriendContact, FriendInteraction, FriendReminder } from '@/types/friends'
 import type { SportWorkoutLog, SportFoodRestriction, SportChallenge } from '@/types/sports'
 import type { SecularBook, SecularProject } from '@/types/secular'
 import type { MusicPracticeLog, MusicSong } from '@/types/music'
@@ -91,19 +91,19 @@ export default async function DomainPage({ params }: Props) {
 
   if (slug === 'friends') {
     const today = new Date().toISOString().split('T')[0]
-    const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 31)
-    const monthAgoStr = monthAgo.toISOString().split('T')[0]
-    const [habitsRes, logsRes, contactsRes, interactionsRes] = await Promise.all([
+    const [habitsRes, logsRes, contactsRes, interactionsRes, remindersRes] = await Promise.all([
       supabase.from('habits').select('*').eq('user_id', user.id).eq('domain_slug', 'friends').eq('is_active', true).order('created_at', { ascending: true }),
       supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
       supabase.from('friend_contacts').select('*').eq('user_id', user.id).order('name', { ascending: true }),
-      supabase.from('friend_interactions').select('*').eq('user_id', user.id).gte('date', monthAgoStr).order('date', { ascending: false }),
+      supabase.from('friend_interactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
+      supabase.from('friend_reminders').select('*').eq('user_id', user.id).eq('done', false).order('remind_on', { ascending: true }),
     ])
     const habits = (habitsRes.data as Habit[]) ?? []
     const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
     const contacts = (contactsRes.data as FriendContact[]) ?? []
     const interactions = (interactionsRes.data as FriendInteraction[]) ?? []
-    const schemaReady = !contactsRes.error && !interactionsRes.error
+    const reminders = (remindersRes.data as FriendReminder[]) ?? []
+    const schemaReady = !contactsRes.error && !interactionsRes.error && !remindersRes.error
     return (
       <FriendsClient
         domain={domain!}
@@ -112,6 +112,7 @@ export default async function DomainPage({ params }: Props) {
         userId={user.id}
         contacts={contacts}
         interactions={interactions}
+        reminders={reminders}
         schemaReady={schemaReady}
       />
     )
