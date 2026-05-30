@@ -266,7 +266,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
               <Trash2 size={16} />
             </button>
           </div>
-          <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 24px))' }}>
+          <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(80px, env(safe-area-inset-bottom, 80px))' }}>
             <div className="flex gap-2">
               <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
               <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="שם הפעילות" className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
@@ -316,7 +316,7 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
           </button>
           <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm" style={{ color: 'var(--muted-foreground)' }}>ביטול</button>
         </div>
-        <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 24px))' }}>
+        <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(80px, env(safe-area-inset-bottom, 80px))' }}>
           <div className="flex gap-2">
             <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
             <input value={label} onChange={e => setLabel(e.target.value)} placeholder="שם הפעילות" autoFocus className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
