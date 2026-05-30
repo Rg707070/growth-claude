@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowRight, BookOpen, FileText, Home } from 'lucide-react'
+import { ArrowRight, BookOpen, FileText, Home, CalendarDays } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { TorahHomeTab } from './torah-home-tab'
 import { TorahLearnTab } from './torah-learn-tab'
 import { TorahSummariesTab } from './torah-summaries-tab'
+import { TorahCalendarTab } from './torah-calendar-tab'
 import type { Habit, LearningSession, LearningSummary, DailyTrack } from '@/types'
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
   dailyTracks: DailyTrack[]
 }
 
-type Tab = 'home' | 'learn' | 'summaries'
+type Tab = 'home' | 'learn' | 'summaries' | 'calendar'
 
 const COLOR = '#0F766E'
 
@@ -68,6 +69,7 @@ export function TorahWorkspaceClient({
     { id: 'home',      label: t('torahHome'),      icon: <Home size={16} /> },
     { id: 'learn',     label: t('torahLearn'),     icon: <BookOpen size={16} /> },
     { id: 'summaries', label: t('torahSummaries'), icon: <FileText size={16} /> },
+    { id: 'calendar',  label: isRTL ? 'לוח שנה' : 'Calendar', icon: <CalendarDays size={16} /> },
   ]
 
   return (
@@ -100,7 +102,7 @@ export function TorahWorkspaceClient({
         </div>
 
         {/* Tab bar */}
-        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+        <div className="grid grid-cols-4 gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -147,6 +149,9 @@ export function TorahWorkspaceClient({
             onUpdated={onSummaryUpdated}
             onDeleted={onSummaryDeleted}
           />
+        )}
+        {activeTab === 'calendar' && (
+          <TorahCalendarTab userId={userId} />
         )}
 
       </div>
