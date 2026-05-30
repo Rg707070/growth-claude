@@ -255,9 +255,9 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
       )}
       <div className="fixed inset-0 z-40 flex items-end" dir="rtl">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative z-10 w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-          <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4" />
-          <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b" style={{ borderColor: 'var(--c-border)' }}>
+        <div className="relative z-10 w-full rounded-t-3xl animate-fade-in flex flex-col" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', maxHeight: '80dvh' }}>
+          <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4 flex-shrink-0" />
+          <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b flex-shrink-0" style={{ borderColor: 'var(--c-border)' }}>
             <button onClick={handleSave} disabled={busy || !editLabel.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30" style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}>
               {busy ? '...' : 'שמור'}
             </button>
@@ -266,7 +266,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
               <Trash2 size={16} />
             </button>
           </div>
-          <div className="p-5 pb-8 flex flex-col gap-4">
+          <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 24px))' }}>
             <div className="flex gap-2">
               <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
               <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="שם הפעילות" className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
@@ -308,15 +308,15 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
   return (
     <div className="fixed inset-0 z-40 flex items-end" dir="rtl">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full rounded-t-3xl animate-fade-in" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-        <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4" />
-        <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b" style={{ borderColor: 'var(--c-border)' }}>
+      <div className="relative z-10 w-full rounded-t-3xl animate-fade-in flex flex-col" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', maxHeight: '80dvh' }}>
+        <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4 flex-shrink-0" />
+        <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b flex-shrink-0" style={{ borderColor: 'var(--c-border)' }}>
           <button onClick={handleAdd} disabled={busy || !label.trim() || !time} className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30" style={{ background: 'rgba(34,211,238,0.15)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.25)' }}>
             {busy ? '...' : 'הוסף'}
           </button>
           <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm" style={{ color: 'var(--muted-foreground)' }}>ביטול</button>
         </div>
-        <div className="p-5 pb-8 flex flex-col gap-4">
+        <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 24px))' }}>
           <div className="flex gap-2">
             <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
             <input value={label} onChange={e => setLabel(e.target.value)} placeholder="שם הפעילות" autoFocus className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
