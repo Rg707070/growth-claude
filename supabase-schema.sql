@@ -557,3 +557,30 @@ create policy "Users manage own reading books"
 --   add column if not exists current_chapter integer default 0 not null check (current_chapter >= 0),
 --   add column if not exists notes text default '' not null,
 --   add column if not exists completed boolean default false not null;
+
+-- ============================================================
+-- FAMILY EVENTS
+-- ============================================================
+
+create table if not exists public.family_events (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  family_id uuid not null,
+  title text not null,
+  category text not null default 'other'
+    check (category in ('birthday', 'holiday', 'trip', 'gathering', 'appointment', 'activity', 'other')),
+  event_date date not null,
+  is_recurring boolean default false not null,
+  recurrence text check (recurrence in ('weekly', 'monthly', 'yearly')),
+  notes text,
+  status text not null default 'upcoming'
+    check (status in ('upcoming', 'completed', 'cancelled')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.family_events enable row level security;
+
+create policy "Users manage own family events"
+  on public.family_events for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

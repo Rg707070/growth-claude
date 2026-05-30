@@ -15,6 +15,10 @@ import type {
   RoutineBreakerCostTier,
   RoutineBreakerStatus,
   MediaLink,
+  FamilyEvent,
+  FamilyEventCategory,
+  FamilyEventStatus,
+  FamilyEventRecurrence,
 } from '@/types/family'
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -246,6 +250,73 @@ export async function deleteRoutineBreaker(breakerId: string): Promise<void> {
     .from('routine_breakers')
     .delete()
     .eq('id', breakerId)
+    .eq('user_id', user.id)
+  if (error) throw error
+  revalidatePath(familyPath())
+}
+
+// ─── Family Events ────────────────────────────────────────────
+
+export async function getFamilyEvents(): Promise<FamilyEvent[]> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { data, error } = await supabase
+    .from('family_events')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('event_date', { ascending: true })
+  if (error) throw error
+  return data as FamilyEvent[]
+}
+
+export async function createFamilyEvent(input: {
+  title: string
+  category?: FamilyEventCategory
+  event_date: string
+  is_recurring?: boolean
+  recurrence?: FamilyEventRecurrence | null
+  notes?: string | null
+}): Promise<FamilyEvent> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { data, error } = await supabase
+    .from('family_events')
+    .insert({
+      user_id: user.id,
+      family_id: user.id,
+      title: input.title,
+      category: input.category ?? 'other',
+      event_date: input.event_date,
+      is_recurring: input.is_recurring ?? false,
+      recurrence: input.recurrence ?? null,
+      notes: input.notes ?? null,
+      status: 'upcoming',
+    })
+    .select()
+    .single()
+  if (error) throw error
+  revalidatePath(familyPath())
+  return data as FamilyEvent
+}
+
+export async function updateFamilyEventStatus(
+  eventId: string,
+  status: FamilyEventStatus
+): Promise<void> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { error } = await supabase
+    .from('family_events')
+    .update({ status })
+    .eq('id', eventId)
+    .eq('user_id', user.id)
+  if (error) throw error
+  revalidatePath(familyPath())
+}
+
+export async function deleteFamilyEvent(eventId: string): Promise<void> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { error } = await supabase
+    .from('family_events')
+    .delete()
+    .eq('id', eventId)
     .eq('user_id', user.id)
   if (error) throw error
   revalidatePath(familyPath())
