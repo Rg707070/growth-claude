@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDomainBySlug } from '@/lib/domains'
 import { FamilyClient } from './family-client'
-import type { FamilyTask, FamilyHabit, RoutineBreaker } from '@/types/family'
+import type { FamilyTask, FamilyHabit, FamilyEvent } from '@/types/family'
 
 export default async function FamilyPage() {
   const supabase = await createClient()
@@ -13,7 +13,7 @@ export default async function FamilyPage() {
 
   const domain = getDomainBySlug('family')!
 
-  const [tasksRes, habitsRes, breakersRes] = await Promise.all([
+  const [tasksRes, habitsRes, eventsRes] = await Promise.all([
     supabase
       .from('family_tasks')
       .select('*')
@@ -26,16 +26,16 @@ export default async function FamilyPage() {
       .eq('is_active', true)
       .order('created_at', { ascending: true }),
     supabase
-      .from('routine_breakers')
+      .from('family_events')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false }),
+      .order('event_date', { ascending: true }),
   ])
 
   const tasks = (tasksRes.data as FamilyTask[]) ?? []
   const habits = (habitsRes.data as FamilyHabit[]) ?? []
-  const breakers = (breakersRes.data as RoutineBreaker[]) ?? []
-  const schemaReady = !tasksRes.error && !habitsRes.error && !breakersRes.error
+  const events = (eventsRes.data as FamilyEvent[]) ?? []
+  const schemaReady = !tasksRes.error && !habitsRes.error && !eventsRes.error
 
   return (
     <FamilyClient
@@ -43,7 +43,7 @@ export default async function FamilyPage() {
       userId={user.id}
       tasks={tasks}
       habits={habits}
-      breakers={breakers}
+      events={events}
       schemaReady={schemaReady}
     />
   )

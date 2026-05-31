@@ -62,3 +62,32 @@ export interface RoutineBreakerFilters {
   type?: RoutineBreakerType
   cost_tier?: RoutineBreakerCostTier
 }
+
+// ─── Family Events ───────────────────────────────────────────
+
+export type FamilyEventCategory =
+  | 'birthday'
+  | 'holiday'
+  | 'trip'
+  | 'gathering'
+  | 'appointment'
+  | 'activity'
+  | 'other'
+
+export type FamilyEventStatus = 'upcoming' | 'completed' | 'cancelled'
+
+export type FamilyEventRecurrence = 'weekly' | 'monthly' | 'yearly'
+
+export interface FamilyEvent {
+  id: string
+  user_id: string
+  family_id: string
+  title: string
+  category: FamilyEventCategory
+  event_date: string  // YYYY-MM-DD
+  is_recurring: boolean
+  recurrence: FamilyEventRecurrence | null
+  notes: string | null
+  status: FamilyEventStatus
+  created_at: string
+}
