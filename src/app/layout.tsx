@@ -50,6 +50,9 @@ export const metadata: Metadata = {
     description: 'מעקב הרגלים גמיפייד ב-7 תחומי חיים. צבור XP, עלה ברמות וצמח.',
     images: ['/growth-emblem.png'],
   },
+  verification: {
+    google: '4TlFuM9boKP1agKhuFM5XpM078jRK77_WREMXxscQms',
+  },
   robots: {
     index: true,
     follow: true,
