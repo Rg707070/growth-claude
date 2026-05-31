@@ -335,10 +335,11 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
 }
 
 // ─── ActivityBlock ────────────────────────────────────────────────────────────
-function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
+function ActivityBlock({ item, isToday, isChecked, isActive, onEdit, onToggle }: {
   item: ScheduleItem
   isToday: boolean
   isChecked: boolean
+  isActive?: boolean
   onEdit: () => void
   onToggle: () => void
 }) {
@@ -353,6 +354,7 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
         borderRightWidth: 3,
         borderRightColor: clr,
         opacity:     isChecked ? 0.55 : 1,
+        boxShadow:   isActive && !isChecked ? `0 0 0 1.5px ${clr}, 0 0 10px ${clr}55` : 'none',
       }}
     >
       <button onClick={onEdit} className="flex-1 min-w-0 flex items-center gap-1 px-1.5 h-full overflow-hidden" dir="rtl">
@@ -376,10 +378,11 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
 }
 
 // ─── HabitBlock ───────────────────────────────────────────────────────────────
-function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
+function HabitBlock({ habit, isCompleted, isToday, isActive, onToggle }: {
   habit: ScheduledHabit
   isCompleted: boolean
   isToday: boolean
+  isActive?: boolean
   onToggle: () => Promise<void>
 }) {
   const domain = DOMAINS.find(d => d.slug === habit.domain_slug)
@@ -394,6 +397,7 @@ function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
         borderRightWidth: 3,
         borderRightColor: clr,
         opacity:     isCompleted ? 0.55 : 1,
+        boxShadow:   isActive && !isCompleted ? `0 0 0 1.5px ${clr}, 0 0 10px ${clr}55` : 'none',
       }}
     >
       <div className="flex-1 min-w-0 flex items-center gap-1 px-1.5 h-full overflow-hidden" dir="rtl">
@@ -485,6 +489,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
   const dayLabel = `${dayDate.getDate()}/${dayDate.getMonth() + 1}`
   const nowH = now.getHours()
   const nowM = now.getMinutes()
+  const nowTotalMin = isToday ? nowH * 60 + nowM : -1
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -532,6 +537,8 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
           const hourHabits = (habitsByHour[h] ?? []).sort((a, b) => toMin(a.schedule_time) - toMin(b.schedule_time))
           const isCurHour  = isToday && h === nowH
           const isEmpty    = hourItems.length === 0 && hourHabits.length === 0
+          const activeItemId  = isCurHour ? (hourItems.filter(it => toMin(it.time) <= nowTotalMin).at(-1)?.id ?? null) : null
+          const activeHabitId = isCurHour ? (hourHabits.filter(hb => toMin(hb.schedule_time) <= nowTotalMin).at(-1)?.id ?? null) : null
 
           return (
             <div
@@ -539,20 +546,17 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
               className="flex relative"
               style={{
                 minHeight:    ROW_H,
-                borderBottom: `1px solid ${isCurHour ? 'rgba(34,211,238,0.20)' : w(0.05, isDark)}`,
-                background:   isCurHour ? 'rgba(34,211,238,0.025)' : 'transparent',
+                borderBottom: `1px solid ${isCurHour ? 'rgba(34,211,238,0.15)' : w(0.05, isDark)}`,
+                borderLeft:   isCurHour ? '2px solid rgba(34,211,238,0.80)' : '2px solid transparent',
+                background:   isCurHour ? 'rgba(34,211,238,0.04)' : 'transparent',
+                boxShadow:    isCurHour ? 'inset 6px 0 14px rgba(34,211,238,0.06)' : 'none',
               }}
             >
-              {/* Current-time indicator */}
-              {isCurHour && (
-                <div className="absolute inset-x-0 z-10 pointer-events-none" style={{ top: `${(nowM / 60) * ROW_H}px` }}>
-                  <div className="h-px" style={{ background: 'rgba(34,211,238,0.50)', marginRight: 48 }} />
-                  <div className="absolute w-2 h-2 rounded-full" style={{ background: 'rgb(103,232,249)', top: -4, right: 48 }} />
-                </div>
-              )}
-
               {/* Hour label */}
-              <div className="w-8 flex-shrink-0 flex items-start justify-center pt-1" style={{ direction: 'ltr' }}>
+              <div className="w-8 flex-shrink-0 flex flex-col items-center justify-start pt-0.5 gap-0.5" style={{ direction: 'ltr' }}>
+                {isCurHour && (
+                  <span className="block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'rgb(103,232,249)' }} />
+                )}
                 <span className="text-[9px] font-mono" style={{ color: isCurHour ? 'rgb(103,232,249)' : w(0.18, isDark) }}>
                   {String(h).padStart(2, '0')}
                 </span>
@@ -571,6 +575,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
                     item={item}
                     isToday={isToday}
                     isChecked={isToday && checked.has(item.time)}
+                    isActive={item.id === activeItemId}
                     onEdit={() => onEdit(item)}
                     onToggle={() => onToggle(item.time)}
                   />
@@ -581,6 +586,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
                     habit={habit}
                     isCompleted={completedHabitIds.has(habit.id)}
                     isToday={isToday}
+                    isActive={habit.id === activeHabitId}
                     onToggle={() => onToggleHabit(habit.id)}
                   />
                 ))}
