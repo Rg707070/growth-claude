@@ -437,9 +437,10 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
   const scrollRef   = useRef<HTMLDivElement>(null)
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
-  const [now, setNow] = useState(new Date())
+  const [now, setNow] = useState<Date | null>(null)
 
   useEffect(() => {
+    setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 30_000)
     return () => clearInterval(id)
   }, [])
@@ -485,9 +486,9 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
   const dayDate = new Date()
   dayDate.setDate(dayDate.getDate() + (dayOfWeek - dayDate.getDay()))
   const dayLabel = `${dayDate.getDate()}/${dayDate.getMonth() + 1}`
-  const nowH = now.getHours()
-  const nowM = now.getMinutes()
-  const nowTotalMin = isToday ? nowH * 60 + nowM : -1
+  const nowH = now?.getHours() ?? -1
+  const nowM = now?.getMinutes() ?? 0
+  const nowTotalMin = isToday && now ? nowH * 60 + nowM : -1
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
