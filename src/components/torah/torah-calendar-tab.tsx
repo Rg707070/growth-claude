@@ -4,12 +4,15 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ChevronLeft, ChevronRight, Clock, BookOpen, Flame, X, CalendarDays } from 'lucide-react'
 import { useLang } from '@/lib/lang'
+import {
+  buildMonthGrid, HEBREW_DAY_HEADERS,
+  getHebrewDateStr, getGregorianDateStr,
+  getHebrewMonthYearForMonth, getGregorianMonthLabel,
+  todayDateString,
+} from '@/lib/family/hebrew-calendar'
 import type { LearningSession } from '@/types'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const COLOR = '#0F766E'
-const MONTH_NAMES_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
-const DAY_SHORT_HE   = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שב']
 
 const CATEGORY_HE: Record<string, string> = {
   gemara:  'גמרא',
@@ -29,9 +32,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   other:   'rgba(107,114,128,0.75)',
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function sessionDay(s: LearningSession): string {
-  // started_at is ISO timestamp — extract date in local time
   return new Date(s.started_at).toISOString().split('T')[0]
 }
 
@@ -43,30 +44,22 @@ function formatMins(seconds: number): string {
   return rem > 0 ? `${h}ש' ${rem}ד'` : `${h} שע'`
 }
 
-function formatDate(dateStr: string, isRTL: boolean): string {
-  const d = new Date(`${dateStr}T12:00:00`)
-  return d.toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  })
-}
-
-function getCellBg(minutes: number, isShabbat: boolean, isFuture: boolean, isToday: boolean): string {
-  if (isFuture)   return 'rgba(255,255,255,0.03)'
-  if (isShabbat)  return 'rgba(248,113,113,0.10)'
-  if (isToday)    return 'rgba(15,118,110,0.22)'
-  if (minutes === 0)   return 'rgba(15,118,110,0.07)'
-  if (minutes <= 30)   return 'rgba(15,118,110,0.28)'
-  if (minutes <= 60)   return 'rgba(15,118,110,0.50)'
-  if (minutes <= 120)  return 'rgba(15,118,110,0.74)'
-  return 'rgba(245,158,11,0.78)' // gold — exceptional day
+function getCellBg(minutes: number, isShabbat: boolean, isFuture: boolean, isToday: boolean, isSelected: boolean): string {
+  if (isSelected)         return COLOR
+  if (isFuture)           return 'transparent'
+  if (isShabbat)          return 'rgba(248,113,113,0.10)'
+  if (isToday && minutes === 0) return `${COLOR}22`
+  if (minutes === 0)      return 'transparent'
+  if (minutes <= 30)      return 'rgba(15,118,110,0.28)'
+  if (minutes <= 60)      return 'rgba(15,118,110,0.50)'
+  if (minutes <= 120)     return 'rgba(15,118,110,0.74)'
+  return 'rgba(245,158,11,0.78)'
 }
 
 function calcStreak(byDay: Record<string, { minutes: number }>, todayStr: string): number {
   let streak = 0
-  // Count today if studied
   const todayDow = new Date(`${todayStr}T12:00:00`).getDay()
   if (todayDow !== 6 && (byDay[todayStr]?.minutes ?? 0) > 0) streak++
-  // Count backwards from yesterday; Shabbat is skipped without breaking the streak
   const cursor = new Date(`${todayStr}T12:00:00`)
   cursor.setDate(cursor.getDate() - 1)
   for (let i = 0; i < 364; i++) {
@@ -81,15 +74,8 @@ function calcStreak(byDay: Record<string, { minutes: number }>, todayStr: string
   return streak
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-interface Props {
-  userId: string
-}
-
-interface DayData {
-  minutes: number
-  sessions: LearningSession[]
-}
+interface Props { userId: string }
+interface DayData { minutes: number; sessions: LearningSession[] }
 
 export function TorahCalendarTab({ userId }: Props) {
   const { isRTL } = useLang()
@@ -98,56 +84,62 @@ export function TorahCalendarTab({ userId }: Props) {
   const [allSessions, setAllSessions] = useState<LearningSession[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
-  const [clickedCell, setClickedCell] = useState<string | null>(null)
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const todayStr = useMemo(() => todayDateString(), [])
 
-  const { year, month, startDate, endDate, daysInMonth, startDow } = useMemo(() => {
+  const { year, month, startDate, endDate } = useMemo(() => {
     const base = new Date()
-    const vm = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1)
-    const y = vm.getFullYear()
-    const m = vm.getMonth()
-    const first = new Date(y, m, 1)
-    const last  = new Date(y, m + 1, 0)
+    const vm   = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1)
+    const y    = vm.getFullYear()
+    const m    = vm.getMonth() + 1
+    const pad  = (n: number) => String(n).padStart(2, '0')
+    const last = new Date(y, m, 0)
     return {
       year: y, month: m,
-      startDate:  first.toISOString().split('T')[0],
-      endDate:    last.toISOString().split('T')[0],
-      daysInMonth: last.getDate(),
-      startDow:    first.getDay(),
+      startDate: `${y}-${pad(m)}-01`,
+      endDate:   `${y}-${pad(m)}-${pad(last.getDate())}`,
     }
   }, [monthOffset])
 
-  // Fetch current month's sessions
+  const days    = useMemo(() => buildMonthGrid(year, month), [year, month])
+  const hebrewHeader    = useMemo(() => getHebrewMonthYearForMonth(year, month), [year, month])
+  const gregorianHeader = useMemo(() => getGregorianMonthLabel(year, month), [year, month])
+
+  const weeks = useMemo(() => {
+    const wks: (typeof days[number])[][] = []
+    let wk: (typeof days[number])[] = []
+    for (const day of days) {
+      wk.push(day)
+      if (wk.length === 7) { wks.push(wk); wk = [] }
+    }
+    if (wk.length > 0) {
+      while (wk.length < 7) wk.push(null)
+      wks.push(wk)
+    }
+    return wks
+  }, [days])
+
   useEffect(() => {
     setLoading(true)
     const sb = createClient()
     sb.from('learning_sessions')
       .select('*')
       .eq('user_id', userId)
-      .gte('started_at', startDate + 'T00:00:00')
-      .lte('started_at', endDate   + 'T23:59:59')
+      .gte('started_at', `${startDate}T00:00:00`)
+      .lte('started_at', `${endDate}T23:59:59`)
       .order('started_at', { ascending: false })
-      .then(({ data }: { data: LearningSession[] | null; error: unknown }) => {
-        setSessions(data ?? [])
-        setLoading(false)
-      })
+      .then(({ data }) => { setSessions((data as LearningSession[]) ?? []); setLoading(false) })
   }, [userId, startDate, endDate])
 
-  // Fetch all sessions (for streak) — only on mount
   useEffect(() => {
     const sb = createClient()
     sb.from('learning_sessions')
       .select('id, started_at, duration_seconds')
       .eq('user_id', userId)
       .order('started_at', { ascending: false })
-      .then(({ data }: { data: LearningSession[] | null; error: unknown }) => {
-        setAllSessions(data ?? [])
-      })
+      .then(({ data }) => { setAllSessions((data as LearningSession[]) ?? []) })
   }, [userId])
 
-  // Build day map for current month
   const byDay = useMemo<Record<string, DayData>>(() => {
     const map: Record<string, DayData> = {}
     for (const s of sessions) {
@@ -159,7 +151,6 @@ export function TorahCalendarTab({ userId }: Props) {
     return map
   }, [sessions])
 
-  // Build day map for all sessions (streak computation)
   const allByDay = useMemo<Record<string, { minutes: number }>>(() => {
     const map: Record<string, { minutes: number }> = {}
     for (const s of allSessions) {
@@ -171,227 +162,209 @@ export function TorahCalendarTab({ userId }: Props) {
   }, [allSessions])
 
   const stats = useMemo(() => {
-    const daysStudied    = Object.keys(byDay).length
-    const totalMinutes   = (Object.values(byDay) as DayData[]).reduce((acc: number, d: DayData) => acc + d.minutes, 0)
-    const totalSessions  = sessions.length
-    const streak         = calcStreak(allByDay, todayStr)
+    const daysStudied   = Object.keys(byDay).length
+    const totalMinutes  = Object.values(byDay).reduce((acc, d) => acc + d.minutes, 0)
+    const totalSessions = sessions.length
+    const streak        = calcStreak(allByDay, todayStr)
     return { daysStudied, totalMinutes, totalSessions, streak }
   }, [byDay, sessions, allByDay, todayStr])
 
-  // Build grid cells: nulls for days before month start, then 1..daysInMonth
-  const cells = useMemo<(number | null)[]>(() => {
-    const arr: (number | null)[] = [
-      ...Array<null>(startDow).fill(null),
-      ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-    ]
-    while (arr.length % 7 !== 0) arr.push(null)
-    return arr
-  }, [startDow, daysInMonth])
-
-  function handleCellClick(dateStr: string) {
-    setClickedCell(dateStr)
-    setTimeout(() => {
-      setClickedCell(null)
-      setSelectedDate((prev: string | null) => prev === dateStr ? null : dateStr)
-    }, 180)
-  }
-
   const selectedData = selectedDate ? byDay[selectedDate] ?? null : null
+
+  // Suppress unused warning — isRTL is used indirectly via the dir attribute
+  void isRTL
 
   return (
     <div className="space-y-4" dir="rtl">
 
       {/* Stats strip */}
       <div className="grid grid-cols-4 gap-2">
-        <StatTile
-          icon={<Flame size={13} />}
-          label="רצף"
-          value={String(stats.streak)}
-          accent={COLOR}
-        />
-        <StatTile
-          icon={<CalendarDays size={13} />}
-          label="ימי לימוד"
-          value={String(stats.daysStudied)}
-          accent={COLOR}
-        />
-        <StatTile
-          icon={<Clock size={13} />}
-          label="דקות"
-          value={String(stats.totalMinutes)}
-          accent={COLOR}
-        />
-        <StatTile
-          icon={<BookOpen size={13} />}
-          label="סשנים"
-          value={String(stats.totalSessions)}
-          accent={COLOR}
-        />
+        <StatTile icon={<Flame size={13} />}        label="רצף"       value={String(stats.streak)}        accent={COLOR} />
+        <StatTile icon={<CalendarDays size={13} />}  label="ימי לימוד" value={String(stats.daysStudied)}   accent={COLOR} />
+        <StatTile icon={<Clock size={13} />}         label="דקות"      value={String(stats.totalMinutes)}  accent={COLOR} />
+        <StatTile icon={<BookOpen size={13} />}      label="סשנים"     value={String(stats.totalSessions)} accent={COLOR} />
       </div>
 
-      {/* Month navigation — RTL: ChevronRight = prev, ChevronLeft = next */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => { setMonthOffset((o: number) => o - 1); setSelectedDate(null) }}
-          className="p-1.5 rounded-lg transition-colors"
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          <ChevronRight size={18} />
-        </button>
-        <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>
-          {MONTH_NAMES_HE[month]} {year}
-        </span>
-        <button
-          onClick={() => { setMonthOffset((o: number) => o + 1); setSelectedDate(null) }}
-          disabled={monthOffset >= 0}
-          className="p-1.5 rounded-lg transition-colors disabled:opacity-20"
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          <ChevronLeft size={18} />
-        </button>
-      </div>
+      {/* Calendar card */}
+      <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
 
-      {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 gap-1">
-        {DAY_SHORT_HE.map((name, i) => (
-          <div
-            key={i}
-            className="text-center text-[10px] font-semibold py-0.5"
-            style={{ color: i === 6 ? 'rgba(248,113,113,0.6)' : 'var(--muted-foreground)' }}
+        {/* Header */}
+        <div className="px-4 py-3 flex items-center justify-between" style={{ background: `${COLOR}18` }}>
+          <button
+            onClick={() => { setMonthOffset((o) => o - 1); setSelectedDate(null) }}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: COLOR, background: `${COLOR}22` }}
           >
-            {name}
+            <ChevronLeft size={16} />
+          </button>
+
+          <div className="text-center">
+            <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{gregorianHeader}</p>
+            <p className="text-xs mt-0.5" style={{ color: COLOR }}>{hebrewHeader}</p>
           </div>
-        ))}
-      </div>
 
-      {/* Calendar grid */}
-      {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>טוען...</span>
+          <button
+            onClick={() => { setMonthOffset((o) => o + 1); setSelectedDate(null) }}
+            disabled={monthOffset >= 0}
+            className="p-1.5 rounded-lg transition-colors disabled:opacity-20"
+            style={{ color: COLOR, background: `${COLOR}22` }}
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map((day: number | null, idx: number) => {
-            if (day === null) return <div key={idx} />
-            const mm      = String(month + 1).padStart(2, '0')
-            const dd      = String(day).padStart(2, '0')
-            const dateStr = `${year}-${mm}-${dd}`
-            const isToday    = dateStr === todayStr
-            const isFuture   = dateStr > todayStr
-            const isShabbat  = new Date(`${dateStr}T12:00:00`).getDay() === 6
-            const isSelected = selectedDate === dateStr
-            const isClicked  = clickedCell === dateStr
-            const isHovered  = hoveredCell === dateStr
-            const isClickable = !isFuture && !isShabbat
-            const data       = byDay[dateStr]
-            const minutes    = data?.minutes ?? 0
-            const isGold     = minutes > 120
 
-            return (
-              <div
-                key={idx}
-                onClick={() => isClickable && handleCellClick(dateStr)}
-                onMouseEnter={() => isClickable && setHoveredCell(dateStr)}
-                onMouseLeave={() => setHoveredCell(null)}
-                className="aspect-square flex flex-col items-center justify-center rounded-xl relative"
-                style={{
-                  background: getCellBg(minutes, isShabbat, isFuture, isToday),
-                  border: isSelected
-                    ? `2px solid ${isGold ? 'rgba(245,158,11,0.80)' : `${COLOR}cc`}`
-                    : isToday
-                      ? `1px solid ${COLOR}88`
-                      : isHovered && isClickable
-                        ? `1px solid ${COLOR}55`
-                        : '1px solid transparent',
-                  opacity:  isFuture ? 0.30 : 1,
-                  cursor:   isClickable ? 'pointer' : 'default',
-                  transform: isClicked ? 'scale(1.18)' : isHovered && isClickable ? 'scale(1.06)' : 'scale(1)',
-                  transition: 'transform 160ms cubic-bezier(.34,1.56,.64,1), border-color 120ms ease, background 120ms ease',
-                  zIndex: isClicked || isHovered ? 1 : 0,
-                  position: 'relative',
-                }}
-              >
-                <span
-                  className="text-[11px] font-bold leading-none"
-                  style={{
-                    color: isToday
-                      ? `${COLOR}`
-                      : isShabbat
-                        ? 'rgba(248,113,113,0.70)'
-                        : 'var(--foreground)',
-                  }}
-                >
-                  {day}
-                </span>
+        {/* Day-of-week headers */}
+        <div
+          className="grid grid-cols-7 px-2 pt-2"
+          style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
+        >
+          {HEBREW_DAY_HEADERS.map((h, i) => (
+            <div
+              key={h}
+              className="text-center pb-2 text-[11px] font-semibold"
+              style={{ color: i === 6 ? 'rgba(248,113,113,0.6)' : 'var(--muted-foreground)' }}
+            >
+              {h}
+            </div>
+          ))}
+        </div>
 
-                {isShabbat ? (
-                  <span className="text-[7px] leading-none mt-0.5" style={{ color: 'rgba(248,113,113,0.45)' }}>
-                    שב׳
-                  </span>
-                ) : (
-                  !isFuture && minutes > 0 && (
-                    <span
-                      className="text-[8px] leading-none mt-0.5 font-medium"
-                      style={{ color: isGold ? 'rgba(245,158,11,0.90)' : `${COLOR}dd` }}
+        {/* Grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-10" style={{ background: 'var(--card)' }}>
+            <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>טוען...</span>
+          </div>
+        ) : (
+          <div className="p-2 space-y-1" style={{ background: 'var(--card)' }}>
+            {weeks.map((wk, wi) => (
+              <div key={wi} className="grid grid-cols-7 gap-0.5">
+                {wk.map((day, di) => {
+                  if (!day) return <div key={di} />
+
+                  const isToday    = day.dateString === todayStr
+                  const isFuture   = day.dateString > todayStr
+                  const isShabbat  = new Date(`${day.dateString}T12:00:00`).getDay() === 6
+                  const isSelected = selectedDate === day.dateString
+                  const isClickable = !isFuture && !isShabbat
+                  const data       = byDay[day.dateString]
+                  const minutes    = data?.minutes ?? 0
+                  const isGold     = minutes > 120
+
+                  return (
+                    <button
+                      key={di}
+                      onClick={() => isClickable && setSelectedDate((prev) => prev === day.dateString ? null : day.dateString)}
+                      className="flex flex-col items-center py-1 px-0.5 rounded-lg transition-all relative"
+                      style={{
+                        background: getCellBg(minutes, isShabbat, isFuture, isToday, isSelected),
+                        border: isToday && !isSelected
+                          ? `1.5px solid ${COLOR}`
+                          : '1.5px solid transparent',
+                        opacity: isFuture ? 0.35 : 1,
+                        cursor: isClickable ? 'pointer' : 'default',
+                      }}
                     >
-                      {minutes < 60 ? `${minutes}ד` : `${Math.floor(minutes / 60)}ש`}
-                    </span>
-                  )
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                      {/* Hebrew month start indicator */}
+                      {day.isHebrewMonthStart && (
+                        <div
+                          className="absolute top-0 left-0 right-0 h-[1.5px] rounded-full"
+                          style={{ background: `${COLOR}55` }}
+                        />
+                      )}
 
-      {/* Color legend */}
-      <div className="flex items-center justify-center gap-3 flex-wrap pt-0.5">
-        {[
-          { color: 'rgba(15,118,110,0.28)', label: 'עד שעה' },
-          { color: 'rgba(15,118,110,0.74)', label: 'שעה–שעתיים' },
-          { color: 'rgba(245,158,11,0.78)', label: '2ש׳+' },
-          { color: 'rgba(248,113,113,0.35)', label: 'שבת' },
-        ].map(({ color, label }) => (
-          <div key={label} className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
-            <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>{label}</span>
+                      {/* Gregorian day */}
+                      <span
+                        className="text-[13px] font-semibold leading-none"
+                        style={{
+                          color: isSelected
+                            ? 'white'
+                            : isToday
+                              ? COLOR
+                              : isShabbat
+                                ? 'rgba(248,113,113,0.70)'
+                                : 'var(--foreground)',
+                        }}
+                      >
+                        {day.gregorianDay}
+                      </span>
+
+                      {/* Hebrew day letter */}
+                      <span
+                        className="text-[8px] leading-none mt-0.5"
+                        style={{ color: isSelected ? 'rgba(255,255,255,0.75)' : 'var(--muted-foreground)' }}
+                      >
+                        {day.hebrewDay}
+                      </span>
+
+                      {/* Minutes badge */}
+                      {!isFuture && !isShabbat && minutes > 0 && (
+                        <span
+                          className="text-[7px] leading-none mt-0.5 font-medium"
+                          style={{
+                            color: isSelected
+                              ? 'rgba(255,255,255,0.90)'
+                              : isGold
+                                ? 'rgba(245,158,11,0.90)'
+                                : `${COLOR}dd`,
+                          }}
+                        >
+                          {minutes < 60 ? `${minutes}ד` : `${Math.floor(minutes / 60)}ש`}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
           </div>
-        ))}
+        )}
+
+        {/* Legend */}
+        <div
+          className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1"
+          style={{ background: `${COLOR}08`, borderTop: '1px solid var(--border)' }}
+        >
+          {[
+            { color: 'rgba(15,118,110,0.28)', label: 'עד שעה' },
+            { color: 'rgba(15,118,110,0.74)', label: 'שעה–שעתיים' },
+            { color: 'rgba(245,158,11,0.78)', label: '2ש׳+' },
+            { color: 'rgba(248,113,113,0.35)', label: 'שבת' },
+          ].map(({ color, label }) => (
+            <span key={label} className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+              <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
 
-      {/* Selected day detail */}
+      {/* Day detail panel */}
       {selectedDate && (
         <div
           className="rounded-2xl p-4 space-y-3"
           style={{ background: 'var(--secondary)', border: `1px solid ${COLOR}33` }}
         >
-          {/* Day header */}
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
-              {formatDate(selectedDate, isRTL)}
-            </span>
-            <button
-              onClick={() => setSelectedDate(null)}
-              className="p-1 rounded-lg"
-              style={{ color: 'var(--muted-foreground)' }}
-            >
+            <div>
+              <p className="text-xs font-semibold" style={{ color: COLOR }}>{getHebrewDateStr(selectedDate)}</p>
+              <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>{getGregorianDateStr(selectedDate)}</p>
+            </div>
+            <button onClick={() => setSelectedDate(null)} className="p-1 rounded-lg" style={{ color: 'var(--muted-foreground)' }}>
               <X size={15} />
             </button>
           </div>
 
-          {/* Stats for this day */}
           {selectedData && (
             <div className="flex gap-3 text-xs" style={{ color: 'var(--muted-foreground)' }}>
               <span>{selectedData.sessions.length} סשנים</span>
               <span>·</span>
-              <span>{formatMins(selectedData.sessions.reduce((a: number, s: LearningSession) => a + s.duration_seconds, 0))}</span>
+              <span>{formatMins(selectedData.sessions.reduce((a, s) => a + s.duration_seconds, 0))}</span>
             </div>
           )}
 
-          {/* Sessions list */}
           {selectedData?.sessions.length ? (
             <div className="space-y-2">
-              {selectedData.sessions.map((s: LearningSession) => (
+              {selectedData.sessions.map((s) => (
                 <SessionRow key={s.id} session={s} />
               ))}
             </div>
@@ -409,10 +382,7 @@ export function TorahCalendarTab({ userId }: Props) {
   )
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-function StatTile({
-  icon, label, value, accent,
-}: {
+function StatTile({ icon, label, value, accent }: {
   icon: React.ReactNode
   label: string
   value: string
@@ -440,10 +410,7 @@ function SessionRow({ session }: { session: LearningSession }) {
       className="flex items-center gap-3 p-2.5 rounded-xl"
       style={{ background: 'var(--background)', border: '1px solid var(--border)' }}
     >
-      <div
-        className="w-1.5 self-stretch rounded-full flex-shrink-0"
-        style={{ background: catColor }}
-      />
+      <div className="w-1.5 self-stretch rounded-full flex-shrink-0" style={{ background: catColor }} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate" style={{ color: 'var(--foreground)' }}>
           {session.text_title || 'לימוד'}
