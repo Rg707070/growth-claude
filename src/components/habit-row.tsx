@@ -161,7 +161,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     await createClient().from('habits').update({ schedule_time: null }).eq('id', habit.id)
   }
 
-  // Touch handlers — long press (550ms) opens edit, tap toggles
+  // Long press (550ms) → edit; tap → toggle
   const handleTouchStart = (e: React.TouchEvent) => {
     isTouching.current = true
     moved.current = false
@@ -200,7 +200,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     isTouching.current = false
   }
 
-  // Desktop click — skipped if triggered by touch (browser fires click after touchend)
+  // Desktop click — skipped if triggered by touch
   const handleClick = () => {
     if (isTouching.current) {
       isTouching.current = false
@@ -214,11 +214,11 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   if (editing) {
     return (
       <div
-        className="flex gap-2 items-center rounded-2xl"
+        className="flex gap-2 items-center rounded-xl"
         style={{
-          background: 'var(--card)',
+          background: 'var(--c-card)',
           border: `1px solid ${accentColor}55`,
-          padding: '0.65rem 1rem',
+          padding: '0.5rem 0.75rem',
         }}
       >
         <Input
@@ -229,7 +229,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
             if (e.key === 'Enter') saveEdit()
             if (e.key === 'Escape') cancelEdit()
           }}
-          className="rounded-xl flex-1 h-8 text-sm"
+          className="rounded-lg flex-1 h-8 text-sm"
           style={{
             background: 'var(--c-input)',
             border: '1px solid var(--c-input-border)',
@@ -278,118 +278,89 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     )
   }
 
-  // ── Normal row (book-card style) ─────────────────────────────────────────
+  // ── Compact row ───────────────────────────────────────────────────────────
 
   return (
     <div
-      className="rounded-2xl p-4 relative"
+      className="rounded-xl relative overflow-hidden"
       style={{
-        background: done
-          ? 'linear-gradient(135deg, #10b98118, #10b98108)'
-          : `linear-gradient(135deg, ${accentColor}18, ${accentColor}08)`,
-        border: `1px solid ${done ? '#10b98135' : `${accentColor}35`}`,
+        background: done ? '#10b98106' : 'var(--c-card)',
+        border: `1px solid ${done ? '#10b98125' : `${accentColor}25`}`,
       }}
     >
-      {/* Left accent bar */}
+      {/* Thin left accent bar */}
       <div
-        className="absolute start-0 top-3 bottom-3 w-1 rounded-full"
+        className="absolute start-0 top-0 bottom-0 w-0.5"
         style={{ background: done ? '#10b981' : accentColor }}
       />
 
-      {/* Tappable content area */}
-      <button
-        type="button"
-        onClick={handleClick}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchCancel}
-        onContextMenu={(e) => e.preventDefault()}
-        disabled={loading}
-        className="w-full text-start select-none active:opacity-75 transition-opacity disabled:opacity-50"
-        style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
-      >
-        <div className="ps-3">
-          {/* Title + status badge */}
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3
-              className="font-semibold text-sm leading-snug"
+      {/* Main row */}
+      <div className="flex items-center gap-2.5 ps-3.5 pe-1.5 py-2.5">
+
+        {/* Toggle area: checkbox + text */}
+        <button
+          type="button"
+          onClick={handleClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+          onContextMenu={(e) => e.preventDefault()}
+          disabled={loading}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-start select-none active:opacity-70 transition-opacity disabled:opacity-50"
+          style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+        >
+          {/* Checkbox circle */}
+          <div
+            className="flex-shrink-0 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center transition-all duration-200"
+            style={{
+              borderColor: done ? '#10b981' : `${accentColor}70`,
+              background: done ? '#10b981' : 'transparent',
+            }}
+          >
+            {done && <Check size={11} strokeWidth={3} color="#fff" />}
+          </div>
+
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-sm font-medium leading-snug truncate"
               style={{
                 color: done ? 'var(--muted-foreground)' : 'var(--foreground)',
                 textDecoration: done ? 'line-through' : 'none',
+                textDecorationColor: '#10b98155',
               }}
             >
               {habit.name}
-            </h3>
-
-            {done ? (
-              <span
-                className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
-                style={{ background: '#10b98120', color: '#10b981' }}
-              >
-                <Check size={11} />
-                {isRTL ? 'הושלם!' : 'Done!'}
-              </span>
-            ) : (
-              <span
-                className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
-                style={{ background: `${accentColor}22`, color: accentColor }}
-              >
-                {domain?.icon}
-              </span>
-            )}
-          </div>
-
-          {/* Domain name */}
-          <p className="text-xs mb-3" style={{ color: 'var(--muted-foreground)' }}>
-            {domain?.icon} {isRTL ? domain?.nameHe : domain?.nameEn}
-          </p>
-          {habit.schedule_time && (
-            <p className="text-[10px] mt-0.5" style={{ color: accentColor }}>
-              🕐 {habit.schedule_time.slice(0, 5)}
             </p>
-          )}
-
-          {/* Progress bar */}
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--c-border)' }}>
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: done ? '100%' : '0%',
-                background: done ? '#10b981' : accentColor,
-              }}
-            />
+            <p className="text-[10px] leading-none mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+              {domain?.icon} {isRTL ? domain?.nameHe : domain?.nameEn}
+              {habit.schedule_time && (
+                <span style={{ color: accentColor }}> · 🕐 {habit.schedule_time.slice(0, 5)}</span>
+              )}
+            </p>
           </div>
-        </div>
-      </button>
+        </button>
 
-      {/* Footer: reminder + bell */}
-      <div className="flex items-center justify-between mt-3 ps-3">
-        <span className="text-xs" style={{ color: reminder ? accentColor : 'var(--muted-foreground)' }}>
-          {reminder
-            ? `${reminder.type === 'alarm' ? '⏰' : '🔔'} ${reminder.time}`
-            : done
-            ? (isRTL ? 'כל הכבוד! 💪' : 'Great work! 💪')
-            : (isRTL ? 'לחץ לסימון כבוצע' : 'Tap to complete')}
-        </span>
-
+        {/* Bell — always visible, dimmed when no reminder */}
         <button
           type="button"
           onClick={openReminderPicker}
-          className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-90"
+          className="flex-shrink-0 p-1.5 rounded-lg transition-all active:scale-90"
           style={{
             color: reminder ? accentColor : 'var(--muted-foreground)',
             background: reminder ? `${accentColor}18` : 'transparent',
+            opacity: reminder ? 1 : 0.35,
           }}
           aria-label={t('setReminder')}
         >
-          {reminder ? <Bell size={14} /> : <BellOff size={14} />}
+          {reminder ? <Bell size={13} /> : <BellOff size={13} />}
         </button>
       </div>
 
-      {/* Reminder picker */}
+      {/* Reminder picker — expands below the row */}
       {showReminderPicker && (
-        <div className="flex flex-col gap-2 px-3 pt-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col gap-2 px-3 pb-3" onClick={(e) => e.stopPropagation()}>
           <div
             className="flex rounded-xl overflow-hidden"
             style={{ border: `1px solid ${accentColor}44` }}
