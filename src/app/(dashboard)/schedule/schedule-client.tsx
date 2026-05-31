@@ -335,10 +335,11 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
 }
 
 // ─── ActivityBlock ────────────────────────────────────────────────────────────
-function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
+function ActivityBlock({ item, isToday, isChecked, isActive, onEdit, onToggle }: {
   item: ScheduleItem
   isToday: boolean
   isChecked: boolean
+  isActive?: boolean
   onEdit: () => void
   onToggle: () => void
 }) {
@@ -348,8 +349,8 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
       className="flex items-center gap-1 rounded-lg border transition-all overflow-hidden"
       style={{
         height: 22,
-        background:  isChecked ? 'rgba(52,211,153,0.06)' : hexBg(clr),
-        borderColor: isChecked ? 'rgba(52,211,153,0.25)' : hexBorder(clr),
+        background:  isChecked ? 'rgba(52,211,153,0.06)' : isActive ? (clr.startsWith('#') ? `${clr}33` : clr.replace(/[\d.]+\)$/, '0.20)')) : hexBg(clr),
+        borderColor: isChecked ? 'rgba(52,211,153,0.25)' : isActive ? (clr.startsWith('#') ? `${clr}99` : clr.replace(/[\d.]+\)$/, '0.50)')) : hexBorder(clr),
         borderRightWidth: 3,
         borderRightColor: clr,
         opacity:     isChecked ? 0.55 : 1,
@@ -376,10 +377,11 @@ function ActivityBlock({ item, isToday, isChecked, onEdit, onToggle }: {
 }
 
 // ─── HabitBlock ───────────────────────────────────────────────────────────────
-function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
+function HabitBlock({ habit, isCompleted, isToday, isActive, onToggle }: {
   habit: ScheduledHabit
   isCompleted: boolean
   isToday: boolean
+  isActive?: boolean
   onToggle: () => Promise<void>
 }) {
   const domain = DOMAINS.find(d => d.slug === habit.domain_slug)
@@ -389,8 +391,8 @@ function HabitBlock({ habit, isCompleted, isToday, onToggle }: {
       className="flex items-center gap-1 rounded-lg border transition-all overflow-hidden"
       style={{
         height: 22,
-        background:  isCompleted ? 'rgba(52,211,153,0.06)' : `${clr}18`,
-        borderColor: isCompleted ? 'rgba(52,211,153,0.25)' : `${clr}40`,
+        background:  isCompleted ? 'rgba(52,211,153,0.06)' : isActive ? `${clr}28` : `${clr}18`,
+        borderColor: isCompleted ? 'rgba(52,211,153,0.25)' : isActive ? `${clr}80` : `${clr}40`,
         borderRightWidth: 3,
         borderRightColor: clr,
         opacity:     isCompleted ? 0.55 : 1,
@@ -485,6 +487,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
   const dayLabel = `${dayDate.getDate()}/${dayDate.getMonth() + 1}`
   const nowH = now.getHours()
   const nowM = now.getMinutes()
+  const nowTotalMin = isToday ? nowH * 60 + nowM : -1
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -532,6 +535,8 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
           const hourHabits = (habitsByHour[h] ?? []).sort((a, b) => toMin(a.schedule_time) - toMin(b.schedule_time))
           const isCurHour  = isToday && h === nowH
           const isEmpty    = hourItems.length === 0 && hourHabits.length === 0
+          const activeItemId  = isCurHour ? (hourItems.filter(it => toMin(it.time) <= nowTotalMin).at(-1)?.id ?? null) : null
+          const activeHabitId = isCurHour ? (hourHabits.filter(hb => toMin(hb.schedule_time) <= nowTotalMin).at(-1)?.id ?? null) : null
 
           return (
             <div
@@ -539,23 +544,29 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
               className="flex relative"
               style={{
                 minHeight:    ROW_H,
-                borderBottom: `1px solid ${isCurHour ? 'rgba(34,211,238,0.20)' : w(0.05, isDark)}`,
-                background:   isCurHour ? 'rgba(34,211,238,0.025)' : 'transparent',
+                borderBottom: `1px solid ${w(0.05, isDark)}`,
+                borderLeft:   '2px solid transparent',
+                background:   isCurHour ? 'rgba(34,211,238,0.04)' : 'transparent',
               }}
             >
-              {/* Current-time indicator */}
-              {isCurHour && (
-                <div className="absolute inset-x-0 z-10 pointer-events-none" style={{ top: `${(nowM / 60) * ROW_H}px` }}>
-                  <div className="h-px" style={{ background: 'rgba(34,211,238,0.50)', marginRight: 48 }} />
-                  <div className="absolute w-2 h-2 rounded-full" style={{ background: 'rgb(103,232,249)', top: -4, right: 48 }} />
-                </div>
-              )}
-
               {/* Hour label */}
               <div className="w-8 flex-shrink-0 flex items-start justify-center pt-1" style={{ direction: 'ltr' }}>
-                <span className="text-[9px] font-mono" style={{ color: isCurHour ? 'rgb(103,232,249)' : w(0.18, isDark) }}>
-                  {String(h).padStart(2, '0')}
-                </span>
+                {isCurHour ? (
+                  <span
+                    className="text-[9px] font-mono font-bold rounded-full flex items-center justify-center"
+                    style={{
+                      color:      'oklch(0.08 0.035 240)',
+                      background: 'rgb(103,232,249)',
+                      width: 18, height: 18, lineHeight: 1,
+                    }}
+                  >
+                    {String(h).padStart(2, '0')}
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-mono" style={{ color: w(0.18, isDark) }}>
+                    {String(h).padStart(2, '0')}
+                  </span>
+                )}
               </div>
 
               {/* Activities + Habits */}
@@ -571,6 +582,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
                     item={item}
                     isToday={isToday}
                     isChecked={isToday && checked.has(item.time)}
+                    isActive={item.id === activeItemId}
                     onEdit={() => onEdit(item)}
                     onToggle={() => onToggle(item.time)}
                   />
@@ -581,6 +593,7 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
                     habit={habit}
                     isCompleted={completedHabitIds.has(habit.id)}
                     isToday={isToday}
+                    isActive={habit.id === activeHabitId}
                     onToggle={() => onToggleHabit(habit.id)}
                   />
                 ))}
