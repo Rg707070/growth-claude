@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/(dashboard)/'],
     },
-    sitemap: 'https://growth-app.com/sitemap.xml',
+    sitemap: 'https://growth-claude.vercel.app/sitemap.xml',
   }
 }

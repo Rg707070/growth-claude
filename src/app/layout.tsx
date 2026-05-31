@@ -9,7 +9,7 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-displ
 const heebo = Heebo({ subsets: ['hebrew', 'latin'], variable: '--font-hebrew' })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://growth-app.com'),
+  metadataBase: new URL('https://growth-claude.vercel.app'),
   title: {
     default: 'GROWTH — אפליקציית הצמיחה האישית',
     template: '%s | GROWTH',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'he_IL',
     alternateLocale: 'en_US',
-    url: 'https://growth-app.com',
+    url: 'https://growth-claude.vercel.app',
     siteName: 'GROWTH',
     title: 'GROWTH — אפליקציית הצמיחה האישית',
     description: 'מעקב הרגלים גמיפייד ב-7 תחומי חיים. צבור XP, עלה ברמות וצמח.',
