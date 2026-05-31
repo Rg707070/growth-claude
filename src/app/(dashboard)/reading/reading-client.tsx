@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, X, ChevronLeft, ChevronRight, BookOpen, Trash2,
@@ -737,112 +737,236 @@ interface ReadingCalendarProps {
 
 function ReadingCalendar({ books, isRTL }: ReadingCalendarProps) {
   const today = new Date()
-  const [year, setYear] = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth())
+  const todayStr = today.toISOString().split('T')[0]
+  const [year, setYear]         = useState(today.getFullYear())
+  const [month, setMonth]       = useState(today.getMonth())
+  const [hoveredDay, setHovered] = useState<string | null>(null)
+  const [clickedDay, setClicked] = useState<string | null>(null)
+  const [selectedDay, setSelected] = useState<string | null>(null)
 
-  const days = getCalendarDays(year, month)
-  const dayHeaders = isRTL ? DAYS_HE : DAYS_EN
-  const monthName = isRTL ? MONTHS_HE[month] : MONTHS_EN[month]
-  const activeBooks = books.filter((b) => !b.completed && b.total_pages && b.current_page < b.total_pages)
+  const activeBooks = useMemo(
+    () => books.filter((b) => !b.completed && b.total_pages && b.current_page < b.total_pages),
+    [books]
+  )
 
-  const goToPrev = () => {
-    if (month === 0) { setMonth(11); setYear((y) => y - 1) } else setMonth((m) => m - 1)
-  }
-  const goToNext = () => {
-    if (month === 11) { setMonth(0); setYear((y) => y + 1) } else setMonth((m) => m + 1)
-  }
+  const cells = useMemo<(number | null)[]>(() => {
+    const firstDow = new Date(year, month, 1).getDay()
+    const dim = new Date(year, month + 1, 0).getDate()
+    const c: (number | null)[] = [
+      ...Array<null>(firstDow).fill(null),
+      ...Array.from({ length: dim }, (_, i) => i + 1),
+    ]
+    while (c.length % 7 !== 0) c.push(null)
+    return c
+  }, [year, month])
+
+  const selectedDayBooks = useMemo(() => {
+    if (!selectedDay) return []
+    const d = new Date(selectedDay + 'T12:00:00')
+    return booksForDay(activeBooks, d.getFullYear(), d.getMonth(), d.getDate())
+  }, [selectedDay, activeBooks])
 
   if (activeBooks.length === 0) return null
 
+  const goToPrev = () => { if (month === 0) { setMonth(11); setYear((y) => y - 1) } else setMonth((m) => m - 1) }
+  const goToNext = () => { if (month === 11) { setMonth(0); setYear((y) => y + 1) } else setMonth((m) => m + 1) }
+
+  const monthName  = isRTL ? MONTHS_HE[month] : MONTHS_EN[month]
+  const dayHeaders = isRTL ? DAYS_HE : DAYS_EN
+
+  function handleCellClick(dateStr: string) {
+    setClicked(dateStr)
+    setTimeout(() => setClicked(null), 180)
+    setSelected((prev) => (prev === dateStr ? null : dateStr))
+  }
+
   return (
-    <div
-      className="rounded-2xl p-4"
-      style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
-    >
+    <div className="rounded-2xl p-4" style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}>
+
+      {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={isRTL ? goToNext : goToPrev}
-          className="p-2 rounded-xl transition-all"
+          className="p-1.5 rounded-lg transition-all active:scale-90"
           style={{ color: 'var(--muted-foreground)' }}
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
+        <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>
           {monthName} {year}
         </span>
         <button
           onClick={isRTL ? goToPrev : goToNext}
-          className="p-2 rounded-xl transition-all"
+          className="p-1.5 rounded-lg transition-all active:scale-90"
           style={{ color: 'var(--muted-foreground)' }}
         >
           <ChevronRight size={18} />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 mb-1">
+      {/* Day-of-week headers — index 6 = Saturday = Shabbat */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
         {dayHeaders.map((d, i) => (
-          <div key={i} className="text-center text-[10px] font-semibold py-1" style={{ color: 'var(--muted-foreground)' }}>
+          <div
+            key={i}
+            className="text-center text-[10px] font-semibold py-1"
+            style={{ color: i === 6 ? 'rgba(248,113,113,0.6)' : 'var(--muted-foreground)' }}
+          >
             {d}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-[3px]">
-        {days.map((day, i) => {
-          if (!day) return <div key={`e-${i}`} />
-          const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-          const dateObj = new Date(year, month, day)
-          const todayObj = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-          const isPast = dateObj < todayObj
-          const booksThisDay = booksForDay(activeBooks, year, month, day)
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, idx) => {
+          if (day === null) return <div key={idx} />
+
+          const mm      = String(month + 1).padStart(2, '0')
+          const dd      = String(day).padStart(2, '0')
+          const dateStr = `${year}-${mm}-${dd}`
+          const isToday   = dateStr === todayStr
+          const isPast    = dateStr < todayStr
+          const isShabbat = new Date(`${dateStr}T12:00:00`).getDay() === 6
+          const isSelected = selectedDay === dateStr
+          const isHovered  = hoveredDay === dateStr
+          const isClicked  = clickedDay === dateStr
+          const dayBooks   = booksForDay(activeBooks, year, month, day)
+          const hasBooks   = dayBooks.length > 0
+          const isClickable = !isPast && !isShabbat
+
+          // Background
+          let bg = 'transparent'
+          if (isShabbat)  bg = 'rgba(248,113,113,0.06)'
+          else if (isToday)    bg = 'rgba(34,211,238,0.15)'
+          else if (isSelected) bg = 'rgba(34,211,238,0.22)'
+          else if (hasBooks) {
+            const intensity = Math.min(1, dayBooks.length / Math.max(1, activeBooks.length))
+            bg = `rgba(34,211,238,${0.05 + intensity * 0.15})`
+          }
+
+          // Border
+          let border = '1px solid transparent'
+          if (isToday)                   border = '1px solid rgba(34,211,238,0.40)'
+          else if (isSelected)           border = '1px solid rgba(34,211,238,0.35)'
+          else if (isHovered && isClickable) border = '1px solid rgba(34,211,238,0.28)'
+
+          // Spring scale
+          const transform = isClicked
+            ? 'scale(1.18)'
+            : isHovered && isClickable
+              ? 'scale(1.06)'
+              : 'scale(1)'
 
           return (
             <div
-              key={day}
-              className="rounded-xl p-1 min-h-[52px] flex flex-col"
+              key={idx}
+              onClick={() => isClickable && handleCellClick(dateStr)}
+              onMouseEnter={() => isClickable && setHovered(dateStr)}
+              onMouseLeave={() => setHovered(null)}
+              className="aspect-square flex flex-col items-center justify-center rounded-xl"
               style={{
-                background: isToday ? 'var(--c-primary-glow)' : 'transparent',
-                border: isToday ? '1px solid var(--primary)' : '1px solid transparent',
-                opacity: isPast ? 0.4 : 1,
+                background: bg,
+                border,
+                opacity: isPast ? 0.35 : 1,
+                cursor: isClickable ? 'pointer' : 'default',
+                transform,
+                transition: 'transform 160ms cubic-bezier(.34,1.56,.64,1), border-color 120ms ease, background 120ms ease',
+                zIndex: isClicked || isHovered ? 1 : 0,
+                position: 'relative',
               }}
             >
               <span
-                className="text-[11px] font-semibold text-center block"
-                style={{ color: isToday ? 'var(--primary)' : 'var(--foreground)' }}
+                className="text-[11px] font-bold leading-none"
+                style={{
+                  color: isToday
+                    ? 'rgb(103,232,249)'
+                    : isShabbat
+                      ? 'rgba(248,113,113,0.7)'
+                      : 'var(--foreground)',
+                }}
               >
                 {day}
               </span>
-              <div className="flex flex-col gap-[2px] mt-0.5">
-                {booksThisDay.slice(0, 2).map(({ book, pages }) => (
-                  <div
-                    key={book.id}
-                    className="rounded text-[9px] font-bold text-center px-0.5 leading-tight py-[1px]"
-                    style={{ background: `${book.color}30`, color: book.color }}
-                    title={`${book.title}: ${pages} ${isRTL ? "עמ'" : 'pg'}`}
-                  >
-                    {pages}{isRTL ? 'ע' : 'p'}
+
+              {isShabbat ? (
+                <span className="text-[7px] leading-none mt-0.5" style={{ color: 'rgba(248,113,113,0.45)' }}>
+                  שב׳
+                </span>
+              ) : (
+                hasBooks && (
+                  <div className="flex gap-[2px] mt-[3px] flex-wrap justify-center">
+                    {dayBooks.slice(0, 3).map(({ book }) => (
+                      <div
+                        key={book.id}
+                        className="w-[5px] h-[5px] rounded-full flex-shrink-0"
+                        style={{ background: book.color }}
+                      />
+                    ))}
+                    {dayBooks.length > 3 && (
+                      <div
+                        className="w-[5px] h-[5px] rounded-full flex-shrink-0"
+                        style={{ background: 'var(--muted-foreground)', opacity: 0.5 }}
+                      />
+                    )}
                   </div>
-                ))}
-                {booksThisDay.length > 2 && (
-                  <div className="text-[9px] text-center font-medium" style={{ color: 'var(--muted-foreground)' }}>
-                    +{booksThisDay.length - 2}
-                  </div>
-                )}
-              </div>
+                )
+              )}
             </div>
           )
         })}
       </div>
 
-      <div className="mt-4 pt-3 flex flex-wrap gap-3" style={{ borderTop: '1px solid var(--c-border)' }}>
+      {/* Selected-day detail panel */}
+      {selectedDay && selectedDayBooks.length > 0 && (
+        <div
+          className="mt-3 rounded-xl p-3 space-y-2"
+          style={{ background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.18)' }}
+        >
+          <p className="text-[11px] font-semibold" style={{ color: 'rgba(103,232,249,0.8)' }}>
+            {(() => {
+              const d = new Date(selectedDay + 'T12:00:00')
+              return isRTL
+                ? `${d.getDate()} ${MONTHS_HE[d.getMonth()]} ${d.getFullYear()}`
+                : `${MONTHS_EN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+            })()}
+          </p>
+          {selectedDayBooks.map(({ book, pages }) => (
+            <div key={book.id} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: book.color }} />
+              <span className="text-xs flex-1 truncate" style={{ color: 'var(--foreground)' }}>
+                {book.title}
+              </span>
+              <span className="text-[11px] font-bold tabular-nums" style={{ color: book.color }}>
+                {pages}{isRTL ? " עמ'" : ' pg'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Legend */}
+      <div
+        className="mt-4 pt-3 flex flex-wrap gap-x-4 gap-y-2 items-center"
+        style={{ borderTop: '1px solid var(--c-border)' }}
+      >
         {activeBooks.map((b) => (
           <div key={b.id} className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ background: b.color }} />
-            <span className="text-[11px] truncate max-w-[100px]" style={{ color: 'var(--muted-foreground)' }}>
+            <div className="w-2 h-2 rounded-full" style={{ background: b.color }} />
+            <span className="text-[10px] truncate max-w-[90px]" style={{ color: 'var(--muted-foreground)' }}>
               {b.title}
             </span>
           </div>
         ))}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(248,113,113,0.5)' }} />
+          <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'שבת' : 'Shabbat'}
+          </span>
+        </div>
+        <span className="text-[9px] opacity-40" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? '· לחץ ליום' : '· tap a day'}
+        </span>
       </div>
     </div>
   )
