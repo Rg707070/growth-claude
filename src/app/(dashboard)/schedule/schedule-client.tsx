@@ -349,12 +349,11 @@ function ActivityBlock({ item, isToday, isChecked, isActive, onEdit, onToggle }:
       className="flex items-center gap-1 rounded-lg border transition-all overflow-hidden"
       style={{
         height: 22,
-        background:  isChecked ? 'rgba(52,211,153,0.06)' : hexBg(clr),
-        borderColor: isChecked ? 'rgba(52,211,153,0.25)' : hexBorder(clr),
+        background:  isChecked ? 'rgba(52,211,153,0.06)' : isActive ? (clr.startsWith('#') ? `${clr}33` : clr.replace(/[\d.]+\)$/, '0.20)')) : hexBg(clr),
+        borderColor: isChecked ? 'rgba(52,211,153,0.25)' : isActive ? (clr.startsWith('#') ? `${clr}99` : clr.replace(/[\d.]+\)$/, '0.50)')) : hexBorder(clr),
         borderRightWidth: 3,
         borderRightColor: clr,
         opacity:     isChecked ? 0.55 : 1,
-        boxShadow:   isActive && !isChecked ? `0 0 0 1.5px ${clr}, 0 0 10px ${clr}55` : 'none',
       }}
     >
       <button onClick={onEdit} className="flex-1 min-w-0 flex items-center gap-1 px-1.5 h-full overflow-hidden" dir="rtl">
@@ -392,12 +391,11 @@ function HabitBlock({ habit, isCompleted, isToday, isActive, onToggle }: {
       className="flex items-center gap-1 rounded-lg border transition-all overflow-hidden"
       style={{
         height: 22,
-        background:  isCompleted ? 'rgba(52,211,153,0.06)' : `${clr}18`,
-        borderColor: isCompleted ? 'rgba(52,211,153,0.25)' : `${clr}40`,
+        background:  isCompleted ? 'rgba(52,211,153,0.06)' : isActive ? `${clr}28` : `${clr}18`,
+        borderColor: isCompleted ? 'rgba(52,211,153,0.25)' : isActive ? `${clr}80` : `${clr}40`,
         borderRightWidth: 3,
         borderRightColor: clr,
         opacity:     isCompleted ? 0.55 : 1,
-        boxShadow:   isActive && !isCompleted ? `0 0 0 1.5px ${clr}, 0 0 10px ${clr}55` : 'none',
       }}
     >
       <div className="flex-1 min-w-0 flex items-center gap-1 px-1.5 h-full overflow-hidden" dir="rtl">
@@ -546,17 +544,13 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
               className="flex relative"
               style={{
                 minHeight:    ROW_H,
-                borderBottom: `1px solid ${isCurHour ? 'rgba(34,211,238,0.15)' : w(0.05, isDark)}`,
-                borderLeft:   isCurHour ? '2px solid rgba(34,211,238,0.80)' : '2px solid transparent',
-                background:   isCurHour ? 'rgba(34,211,238,0.04)' : 'transparent',
-                boxShadow:    isCurHour ? 'inset 6px 0 14px rgba(34,211,238,0.06)' : 'none',
+                borderBottom: `1px solid ${w(0.05, isDark)}`,
+                borderLeft:   isCurHour ? '2px solid rgba(34,211,238,0.65)' : '2px solid transparent',
+                background:   isCurHour ? 'rgba(34,211,238,0.03)' : 'transparent',
               }}
             >
               {/* Hour label */}
-              <div className="w-8 flex-shrink-0 flex flex-col items-center justify-start pt-0.5 gap-0.5" style={{ direction: 'ltr' }}>
-                {isCurHour && (
-                  <span className="block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'rgb(103,232,249)' }} />
-                )}
+              <div className="w-8 flex-shrink-0 flex items-start justify-center pt-1" style={{ direction: 'ltr' }}>
                 <span className="text-[9px] font-mono" style={{ color: isCurHour ? 'rgb(103,232,249)' : w(0.18, isDark) }}>
                   {String(h).padStart(2, '0')}
                 </span>
