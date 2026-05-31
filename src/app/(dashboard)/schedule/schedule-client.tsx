@@ -545,15 +545,28 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
               style={{
                 minHeight:    ROW_H,
                 borderBottom: `1px solid ${w(0.05, isDark)}`,
-                borderLeft:   isCurHour ? '2px solid rgba(34,211,238,0.65)' : '2px solid transparent',
-                background:   isCurHour ? 'rgba(34,211,238,0.03)' : 'transparent',
+                borderLeft:   '2px solid transparent',
+                background:   isCurHour ? 'rgba(34,211,238,0.04)' : 'transparent',
               }}
             >
               {/* Hour label */}
               <div className="w-8 flex-shrink-0 flex items-start justify-center pt-1" style={{ direction: 'ltr' }}>
-                <span className="text-[9px] font-mono" style={{ color: isCurHour ? 'rgb(103,232,249)' : w(0.18, isDark) }}>
-                  {String(h).padStart(2, '0')}
-                </span>
+                {isCurHour ? (
+                  <span
+                    className="text-[9px] font-mono font-bold rounded-full flex items-center justify-center"
+                    style={{
+                      color:      'oklch(0.08 0.035 240)',
+                      background: 'rgb(103,232,249)',
+                      width: 18, height: 18, lineHeight: 1,
+                    }}
+                  >
+                    {String(h).padStart(2, '0')}
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-mono" style={{ color: w(0.18, isDark) }}>
+                    {String(h).padStart(2, '0')}
+                  </span>
+                )}
               </div>
 
               {/* Activities + Habits */}
