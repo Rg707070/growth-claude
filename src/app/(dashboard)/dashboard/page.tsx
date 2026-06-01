@@ -47,7 +47,7 @@ export default async function DashboardPage() {
   const twoWeeksStart = fourteenDaysAgo.toISOString().split('T')[0]
 
   const [profileRes, habitsRes, allHabitsRes, logsRes, allLogsRes] = await Promise.all([
-    supabase.from('profiles').select('full_name, last_activity_date, created_at').eq('id', user.id).single(),
+    supabase.from('profiles').select('full_name, last_activity_date, onboarding_complete, created_at').eq('id', user.id).single(),
     supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
     // All habits (incl. inactive) — needed to map old log entries to their domain
     supabase.from('habits').select('id, domain_slug').eq('user_id', user.id),
@@ -62,8 +62,9 @@ export default async function DashboardPage() {
   const profile = (profileRes.data ?? {
     full_name: user.user_metadata?.full_name ?? null,
     last_activity_date: null,
+    onboarding_complete: false,
     created_at: new Date().toISOString(),
-  }) as { full_name: string | null; last_activity_date: string | null; created_at: string }
+  }) as { full_name: string | null; last_activity_date: string | null; onboarding_complete: boolean; created_at: string }
 
   const accountAgeDays = Math.max(
     1,

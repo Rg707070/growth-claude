@@ -34,6 +34,7 @@ export interface Profile {
   id: string
   full_name: string | null
   last_activity_date: string | null
+  onboarding_complete: boolean
   created_at: string
 }
 

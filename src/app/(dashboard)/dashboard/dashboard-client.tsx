@@ -5,6 +5,7 @@ import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
 import { LangToggle } from '@/components/lang-toggle'
 import { HabitRow } from '@/components/habit-row'
+import { EmptyHabits } from '@/components/empty-habits'
 import { ScheduleToday } from '@/components/schedule-today'
 import { TimeBackground } from '@/components/time-background'
 import { WaveAnimation } from '@/components/wave-animation'
@@ -306,11 +307,7 @@ export function DashboardClient({
                 </div>
               )}
 
-              {todayHabits.length === 0 && (
-                <div className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  {t('noHabitsYet')}
-                </div>
-              )}
+              {todayHabits.length === 0 && <EmptyHabits />}
             </div>
 
             {/* Mobile/tablet-only: schedule + journal + chart */}
