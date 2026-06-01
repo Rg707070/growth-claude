@@ -223,6 +223,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
   onDelete: (id: string) => Promise<void>
   onClose: () => void
 }) {
+  const { t } = useLang()
   const [editTime,  setEditTime]  = useState(item.time)
   const [editLabel, setEditLabel] = useState(item.label)
   const [editType,  setEditType]  = useState(item.type)
@@ -270,7 +271,7 @@ function EditSheet({ item, dayOfWeek, getDuplicateCount, onSave, onDelete, onClo
           <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(80px, env(safe-area-inset-bottom, 80px))' }}>
             <div className="flex gap-2">
               <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
-              <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="שם הפעילות" className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
+              <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder={t('activityName')} className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
             </div>
             <select value={editType} onChange={e => setEditType(e.target.value)} className="rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-2.5 focus:outline-none">
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -292,6 +293,7 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
   onAdd: (time: string, label: string, type: string, color: string | null) => Promise<void>
   onClose: () => void
 }) {
+  const { t } = useLang()
   const defaultTime = defaultHour !== null ? `${String(defaultHour).padStart(2, '0')}:00` : ''
   const [time,  setTime]  = useState(defaultTime)
   const [label, setLabel] = useState('')
@@ -320,7 +322,7 @@ function AddSheet({ defaultHour, onAdd, onClose }: {
         <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ paddingBottom: 'max(80px, env(safe-area-inset-bottom, 80px))' }}>
           <div className="flex gap-2">
             <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-24 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
-            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="שם הפעילות" autoFocus className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
+            <input value={label} onChange={e => setLabel(e.target.value)} placeholder={t('activityName')} autoFocus className="flex-1 rounded-xl bg-white/5 border border-white/10 text-white/80 text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-400/30" />
           </div>
           <select value={type} onChange={e => setType(e.target.value)} className="rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm px-3 py-2.5 focus:outline-none">
             {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
