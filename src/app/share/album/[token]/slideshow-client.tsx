@@ -56,7 +56,7 @@ export function SlideShowClient({ photos, weekLabel }: SlideShowClientProps) {
         <img
           key={current.id}
           src={current.url}
-          alt={current.caption || ''}
+          alt={current.caption || 'תמונה'}
           className="max-w-full max-h-full object-contain"
           style={{ animation: 'fadein 0.5s ease' }}
         />

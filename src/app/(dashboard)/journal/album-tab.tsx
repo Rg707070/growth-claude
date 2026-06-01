@@ -209,7 +209,7 @@ export function AlbumTab({ userId, initialPhotos }: AlbumTabProps) {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getPhotoUrl(photo.storage_path)}
-                      alt={photo.caption || ''}
+                      alt={photo.caption || 'תמונה'}
                       className="w-full h-full object-cover"
                     />
                     <button
@@ -285,7 +285,7 @@ function Slideshow({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={getUrl(current.storage_path)}
-          alt={current.caption || ''}
+          alt={current.caption || 'תמונה'}
           className="w-full max-h-[80vh] object-contain rounded-2xl"
         />
         {current.caption && (
