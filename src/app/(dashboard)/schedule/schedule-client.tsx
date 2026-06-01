@@ -8,6 +8,7 @@ import { DOMAINS } from '@/lib/domains'
 import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check, CalendarDays } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 import { useLang } from '@/lib/lang'
+import { useToast } from '@/components/ui/toast'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -778,7 +779,7 @@ function MonthlyView({ userId, allHabits, isDark, monthOffset, onMonthOffsetChan
       }
       setDayData(dd)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [userId, startDate, endDate])
 
   const cells: (number | null)[] = [
@@ -1081,6 +1082,7 @@ function YearlyView({ userId, allHabits, isDark, onSelectDate }: {
         setStreak(s)
         setLoading(false)
       })
+      .then(undefined, () => setLoading(false))
   }, [userId, startDate, todayStr, dailyHabitCount])
 
   const allWeeks = useMemo(() => {
@@ -1208,7 +1210,8 @@ export function SchedulePageClient({
   allHabits, weekHabitLogs, weekActivityChecks,
 }: Props) {
   const { isDark } = useTheme()
-  const { isRTL }  = useLang()
+  const { isRTL, t }  = useLang()
+  const { toast } = useToast()
   const todayDay   = new Date().getDay()
   const todayDate  = new Date().toISOString().split('T')[0]
 
@@ -1283,49 +1286,91 @@ export function SchedulePageClient({
   }
 
   async function saveEdit(id: string, scope: 'single' | 'all' | 'once', time: string, label: string, type: string, color: string | null, dayOfWeek: number) {
-    const sb = createClient()
-    if (scope === 'single') {
-      await sb.from('user_schedule').update({ time, label, type, color }).eq('id', id)
-    } else if (scope === 'all') {
-      const orig = allItems.find(i => i.id === id)
-      if (!orig) return
-      for (const mid of allItems.filter(i => i.label === orig.label && i.specific_date === null).map(i => i.id))
-        await sb.from('user_schedule').update({ time, label, type, color }).eq('id', mid)
-    } else {
-      await sb.from('user_schedule').insert({ user_id: userId, day_of_week: dayOfWeek, time, label, type, color, sort_order: 0, specific_date: getWeekDate(dayOfWeek) })
+    try {
+      const sb = createClient()
+      if (scope === 'single') {
+        const { error } = await sb.from('user_schedule').update({ time, label, type, color }).eq('id', id)
+        if (error) throw error
+      } else if (scope === 'all') {
+        const orig = allItems.find(i => i.id === id)
+        if (!orig) return
+        for (const mid of allItems.filter(i => i.label === orig.label && i.specific_date === null).map(i => i.id)) {
+          const { error } = await sb.from('user_schedule').update({ time, label, type, color }).eq('id', mid)
+          if (error) throw error
+        }
+      } else {
+        const { error } = await sb.from('user_schedule').insert({ user_id: userId, day_of_week: dayOfWeek, time, label, type, color, sort_order: 0, specific_date: getWeekDate(dayOfWeek) })
+        if (error) throw error
+      }
+      router.refresh()
+    } catch {
+      toast(t('saveFailed'), 'error')
     }
-    router.refresh()
   }
 
   async function deleteItem(id: string) {
-    await createClient().from('user_schedule').delete().eq('id', id)
-    router.refresh()
+    try {
+      const { error } = await createClient().from('user_schedule').delete().eq('id', id)
+      if (error) throw error
+      router.refresh()
+    } catch {
+      toast(t('saveFailed'), 'error')
+    }
   }
 
   async function addItem(time: string, label: string, type: string, color: string | null) {
-    await createClient().from('user_schedule').insert({ user_id: userId, day_of_week: day, time, label, type, color, sort_order: 0 })
-    router.refresh()
+    try {
+      const { error } = await createClient().from('user_schedule').insert({ user_id: userId, day_of_week: day, time, label, type, color, sort_order: 0 })
+      if (error) throw error
+      router.refresh()
+    } catch {
+      toast(t('saveFailed'), 'error')
+    }
   }
 
   async function toggleCheck(time: string) {
     const sb = createClient()
-    if (checked.has(time)) {
+    const wasChecked = checked.has(time)
+    if (wasChecked) {
       setChecked(p => { const n = new Set(p); n.delete(time); return n })
-      await sb.from('activity_checks').delete().eq('user_id', userId).eq('date', todayDate).eq('time', time)
     } else {
       setChecked(p => new Set([...p, time]))
-      await sb.from('activity_checks').upsert({ user_id: userId, date: todayDate, time })
+    }
+    try {
+      const { error } = wasChecked
+        ? await sb.from('activity_checks').delete().eq('user_id', userId).eq('date', todayDate).eq('time', time)
+        : await sb.from('activity_checks').upsert({ user_id: userId, date: todayDate, time })
+      if (error) throw error
+    } catch {
+      setChecked(p => {
+        const n = new Set(p)
+        if (wasChecked) n.add(time); else n.delete(time)
+        return n
+      })
+      toast(t('saveFailed'), 'error')
     }
   }
 
   async function toggleHabit(habitId: string) {
     const sb = createClient()
-    if (completedHabitIds.has(habitId)) {
+    const wasDone = completedHabitIds.has(habitId)
+    if (wasDone) {
       setCompletedHabitIds(p => { const n = new Set(p); n.delete(habitId); return n })
-      await sb.from('habit_logs').delete().eq('user_id', userId).eq('habit_id', habitId).eq('completed_at', todayDate)
     } else {
       setCompletedHabitIds(p => new Set([...p, habitId]))
-      await sb.from('habit_logs').upsert({ user_id: userId, habit_id: habitId, completed_at: todayDate })
+    }
+    try {
+      const { error } = wasDone
+        ? await sb.from('habit_logs').delete().eq('user_id', userId).eq('habit_id', habitId).eq('completed_at', todayDate)
+        : await sb.from('habit_logs').upsert({ user_id: userId, habit_id: habitId, completed_at: todayDate })
+      if (error) throw error
+    } catch {
+      setCompletedHabitIds(p => {
+        const n = new Set(p)
+        if (wasDone) n.add(habitId); else n.delete(habitId)
+        return n
+      })
+      toast(t('saveFailed'), 'error')
     }
   }
 

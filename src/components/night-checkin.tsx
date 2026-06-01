@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef } from 'react'
 import type { KeyboardEvent, ChangeEvent, RefObject, CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
+import { useToast } from '@/components/ui/toast'
 
 export function NightCheckIn() {
-  const { isRTL } = useLang()
+  const { t, isRTL } = useLang()
+  const { toast } = useToast()
   const [visible, setVisible] = useState(false)
   const [doneItems, setDoneItems] = useState<string[]>([])
   const [leftItems, setLeftItems] = useState<string[]>([])
@@ -74,21 +76,25 @@ export function NightCheckIn() {
 
   const submit = async () => {
     const today = new Date().toISOString().split('T')[0]
-    localStorage.setItem(`night_checkin_${today}`, 'done')
-    setSubmitted(true)
-
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('night_checkins').upsert({
-        user_id: user.id,
-        date: today,
-        mood: doneItems.length ? JSON.stringify(doneItems) : null,
-        productive: leftItems.length ? JSON.stringify(leftItems) : null,
-        gratitude: null,
-      })
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { error } = await supabase.from('night_checkins').upsert({
+          user_id: user.id,
+          date: today,
+          mood: doneItems.length ? JSON.stringify(doneItems) : null,
+          productive: leftItems.length ? JSON.stringify(leftItems) : null,
+          gratitude: null,
+        })
+        if (error) throw error
+      }
+      localStorage.setItem(`night_checkin_${today}`, 'done')
+      setSubmitted(true)
+      setTimeout(() => setVisible(false), 2000)
+    } catch {
+      toast(t('saveFailed'), 'error')
     }
-    setTimeout(() => setVisible(false), 2000)
   }
 
   if (!visible) return null
@@ -141,6 +147,7 @@ export function NightCheckIn() {
               </div>
               <button
                 onClick={dismiss}
+                aria-label={t('close')}
                 className="text-xl leading-none transition-colors mt-0.5"
                 style={{ color: 'var(--muted-foreground)' }}
               >×</button>

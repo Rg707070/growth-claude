@@ -6,6 +6,7 @@ import { Check, Bell, BellOff, X, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getDomainBySlug } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
+import { useToast } from '@/components/ui/toast'
 import {
   getReminderForHabit,
   setHabitReminder,
@@ -26,6 +27,7 @@ interface HabitRowProps {
 export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const router = useRouter()
   const { t, isRTL } = useLang()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(isCompleted)
   const [showReminderPicker, setShowReminderPicker] = useState(false)
@@ -82,6 +84,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       router.refresh()
     } catch {
       setDone(prevDone)
+      toast(t('saveFailed'), 'error')
     } finally {
       setLoading(false)
     }
@@ -100,7 +103,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       setEditing(false)
       router.refresh()
     } catch {
-      // keep editing open on error
+      toast(t('saveFailed'), 'error')
     } finally {
       setSaving(false)
     }
@@ -126,6 +129,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     } catch {
       setDeleting(false)
       setConfirmDelete(false)
+      toast(t('saveFailed'), 'error')
     }
   }
 
