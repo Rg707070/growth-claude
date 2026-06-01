@@ -4,9 +4,9 @@
 
 ## What this project is
 
-A mobile-first, gamified habit tracker for a yeshiva student (Rotem). Tracks 7 life domains (family, friends, torah, secular, sports, finance, music) with XP + levels drawn from *Mesillat Yesharim*. Bilingual: Hebrew (RTL, default) + English.
+A mobile-first, bilingual personal growth tracker for a yeshiva student (Rotem). Tracks habits and deep domain workspaces across 7 life domains: family, friends, torah, secular, sports, finance, music. Bilingual: Hebrew (RTL, default) + English.
 
-**Stack:** Next.js 16, TypeScript 5 (strict), Supabase (auth + Postgres + RLS), Tailwind CSS v4, shadcn/ui, Lucide icons, Google Generative AI (Gemini).
+**Stack:** Next.js 16.2.6, TypeScript 5 (strict), React 19.2.4, Supabase (auth + Postgres + RLS), Tailwind CSS v4, shadcn/ui, Lucide icons, TipTap editor, dnd-kit, Google Generative AI (Gemini 2.0 Flash Lite).
 **Deployed:** Vercel ← GitHub (`Rg707070/growth-claude`, branch `main`).
 
 ---
@@ -18,7 +18,7 @@ npm run dev        # dev server → http://localhost:3000 (or 3001 if busy)
 npm run build      # production build — also catches TS errors
 npx tsc --noEmit   # fast type-check only
 npm run lint       # ESLint
-git push           # triggers Vercel auto-deploy
+git push           # triggers Vercel auto-deploys
 ```
 
 Always run `npx tsc --noEmit` before committing. Zero-error policy.
@@ -35,12 +35,6 @@ Always run `npx tsc --noEmit` before committing. Zero-error policy.
 
 ### After any Supabase write
 Always call `router.refresh()` to re-run the server component and get fresh data. There is no global state.
-
-### XP updates — always use the RPC
-```ts
-await supabase.rpc('update_profile_xp', { uid: user.id, xp_delta: 10 })
-```
-Never write to `profiles.xp` directly — race conditions.
 
 ### Auth pattern in dashboard
 The `(dashboard)/layout.tsx` checks auth and redirects to `/login`. Individual dashboard pages do NOT re-check auth.
@@ -96,19 +90,41 @@ Each domain in `src/lib/domains.ts` carries: `color` (hex, for inline styles), `
 
 `src/lib/domains.ts` → `DOMAINS` array. Never hardcode domain names, colors, or slugs anywhere else.
 
-The 7 slugs: `family`, `friends`, `torah`, `secular`, `sports`, `finance`, `music`. `family` has its own dedicated page (`/domain/family`) with tasks, rituals, and adventures.
+The 7 slugs: `family`, `friends`, `torah`, `secular`, `sports`, `finance`, `music`.
 
-Domain-specific extras in `domain-detail-client.tsx`:
-- `torah` → `SefariaWidget`
-- `sports` / `music` → `ConnectPlaceholder`
+Domain routing:
+- `family` → dedicated page at `/domain/family` (tasks, habits, family events, routine breakers)
+- `torah` → full workspace at `/domain/torah` (sessions, notes, summaries, lesson feed, daily tracks)
+- All other domains → `/domain/[slug]` with their own client component and DB-backed ecosystem
+
+Domain-specific client components in `src/components/`:
+- `family-page-client.tsx` — Family coordination hub
+- `torah-workspace-client.tsx` — Full Torah learning workspace (5 tabs)
+- `finance-client.tsx`, `friends-client.tsx`, `sports-client.tsx`, `music-client.tsx`, `secular-client.tsx` — Domain pages with habits + domain-specific features
 
 ---
 
 ## Database
 
-Schema is in `supabase-schema.sql`. Tables: `profiles`, `habits`, `habit_logs`, `journal_entries`, `night_checkins`, `user_schedule`. All have RLS — users see only their own rows.
+Schema is in `supabase-schema.sql`. All tables have RLS — users see only their own rows.
 
-`user_schedule` table exists but is currently unused — schedule is hardcoded in `src/lib/schedule.ts`.
+**Core tables:** `profiles`, `habits`, `habit_logs`, `journal_entries`, `night_checkins`
+
+**Journal / media:** `journal_documents` (TipTap rich text), `photo_entries`, `album_shares`
+
+**Schedule:** `user_schedule` (editable weekly timetable), `activity_checks` (per-item daily check-offs), `schedule_reflections`
+
+**Torah workspace:** `learning_sessions`, `learning_notes`, `learning_summaries`, `torah_daily_tracks`, `torah_lessons` (admin-seeded), `saved_lessons`
+
+**Family domain:** `family_tasks`, `family_habits`, `family_events`, `routine_breakers`
+
+**Domain ecosystem (generic):** `domain_tasks`, `domain_goals`
+
+**Domain-specific:** `friend_contacts`, `friend_interactions`, `friend_reminders`, `finance_transactions`, `finance_wishlist`, `secular_books`, `secular_projects`, `reading_books`, `sport_workout_logs`, `sport_food_restrictions`, `sport_challenges`, `music_practice_logs`, `music_songs`
+
+**Key RPCs:**
+- `advance_family_habit_streak(habit_id, uid)` — increments/resets family habit streak based on frequency window
+- `advance_task_rotation(task_id, uid, max_members)` — rotates recurring family task assignment
 
 ---
 
@@ -117,7 +133,7 @@ Schema is in `supabase-schema.sql`. Tables: `profiles`, `habits`, `habit_logs`, 
 ```
 NEXT_PUBLIC_SUPABASE_URL       — Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY  — "Publishable key" in newer Supabase dashboards (same thing)
-GOOGLE_AI_API_KEY              — server-only, for /api/insights, /api/chat, /api/daily-plan, /api/torah/scan Gemini calls
+GOOGLE_AI_API_KEY              — server-only, for /api/torah/scan Gemini calls
 ```
 
 Never commit `.env.local`. No `SUPABASE_SERVICE_ROLE_KEY` needed — all ops go through anon key + RLS.
