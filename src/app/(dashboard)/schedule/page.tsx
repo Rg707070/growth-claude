@@ -36,7 +36,8 @@ export default async function SchedulePage() {
         specific_date: null,
       }))
     )
-    await supabase.from('user_schedule').insert(seedRows)
+    const { error: seedError } = await supabase.from('user_schedule').insert(seedRows)
+    if (seedError) console.error('schedule seed failed', seedError)
   }
 
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map(getWeekDate)
