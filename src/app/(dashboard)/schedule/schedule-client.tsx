@@ -160,7 +160,7 @@ function ScopeModal({ label, matchCount, onSelect, onCancel }: {
               <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>שינוי &quot;{label}&quot;</p>
               <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>קיים ב-{matchCount} ימים נוספים</p>
             </div>
-            <button onClick={onCancel} className="p-1 rounded-lg" style={{ color: 'var(--muted-foreground)' }}><X size={16} /></button>
+            <button onClick={onCancel} aria-label="סגור" className="p-1 rounded-lg" style={{ color: 'var(--muted-foreground)' }}><X size={16} /></button>
           </div>
         </div>
         <div className="p-3 flex flex-col gap-2">
