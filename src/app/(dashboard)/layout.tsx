@@ -6,6 +6,7 @@ import { NightCheckIn } from '@/components/night-checkin'
 import { DashboardMain } from '@/components/dashboard-main'
 import { Sidebar } from '@/components/sidebar'
 import { ToastProvider } from '@/components/ui/toast'
+import { OnboardingFlow } from '@/components/onboarding/onboarding-flow'
 import type { Profile } from '@/types'
 
 export default async function DashboardLayout({
@@ -27,6 +28,7 @@ export default async function DashboardLayout({
     id: user.id,
     full_name: user.user_metadata?.full_name ?? null,
     last_activity_date: null,
+    onboarding_complete: false,
     created_at: new Date().toISOString(),
   }
 
@@ -38,6 +40,9 @@ export default async function DashboardLayout({
         <BottomNav />
         <FAB />
         <NightCheckIn />
+        {!profile.onboarding_complete && (
+          <OnboardingFlow userId={profile.id} fullName={profile.full_name} />
+        )}
       </div>
     </ToastProvider>
   )

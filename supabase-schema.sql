@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   current_streak integer default 0 not null,
   longest_streak integer default 0 not null,
   last_activity_date date,
+  onboarding_complete boolean not null default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
