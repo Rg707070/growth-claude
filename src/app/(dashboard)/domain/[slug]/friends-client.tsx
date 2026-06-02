@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight, Plus, X, Trash2, MessageCircle, Users,
-  Bell, BellRing, Calendar, MessageSquare, Phone, History,
+  Bell, BellRing, Calendar, MessageSquare, Phone, History, Search,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
@@ -261,7 +261,12 @@ function ContactsTab({
 }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
+  const [search, setSearch] = useState('')
   const [pending, startTransition] = useTransition()
+
+  const filteredContacts = search.trim()
+    ? contacts.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+    : contacts
 
   const submit = () => {
     if (!name.trim()) return
@@ -274,6 +279,37 @@ function ContactsTab({
 
   return (
     <div className="space-y-2">
+      {contacts.length > 0 && (
+        <div className="relative">
+          <Search
+            size={15}
+            className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: 'var(--muted-foreground)', insetInlineStart: '12px' }}
+          />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={isRTL ? 'חפש איש קשר...' : 'Search contact...'}
+            className="rounded-xl"
+            style={{
+              background: 'var(--c-input)',
+              border: '1px solid var(--c-input-border)',
+              color: 'var(--foreground)',
+              paddingInlineStart: '34px',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute top-1/2 -translate-y-1/2"
+              style={{ color: 'var(--muted-foreground)', insetInlineEnd: '10px' }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      )}
+
       {contacts.length === 0 && !adding && (
         <div className="text-center py-10">
           <Users size={32} className="mx-auto mb-3" style={{ color: 'var(--muted-foreground)' }} />
@@ -283,7 +319,13 @@ function ContactsTab({
         </div>
       )}
 
-      {contacts.map((contact) => (
+      {search.trim() && filteredContacts.length === 0 && (
+        <p className="text-center text-sm py-6" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'לא נמצאו תוצאות' : 'No results found'}
+        </p>
+      )}
+
+      {filteredContacts.map((contact) => (
         <ContactRow
           key={contact.id}
           contact={contact}
