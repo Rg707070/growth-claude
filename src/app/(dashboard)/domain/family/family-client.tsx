@@ -6,6 +6,7 @@ import {
   ArrowRight, Plus, X, Check, Trash2, Calendar, ListChecks,
   Plane, Utensils, Activity, Star, Tag, Cake, Flame,
   ChevronLeft, ChevronRight, RotateCcw,
+  Home, Banknote, ShoppingCart, Heart, Users,
 } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { Button } from '@/components/ui/button'
@@ -33,13 +34,13 @@ import type {
 
 type Tab = 'tasks' | 'habits' | 'events'
 
-const TASK_CATEGORIES: { value: FamilyTaskCategory; he: string; en: string }[] = [
-  { value: 'household', he: 'בית', en: 'Household' },
-  { value: 'financial', he: 'כספים', en: 'Financial' },
-  { value: 'shopping', he: 'קניות', en: 'Shopping' },
-  { value: 'childcare', he: 'ילדים', en: 'Childcare' },
-  { value: 'social', he: 'חברתי', en: 'Social' },
-  { value: 'other', he: 'אחר', en: 'Other' },
+const TASK_CATEGORIES: { value: FamilyTaskCategory; he: string; en: string; color: string; icon: React.ReactNode }[] = [
+  { value: 'household', he: 'בית',    en: 'Household', color: '#6366f1', icon: <Home size={13} /> },
+  { value: 'financial', he: 'כספים', en: 'Financial', color: '#10b981', icon: <Banknote size={13} /> },
+  { value: 'shopping',  he: 'קניות', en: 'Shopping',  color: '#f59e0b', icon: <ShoppingCart size={13} /> },
+  { value: 'childcare', he: 'ילדים', en: 'Childcare', color: '#ec4899', icon: <Heart size={13} /> },
+  { value: 'social',    he: 'חברתי', en: 'Social',    color: '#06b6d4', icon: <Users size={13} /> },
+  { value: 'other',     he: 'אחר',   en: 'Other',     color: '#6b7280', icon: <Tag size={13} /> },
 ]
 
 const URGENCY_COLORS: Record<FamilyTaskUrgency, string> = {
@@ -264,24 +265,23 @@ function TasksTab({ tasks, accentColor, isRTL, today }: {
   const open = tasks.filter((t) => t.status !== 'done')
   const done = tasks.filter((t) => t.status === 'done')
 
+  const groups = TASK_CATEGORIES
+    .map((cat) => ({ cat, items: open.filter((t) => t.category === cat.value) }))
+    .filter((g) => g.items.length > 0)
+
   return (
-    <div className="space-y-3">
-      {open.length === 0 && !adding && (
+    <div className="space-y-2">
+      {groups.length === 0 && !adding && (
         <p className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {isRTL ? 'אין משימות פתוחות' : 'No open tasks'}
         </p>
       )}
 
-      {open.map((task) => <TaskCard key={task.id} task={task} isRTL={isRTL} today={today} />)}
+      {groups.map(({ cat, items }) => (
+        <FolderGroup key={cat.value} cat={cat} tasks={items} isRTL={isRTL} today={today} />
+      ))}
 
-      {done.length > 0 && (
-        <>
-          <p className="text-xs uppercase tracking-wider pt-3" style={{ color: 'var(--muted-foreground)' }}>
-            {isRTL ? 'הושלמו' : 'Completed'}
-          </p>
-          {done.map((task) => <TaskCard key={task.id} task={task} isRTL={isRTL} today={today} />)}
-        </>
-      )}
+      {done.length > 0 && <CompletedFolder tasks={done} isRTL={isRTL} today={today} />}
 
       {adding ? (
         <Card className="p-4 space-y-3">
@@ -363,59 +363,149 @@ function TasksTab({ tasks, accentColor, isRTL, today }: {
   )
 }
 
-function TaskCard({ task, isRTL, today }: { task: FamilyTask; isRTL: boolean; today: string }) {
+function FolderGroup({
+  cat, tasks, isRTL, today,
+}: {
+  cat: typeof TASK_CATEGORIES[number]
+  tasks: FamilyTask[]
+  isRTL: boolean
+  today: string
+}) {
+  const [open, setOpen] = useState(true)
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${cat.color}30` }}>
+      {/* Folder header */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full px-3 py-2 flex items-center gap-2"
+        style={{ background: `${cat.color}10` }}
+      >
+        <span style={{ color: cat.color }}>{cat.icon}</span>
+        <span className="flex-1 text-[13px] font-semibold text-start" style={{ color: 'var(--foreground)' }}>
+          {isRTL ? cat.he : cat.en}
+        </span>
+        <span
+          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+          style={{ background: `${cat.color}20`, color: cat.color }}
+        >
+          {tasks.length}
+        </span>
+        <ChevronRight
+          size={13}
+          style={{
+            color: cat.color,
+            transform: open ? 'rotate(90deg)' : 'none',
+            transition: 'transform 0.15s',
+            flexShrink: 0,
+          }}
+        />
+      </button>
+
+      {/* Task rows */}
+      {open && tasks.map((task, i) => (
+        <TaskRow
+          key={task.id}
+          task={task}
+          isRTL={isRTL}
+          today={today}
+          divider={i > 0}
+        />
+      ))}
+    </div>
+  )
+}
+
+function CompletedFolder({ tasks, isRTL, today }: { tasks: FamilyTask[]; isRTL: boolean; today: string }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] py-1.5 px-1"
+        style={{ color: 'var(--muted-foreground)' }}
+      >
+        <ChevronRight
+          size={11}
+          style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}
+        />
+        {isRTL ? `הושלמו (${tasks.length})` : `Completed (${tasks.length})`}
+      </button>
+      {open && (
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', opacity: 0.55 }}>
+          {tasks.map((task, i) => (
+            <TaskRow key={task.id} task={task} isRTL={isRTL} today={today} divider={i > 0} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TaskRow({ task, isRTL, today, divider }: {
+  task: FamilyTask; isRTL: boolean; today: string; divider: boolean
+}) {
   const [pending, startTransition] = useTransition()
   const done = task.status === 'done'
   const urgencyColor = URGENCY_COLORS[task.urgency]
-  const category = TASK_CATEGORIES.find((c) => c.value === task.category)
   const isOverdue = !done && task.due_date && task.due_date < today
 
   return (
-    <Card className="px-2.5 py-2 flex items-center gap-2" style={{ opacity: done ? 0.45 : 1 }}>
+    <div
+      className="flex items-center gap-2 px-3 py-2"
+      style={{
+        background: 'var(--card)',
+        borderTop: divider ? '1px solid var(--border)' : 'none',
+        opacity: done ? 0.45 : 1,
+      }}
+    >
+      {/* Urgency accent bar */}
+      <div
+        className="w-0.5 self-stretch rounded-full flex-shrink-0"
+        style={{ background: urgencyColor, minHeight: '16px' }}
+      />
+
+      {/* Checkbox */}
       <button
         onClick={() => startTransition(async () => {
           await updateFamilyTaskStatus(task.id, done ? 'pending' : 'done')
         })}
         disabled={pending}
-        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-        style={{ background: done ? urgencyColor : 'transparent', border: `2px solid ${urgencyColor}` }}
+        className="w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+        style={{ background: done ? urgencyColor : 'transparent', border: `1.5px solid ${urgencyColor}` }}
       >
-        {done && <Check size={11} color="white" />}
+        {done && <Check size={10} color="white" />}
       </button>
 
+      {/* Text */}
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium leading-tight truncate"
-          style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}>
+        <p
+          className="text-[13px] leading-tight truncate"
+          style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}
+        >
           {task.title}
         </p>
-        {(category || task.due_date) && (
-          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-            {category && (
-              <span className="flex items-center gap-1">
-                <Tag size={9} />
-                {isRTL ? category.he : category.en}
-              </span>
-            )}
-            {task.due_date && (
-              <span className="flex items-center gap-1" style={{ color: isOverdue ? '#ef4444' : 'var(--muted-foreground)' }}>
-                <Calendar size={9} />
-                {getGregorianDateStr(task.due_date)}
-                <span className="opacity-50">· {getHebrewDateStr(task.due_date)}</span>
-              </span>
-            )}
-          </div>
+        {task.due_date && (
+          <p className="text-[10px] mt-0.5 flex items-center gap-1"
+            style={{ color: isOverdue ? '#ef4444' : 'var(--muted-foreground)' }}>
+            <Calendar size={9} />
+            {getGregorianDateStr(task.due_date)}
+            <span className="opacity-50">· {getHebrewDateStr(task.due_date)}</span>
+          </p>
         )}
       </div>
 
+      {/* Delete */}
       <button
         onClick={() => startTransition(async () => { await deleteFamilyTask(task.id) })}
         disabled={pending}
-        className="p-1 rounded-md opacity-40 hover:opacity-70 transition-opacity"
+        className="p-1 rounded opacity-30 hover:opacity-60 transition-opacity flex-shrink-0"
         style={{ color: 'var(--muted-foreground)' }}
       >
-        <Trash2 size={13} />
+        <Trash2 size={12} />
       </button>
-    </Card>
+    </div>
   )
 }
 
