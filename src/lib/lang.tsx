@@ -100,6 +100,15 @@ const translations = {
     reminderAlarm: 'אזעקה',
     deleteReminder: 'מחק תזכורת',
     habitReminderBody: 'זמן לבצע את ההרגל! 💪',
+    // Book links
+    linkToBook: 'קשר לספר',
+    linkedSummaries: 'סיכומים מקושרים',
+    noLinkedSummaries: 'אין סיכומים מקושרים',
+    saveFirstToLink: 'שמור כדי לקשר לספר',
+    noBooksToLink: 'אין ספרים. הוסף ספר באזור הקריאה',
+    detach: 'הסר קישור',
+    openSource: 'פתח',
+    untitled: 'ללא כותרת',
   },
   en: {
     appName: 'GROWTH',
@@ -197,6 +206,15 @@ const translations = {
     reminderAlarm: 'Alarm',
     deleteReminder: 'Delete reminder',
     habitReminderBody: "Time to complete your habit! 💪",
+    // Book links
+    linkToBook: 'Link to book',
+    linkedSummaries: 'Linked summaries',
+    noLinkedSummaries: 'No linked summaries yet',
+    saveFirstToLink: 'Save first to link',
+    noBooksToLink: 'No books yet. Add one in Reading',
+    detach: 'Unlink',
+    openSource: 'Open',
+    untitled: 'Untitled',
   },
 }
 

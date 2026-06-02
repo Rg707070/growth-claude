@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Save, Loader2, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { LinkToBookButton } from '@/components/book-link-button'
 
 const TORAH_COLOR = '#0f766e'
 
@@ -18,24 +19,31 @@ export function TorahSummaryPanel({ userId, defaultTitle }: Props) {
   const [title, setTitle] = useState(defaultTitle)
   const [content, setContent] = useState('')
   const [appSave, setAppSave] = useState<SaveState>('idle')
+  const [savedId, setSavedId] = useState<string | null>(null)
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset title when default changes from parent
     setTitle(defaultTitle)
+    setSavedId(null)
   }, [defaultTitle])
 
   async function saveToApp() {
     if (!title.trim() || !content.trim()) return
     setAppSave('saving')
-    await supabase.from('learning_summaries').insert({
-      user_id: userId,
-      title: title.trim(),
-      content: content.trim(),
-      source: defaultTitle,
-      folder: 'שיעורים',
-      category: 'other',
-      tags: [],
-    })
+    const { data } = await supabase
+      .from('learning_summaries')
+      .insert({
+        user_id: userId,
+        title: title.trim(),
+        content: content.trim(),
+        source: defaultTitle,
+        folder: 'שיעורים',
+        category: 'other',
+        tags: [],
+      })
+      .select('id')
+      .single()
+    setSavedId((data as { id: string } | null)?.id ?? null)
     setAppSave('done')
     setTimeout(() => setAppSave('idle'), 2500)
   }
@@ -84,6 +92,9 @@ export function TorahSummaryPanel({ userId, defaultTitle }: Props) {
             {appSave === 'done' ? 'נשמר!' : 'שמור בסיכומים'}
           </button>
 
+          {savedId && (
+            <LinkToBookButton userId={userId} sourceType="learning_summary" sourceId={savedId} variant="full" />
+          )}
         </div>
       </div>
     </div>

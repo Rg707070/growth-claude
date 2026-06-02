@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
+import { LinkToBookButton } from '@/components/book-link-button'
 
 interface JournalEntry {
   id: string
@@ -20,6 +21,7 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
   const [text, setText] = useState('')
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [saving, setSaving] = useState(false)
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null)
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
@@ -35,7 +37,10 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
       if (data) {
         setEntries(data as JournalEntry[])
         const todayEntry = (data as JournalEntry[]).find((e) => e.date === today)
-        if (todayEntry) setText(todayEntry.text)
+        if (todayEntry) {
+          setText(todayEntry.text)
+          setSavedEntryId(todayEntry.id)
+        }
       }
     }
     load()
@@ -45,14 +50,20 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
     if (!text.trim()) return
     setSaving(true)
     const supabase = createClient()
-    await supabase.from('journal_entries').upsert(
-      { user_id: userId, domain_slug: domainSlug, date: today, text: text.trim() },
-      { onConflict: 'user_id,domain_slug,date' }
-    )
+    const { data } = await supabase
+      .from('journal_entries')
+      .upsert(
+        { user_id: userId, domain_slug: domainSlug, date: today, text: text.trim() },
+        { onConflict: 'user_id,domain_slug,date' }
+      )
+      .select('id')
+      .single()
     setSaving(false)
+    const newId = (data as { id: string } | null)?.id ?? savedEntryId
+    if (newId) setSavedEntryId(newId)
     setEntries((prev) => {
       const filtered = prev.filter((e) => e.date !== today)
-      return [{ id: today, date: today, text: text.trim() }, ...filtered].slice(0, 5)
+      return [{ id: newId ?? today, date: today, text: text.trim() }, ...filtered].slice(0, 5)
     })
   }
 
@@ -93,6 +104,9 @@ export function DomainJournal({ domainSlug, userId }: DomainJournalProps) {
         >
           {saving ? '...' : '✓'}
         </button>
+        <div className="flex items-center rounded-xl px-1" style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)' }}>
+          <LinkToBookButton userId={userId} sourceType="journal_entry" sourceId={savedEntryId} variant="icon" />
+        </div>
       </div>
 
       {entries.filter((e) => e.date !== today).length > 0 && (

@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
+import { LinkToBookButton } from '@/components/book-link-button'
 import {
   Bold,
   Italic,
@@ -53,13 +54,15 @@ declare global {
 interface WritingTabProps {
   userId: string
   initialDocs: DocMeta[]
+  initialDocId?: string | null
 }
 
-export function WritingTab({ userId, initialDocs }: WritingTabProps) {
+export function WritingTab({ userId, initialDocs, initialDocId }: WritingTabProps) {
   const { isRTL } = useLang()
   const [docs, setDocs] = useState<DocMeta[]>(initialDocs)
-  const [activeDocId, setActiveDocId] = useState<string | null>(initialDocs[0]?.id ?? null)
-  const [title, setTitle] = useState(initialDocs[0]?.title ?? '')
+  const startDoc = initialDocs.find((d) => d.id === initialDocId) ?? initialDocs[0]
+  const [activeDocId, setActiveDocId] = useState<string | null>(startDoc?.id ?? null)
+  const [title, setTitle] = useState(startDoc?.title ?? '')
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -379,6 +382,9 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
             >
               {toolbarButtons}
               <div className="flex-1" />
+              {activeDocId && (
+                <LinkToBookButton userId={userId} sourceType="journal_document" sourceId={activeDocId} variant="icon" />
+              )}
               <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
                 {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
               </span>
@@ -399,6 +405,9 @@ export function WritingTab({ userId, initialDocs }: WritingTabProps) {
               <span className="flex-1 text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>
                 {title || (isRTL ? 'ללא כותרת' : 'Untitled')}
               </span>
+              {activeDocId && (
+                <LinkToBookButton userId={userId} sourceType="journal_document" sourceId={activeDocId} variant="icon" />
+              )}
               <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
                 {saveState === 'saved' ? (isRTL ? '✓ נשמר' : '✓ Saved') : saveState === 'saving' ? '...' : ''}
               </span>
