@@ -371,47 +371,49 @@ function TaskCard({ task, isRTL, today }: { task: FamilyTask; isRTL: boolean; to
   const isOverdue = !done && task.due_date && task.due_date < today
 
   return (
-    <Card className="p-3 flex items-center gap-3" style={{ opacity: done ? 0.5 : 1 }}>
+    <Card className="px-2.5 py-2 flex items-center gap-2" style={{ opacity: done ? 0.45 : 1 }}>
       <button
         onClick={() => startTransition(async () => {
           await updateFamilyTaskStatus(task.id, done ? 'pending' : 'done')
         })}
         disabled={pending}
-        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
         style={{ background: done ? urgencyColor : 'transparent', border: `2px solid ${urgencyColor}` }}
       >
-        {done && <Check size={14} color="white" />}
+        {done && <Check size={11} color="white" />}
       </button>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate"
+        <p className="text-[13px] font-medium leading-tight truncate"
           style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}>
           {task.title}
         </p>
-        <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-          {category && (
-            <span className="flex items-center gap-1">
-              <Tag size={10} />
-              {isRTL ? category.he : category.en}
-            </span>
-          )}
-          {task.due_date && (
-            <span className="flex items-center gap-1" style={{ color: isOverdue ? '#ef4444' : 'var(--muted-foreground)' }}>
-              <Calendar size={10} />
-              {getGregorianDateStr(task.due_date)}
-              <span className="opacity-60">{getHebrewDateStr(task.due_date)}</span>
-            </span>
-          )}
-        </div>
+        {(category || task.due_date) && (
+          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            {category && (
+              <span className="flex items-center gap-1">
+                <Tag size={9} />
+                {isRTL ? category.he : category.en}
+              </span>
+            )}
+            {task.due_date && (
+              <span className="flex items-center gap-1" style={{ color: isOverdue ? '#ef4444' : 'var(--muted-foreground)' }}>
+                <Calendar size={9} />
+                {getGregorianDateStr(task.due_date)}
+                <span className="opacity-50">· {getHebrewDateStr(task.due_date)}</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <button
         onClick={() => startTransition(async () => { await deleteFamilyTask(task.id) })}
         disabled={pending}
-        className="p-1.5 rounded-lg"
+        className="p-1 rounded-md opacity-40 hover:opacity-70 transition-opacity"
         style={{ color: 'var(--muted-foreground)' }}
       >
-        <Trash2 size={14} />
+        <Trash2 size={13} />
       </button>
     </Card>
   )
@@ -529,28 +531,28 @@ function HabitCard({ habit, accentColor, isRTL }: {
       : (isRTL ? 'חודשי' : 'monthly')
 
   return (
-    <Card className="p-4">
-      <div className="flex items-start gap-3">
+    <Card className="px-3 py-2.5">
+      <div className="flex items-center gap-2.5">
         <button
           onClick={() => startTransition(async () => { await completeFamilyHabit(habit.id) })}
           disabled={pending}
-          className="flex-shrink-0 px-3 py-2 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all"
+          className="flex-shrink-0 px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all"
           style={{
             background: alive ? accentColor : `${accentColor}22`,
             color: alive ? 'white' : accentColor,
           }}
         >
-          <Flame size={14} />
+          <Flame size={12} />
           {habit.current_streak}
         </button>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+          <p className="text-[13px] font-medium leading-tight" style={{ color: 'var(--foreground)' }}>
             {habit.name}
           </p>
-          <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+          <div className="flex items-center gap-1.5 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
             <span>{freqLabel}</span>
-            <span>·</span>
+            <span className="opacity-40">·</span>
             <span>
               {habit.accountability_type === 'shared_streak'
                 ? (isRTL ? 'רצף משותף' : 'shared')
@@ -558,25 +560,26 @@ function HabitCard({ habit, accentColor, isRTL }: {
             </span>
             {!alive && habit.current_streak > 0 && (
               <>
-                <span>·</span>
+                <span className="opacity-40">·</span>
                 <span style={{ color: '#ef4444' }}>{isRTL ? 'פג תוקף' : 'lapsed'}</span>
               </>
             )}
+            {habit.context_anchor && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="italic truncate">{habit.context_anchor}</span>
+              </>
+            )}
           </div>
-          {habit.context_anchor && (
-            <p className="text-[11px] mt-1 italic" style={{ color: 'var(--muted-foreground)' }}>
-              {habit.context_anchor}
-            </p>
-          )}
         </div>
 
         <button
           onClick={() => startTransition(async () => { await deleteFamilyHabit(habit.id) })}
           disabled={pending}
-          className="p-1.5"
+          className="p-1 opacity-40 hover:opacity-70 transition-opacity"
           style={{ color: 'var(--muted-foreground)' }}
         >
-          <Trash2 size={14} />
+          <Trash2 size={13} />
         </button>
       </div>
     </Card>
@@ -796,65 +799,66 @@ function EventCard({ event, isRTL }: { event: FamilyEvent; isRTL: boolean }) {
 
   return (
     <Card
-      className="p-3 flex items-start gap-3"
-      style={{ opacity: completed ? 0.55 : 1, borderColor: `${meta.color}33` }}
+      className="px-2.5 py-2 flex items-center gap-2"
+      style={{ opacity: completed ? 0.45 : 1, borderColor: `${meta.color}33` }}
     >
       <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ background: `${meta.color}22`, color: meta.color }}
+        className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+        style={{ background: `${meta.color}20`, color: meta.color }}
       >
         {meta.icon}
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold leading-tight"
+        <p className="text-[13px] font-medium leading-tight truncate"
           style={{ color: 'var(--foreground)', textDecoration: completed ? 'line-through' : 'none' }}>
           {event.title}
         </p>
-        <div className="mt-1 space-y-0.5">
-          <p className="text-[11px] font-medium" style={{ color: meta.color }}>
-            {getHebrewDateStr(event.event_date)}
-          </p>
-          <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-            {getGregorianDateStr(event.event_date)}
-            {event.is_recurring && (
-              <span className="mr-2 inline-flex items-center gap-0.5">
-                · <RotateCcw size={9} className="inline" />
-                {event.recurrence === 'yearly' ? (isRTL ? 'כל שנה' : 'yearly') :
-                  event.recurrence === 'monthly' ? (isRTL ? 'כל חודש' : 'monthly') :
-                    (isRTL ? 'כל שבוע' : 'weekly')}
+        <div className="flex items-center gap-1 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+          <span style={{ color: meta.color }}>{getHebrewDateStr(event.event_date)}</span>
+          <span className="opacity-40">·</span>
+          <span>{getGregorianDateStr(event.event_date)}</span>
+          {event.is_recurring && (
+            <>
+              <span className="opacity-40">·</span>
+              <RotateCcw size={8} />
+              <span>
+                {event.recurrence === 'yearly' ? (isRTL ? 'שנתי' : 'yr') :
+                  event.recurrence === 'monthly' ? (isRTL ? 'חודשי' : 'mo') :
+                    (isRTL ? 'שבועי' : 'wk')}
               </span>
-            )}
-          </p>
+            </>
+          )}
           {event.notes && (
-            <p className="text-[10px] italic leading-snug" style={{ color: 'var(--muted-foreground)' }}>
-              {event.notes}
-            </p>
+            <>
+              <span className="opacity-40">·</span>
+              <span className="italic truncate">{event.notes}</span>
+            </>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={() => startTransition(async () => {
             await updateFamilyEventStatus(event.id, completed ? 'upcoming' : 'completed')
           })}
           disabled={pending}
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          className="w-6 h-6 rounded-md flex items-center justify-center transition-all"
           style={{
-            background: completed ? meta.color : `${meta.color}22`,
+            background: completed ? meta.color : `${meta.color}20`,
             color: completed ? 'white' : meta.color,
           }}
         >
-          <Check size={13} />
+          <Check size={12} />
         </button>
         <button
           onClick={() => startTransition(async () => { await deleteFamilyEvent(event.id) })}
           disabled={pending}
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          className="w-6 h-6 rounded-md flex items-center justify-center opacity-40 hover:opacity-70 transition-opacity"
           style={{ color: 'var(--muted-foreground)' }}
         >
-          <Trash2 size={13} />
+          <Trash2 size={12} />
         </button>
       </div>
     </Card>
