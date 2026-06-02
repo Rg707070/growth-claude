@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ArrowRight, BookOpen, FileText, Home } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { TorahHomeTab } from './torah-home-tab'
 import { TorahLearnTab } from './torah-learn-tab'
@@ -35,8 +35,13 @@ export function TorahWorkspaceClient({
   dailyTracks,
 }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { t, isRTL } = useLang()
-  const [activeTab, setActiveTab] = useState<Tab>('home')
+  const paramTab = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<Tab>(
+    paramTab === 'summaries' || paramTab === 'learn' ? paramTab : 'home',
+  )
+  const initialSummaryId = searchParams.get('summary')
   const [localSummaries, setLocalSummaries] = useState<LearningSummary[]>(summaries)
   const [localSessions, setLocalSessions] = useState<LearningSession[]>(sessions)
   const [localTodaySeconds, setLocalTodaySeconds] = useState(todaySeconds)
@@ -143,6 +148,7 @@ export function TorahWorkspaceClient({
           <TorahSummariesTab
             userId={userId}
             summaries={localSummaries}
+            initialSummaryId={initialSummaryId}
             onCreated={onSummaryCreated}
             onUpdated={onSummaryUpdated}
             onDeleted={onSummaryDeleted}

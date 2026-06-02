@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { WritingTab } from './writing-tab'
 import { InsightsTab } from './insights-tab'
@@ -8,6 +9,8 @@ import { AlbumTab } from './album-tab'
 import type { DocMeta, DomainEntry, PhotoEntry } from './page'
 
 type Tab = 'writing' | 'insights' | 'album'
+
+const TABS: Tab[] = ['writing', 'insights', 'album']
 
 interface JournalClientProps {
   userId: string
@@ -18,7 +21,10 @@ interface JournalClientProps {
 
 export function JournalClient({ userId, documents, domainEntries, photos }: JournalClientProps) {
   const { isRTL } = useLang()
-  const [tab, setTab] = useState<Tab>('writing')
+  const searchParams = useSearchParams()
+  const paramTab = searchParams.get('tab') as Tab | null
+  const [tab, setTab] = useState<Tab>(paramTab && TABS.includes(paramTab) ? paramTab : 'writing')
+  const initialDocId = searchParams.get('doc')
 
   const tabs: { id: Tab; labelHe: string; labelEn: string }[] = [
     { id: 'writing', labelHe: 'כתיבה', labelEn: 'Writing' },
@@ -58,7 +64,7 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
         </div>
 
         {/* Tab content */}
-        {tab === 'writing' && <WritingTab userId={userId} initialDocs={documents} />}
+        {tab === 'writing' && <WritingTab userId={userId} initialDocs={documents} initialDocId={initialDocId} />}
         {tab === 'insights' && <InsightsTab entries={domainEntries} />}
         {tab === 'album' && <AlbumTab userId={userId} initialPhotos={photos} />}
       </div>

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Star, StarOff, Search, X, Trash2, ChevronDown, Pencil } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { createClient } from '@/lib/supabase/client'
+import { LinkToBookButton } from '@/components/book-link-button'
 import type { LearningSummary } from '@/types'
 
 const TORAH_COLOR = '#0f766e'
@@ -12,6 +13,7 @@ const GOLD = '#c4963a'
 interface Props {
   userId: string
   summaries: LearningSummary[]
+  initialSummaryId?: string | null
   onCreated: (s: LearningSummary) => void
   onUpdated: (s: LearningSummary) => void
   onDeleted: (id: string) => void
@@ -25,12 +27,23 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })
 }
 
-export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onDeleted }: Props) {
+export function TorahSummariesTab({ userId, summaries, initialSummaryId, onCreated, onUpdated, onDeleted }: Props) {
   const { t } = useLang()
   const supabase = createClient()
 
   const [view, setView] = useState<View>('list')
   const [selected, setSelected] = useState<LearningSummary | null>(null)
+
+  useEffect(() => {
+    if (!initialSummaryId) return
+    const match = summaries.find((s) => s.id === initialSummaryId)
+    if (match) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- open the deep-linked summary once on mount
+      setSelected(match)
+      setView('view')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run for the initial deep-link target
+  }, [initialSummaryId])
   const [search, setSearch] = useState('')
   const [folderFilter, setFolderFilter] = useState('הכל')
   const [favOnly, setFavOnly] = useState(false)
@@ -223,6 +236,9 @@ export function TorahSummariesTab({ userId, summaries, onCreated, onUpdated, onD
             >
               <Trash2 size={16} />
             </button>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--secondary)' }}>
+              <LinkToBookButton userId={userId} sourceType="learning_summary" sourceId={selected.id} variant="icon" />
+            </div>
           </div>
           <button onClick={() => setView('list')} className="text-xs font-medium transition-opacity hover:opacity-70"
             style={{ color: 'var(--muted-foreground)' }}>

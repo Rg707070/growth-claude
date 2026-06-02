@@ -4,10 +4,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, X, ChevronLeft, ChevronRight, BookOpen, Trash2,
-  Check, AlertCircle, FileText, CheckCircle2,
+  Check, AlertCircle, FileText, CheckCircle2, Link2, ExternalLink,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
+import { fetchLinkedItems, type LinkedItem } from '@/lib/book-links'
 
 interface ReadingBook {
   id: string
@@ -350,6 +351,8 @@ interface BookCardProps {
 }
 
 function BookCard({ book, isRTL, onDeleted, onUpdated }: BookCardProps) {
+  const router = useRouter()
+  const { t } = useLang()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [logPages, setLogPages] = useState('')
   const [logChapters, setLogChapters] = useState('')
@@ -360,6 +363,20 @@ function BookCard({ book, isRTL, onDeleted, onUpdated }: BookCardProps) {
   const [notesValue, setNotesValue] = useState(book.notes)
   const [savingNotes, setSavingNotes] = useState(false)
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showLinks, setShowLinks] = useState(false)
+  const [linkedItems, setLinkedItems] = useState<LinkedItem[]>([])
+  const [loadingLinks, setLoadingLinks] = useState(false)
+
+  const toggleLinks = async () => {
+    const next = !showLinks
+    setShowLinks(next)
+    if (next) {
+      setLoadingLinks(true)
+      const items = await fetchLinkedItems(createClient(), book.id)
+      setLinkedItems(items)
+      setLoadingLinks(false)
+    }
+  }
 
   const hasPages = book.total_pages !== null && book.total_pages > 0
   const hasChapters = book.total_chapters !== null && book.total_chapters > 0
@@ -597,6 +614,14 @@ function BookCard({ book, isRTL, onDeleted, onUpdated }: BookCardProps) {
                 <FileText size={14} />
               </button>
               <button
+                onClick={toggleLinks}
+                className="p-1.5 rounded-lg"
+                style={{ color: showLinks ? book.color : 'var(--muted-foreground)' }}
+                title={t('linkedSummaries')}
+              >
+                <Link2 size={14} />
+              </button>
+              <button
                 onClick={handleMarkComplete}
                 className="p-1.5 rounded-lg"
                 style={{ color: 'var(--muted-foreground)' }}
@@ -618,6 +643,14 @@ function BookCard({ book, isRTL, onDeleted, onUpdated }: BookCardProps) {
               style={{ color: showNotes ? book.color : 'var(--muted-foreground)' }}
             >
               <FileText size={14} />
+            </button>
+            <button
+              onClick={toggleLinks}
+              className="p-1.5 rounded-lg"
+              style={{ color: showLinks ? book.color : 'var(--muted-foreground)' }}
+              title={t('linkedSummaries')}
+            >
+              <Link2 size={14} />
             </button>
             {deleteControls}
           </div>
@@ -721,6 +754,49 @@ function BookCard({ book, isRTL, onDeleted, onUpdated }: BookCardProps) {
               }}
               dir={isRTL ? 'rtl' : 'ltr'}
             />
+          </div>
+        )}
+
+        {/* Linked summaries */}
+        {showLinks && (
+          <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${book.color}30` }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                {t('linkedSummaries')}
+                {linkedItems.length > 0 && ` · ${linkedItems.length}`}
+              </span>
+            </div>
+            {loadingLinks ? (
+              <p className="text-xs py-2" style={{ color: 'var(--muted-foreground)' }}>…</p>
+            ) : linkedItems.length === 0 ? (
+              <p className="text-xs py-2" style={{ color: 'var(--muted-foreground)' }}>
+                {t('noLinkedSummaries')}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {linkedItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => router.push(item.href)}
+                    className="w-full text-start rounded-xl p-2.5 transition-all active:scale-[0.99] flex items-start gap-2"
+                    style={{ background: 'var(--c-input)', border: `1px solid ${book.color}25` }}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                        {item.title || t('untitled')}
+                      </p>
+                      {item.preview && (
+                        <p className="text-xs line-clamp-2 leading-relaxed mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                          {item.preview}
+                        </p>
+                      )}
+                    </div>
+                    <ExternalLink size={13} className="shrink-0 mt-0.5" style={{ color: book.color }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
