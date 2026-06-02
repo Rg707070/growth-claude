@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 
-type TableName = 'family_tasks' | 'family_habits' | 'routine_breakers' | 'family_events'
+type TableName = 'family_tasks' | 'family_habits' | 'routine_breakers' | 'family_events' | 'family_task_folders'
 
 export type FamilyRealtimeEvent = {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE'

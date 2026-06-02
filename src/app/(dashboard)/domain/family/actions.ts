@@ -7,6 +7,7 @@ import type {
   FamilyTaskCategory,
   FamilyTaskStatus,
   FamilyTaskUrgency,
+  FamilyTaskFolder,
   FamilyHabit,
   FamilyHabitFrequency,
   FamilyHabitAccountability,
@@ -55,6 +56,7 @@ export async function createFamilyTask(input: {
   category?: FamilyTaskCategory
   urgency?: FamilyTaskUrgency
   due_date?: string | null
+  folder_id?: string | null
   assigned_to?: string | null
   is_recurring?: boolean
 }): Promise<FamilyTask> {
@@ -65,9 +67,10 @@ export async function createFamilyTask(input: {
       user_id: user.id,
       family_id: user.id,
       title: input.title,
-      category: input.category ?? 'household',
+      category: input.category ?? 'other',
       urgency: input.urgency ?? 'normal',
       due_date: input.due_date ?? null,
+      folder_id: input.folder_id ?? null,
       assigned_to: input.assigned_to ?? null,
       is_recurring: input.is_recurring ?? false,
     })
@@ -76,6 +79,64 @@ export async function createFamilyTask(input: {
   if (error) throw error
   revalidatePath(familyPath())
   return data as FamilyTask
+}
+
+// ─── Family Task Folders ─────────────────────────────────────
+
+export async function createTaskFolder(name: string, color: string): Promise<FamilyTaskFolder> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { data: existing } = await supabase
+    .from('family_task_folders')
+    .select('sort_order')
+    .eq('user_id', user.id)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .single()
+  const nextOrder = existing ? (existing.sort_order as number) + 1 : 0
+  const { data, error } = await supabase
+    .from('family_task_folders')
+    .insert({ user_id: user.id, name: name.trim(), color, sort_order: nextOrder })
+    .select()
+    .single()
+  if (error) throw error
+  revalidatePath(familyPath())
+  return data as FamilyTaskFolder
+}
+
+export async function renameTaskFolder(id: string, name: string): Promise<void> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { error } = await supabase
+    .from('family_task_folders')
+    .update({ name: name.trim() })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  if (error) throw error
+  revalidatePath(familyPath())
+}
+
+export async function deleteTaskFolder(id: string): Promise<void> {
+  const { supabase, user } = await getAuthenticatedUser()
+  const { error } = await supabase
+    .from('family_task_folders')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+  if (error) throw error
+  revalidatePath(familyPath())
+}
+
+export async function updateFolderOrder(updates: { id: string; sort_order: number }[]): Promise<void> {
+  const { supabase, user } = await getAuthenticatedUser()
+  await Promise.all(
+    updates.map(({ id, sort_order }) =>
+      supabase
+        .from('family_task_folders')
+        .update({ sort_order })
+        .eq('id', id)
+        .eq('user_id', user.id)
+    )
+  )
+  revalidatePath(familyPath())
 }
 
 export async function updateFamilyTaskStatus(

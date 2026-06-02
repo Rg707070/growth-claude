@@ -2,6 +2,15 @@ export type FamilyTaskCategory = 'household' | 'financial' | 'shopping' | 'child
 export type FamilyTaskStatus = 'pending' | 'in_progress' | 'done'
 export type FamilyTaskUrgency = 'low' | 'normal' | 'high' | 'critical'
 
+export interface FamilyTaskFolder {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  sort_order: number
+  created_at: string
+}
+
 export interface FamilyTask {
   id: string
   user_id: string
@@ -11,6 +20,7 @@ export interface FamilyTask {
   status: FamilyTaskStatus
   urgency: FamilyTaskUrgency
   due_date: string | null
+  folder_id: string | null
   assigned_to: string | null
   is_recurring: boolean
   rotation_index: number

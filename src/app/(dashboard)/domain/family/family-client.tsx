@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useTransition, useEffect, useMemo } from 'react'
+import { useState, useTransition, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight, Plus, X, Check, Trash2, Calendar, ListChecks,
   Plane, Utensils, Activity, Star, Tag, Cake, Flame,
-  ChevronLeft, ChevronRight, RotateCcw,
-  Home, Banknote, ShoppingCart, Heart, Users,
+  ChevronLeft, ChevronRight, RotateCcw, GripVertical, Pencil,
 } from 'lucide-react'
 import { useLang } from '@/lib/lang'
 import { Button } from '@/components/ui/button'
@@ -16,6 +15,7 @@ import {
   createFamilyTask, updateFamilyTaskStatus, deleteFamilyTask,
   createFamilyHabit, completeFamilyHabit, deleteFamilyHabit,
   createFamilyEvent, updateFamilyEventStatus, deleteFamilyEvent,
+  createTaskFolder, renameTaskFolder, deleteTaskFolder, updateFolderOrder,
 } from './actions'
 import { subscribeFamilyRealtime } from '@/lib/family/realtime'
 import { isStreakAlive } from '@/lib/family/streak-engine'
@@ -25,7 +25,7 @@ import {
 } from '@/lib/family/hebrew-calendar'
 import type { Domain } from '@/types'
 import type {
-  FamilyTask, FamilyTaskCategory, FamilyTaskUrgency,
+  FamilyTask, FamilyTaskUrgency, FamilyTaskFolder,
   FamilyHabit, FamilyHabitFrequency, FamilyHabitAccountability,
   FamilyEvent, FamilyEventCategory, FamilyEventRecurrence,
 } from '@/types/family'
@@ -34,14 +34,7 @@ import type {
 
 type Tab = 'tasks' | 'habits' | 'events'
 
-const TASK_CATEGORIES: { value: FamilyTaskCategory; he: string; en: string; color: string; icon: React.ReactNode }[] = [
-  { value: 'household', he: 'בית',    en: 'Household', color: '#6366f1', icon: <Home size={13} /> },
-  { value: 'financial', he: 'כספים', en: 'Financial', color: '#10b981', icon: <Banknote size={13} /> },
-  { value: 'shopping',  he: 'קניות', en: 'Shopping',  color: '#f59e0b', icon: <ShoppingCart size={13} /> },
-  { value: 'childcare', he: 'ילדים', en: 'Childcare', color: '#ec4899', icon: <Heart size={13} /> },
-  { value: 'social',    he: 'חברתי', en: 'Social',    color: '#06b6d4', icon: <Users size={13} /> },
-  { value: 'other',     he: 'אחר',   en: 'Other',     color: '#6b7280', icon: <Tag size={13} /> },
-]
+const FOLDER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316', '#ef4444']
 
 const URGENCY_COLORS: Record<FamilyTaskUrgency, string> = {
   low: '#6b7280',
@@ -80,10 +73,11 @@ interface Props {
   tasks: FamilyTask[]
   habits: FamilyHabit[]
   events: FamilyEvent[]
+  folders: FamilyTaskFolder[]
   schemaReady: boolean
 }
 
-export function FamilyClient({ domain, tasks, habits, events, schemaReady }: Props) {
+export function FamilyClient({ domain, tasks, habits, events, folders, schemaReady }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
   const [tab, setTab] = useState<Tab>('tasks')
@@ -97,7 +91,7 @@ export function FamilyClient({ domain, tasks, habits, events, schemaReady }: Pro
 
   useEffect(() => {
     if (!schemaReady) return
-    return subscribeFamilyRealtime(['family_tasks', 'family_habits', 'family_events'], () => router.refresh())
+    return subscribeFamilyRealtime(['family_tasks', 'family_habits', 'family_events', 'family_task_folders'], () => router.refresh())
   }, [router, schemaReady])
 
   const openTasks = tasks.filter((t) => t.status !== 'done').length
@@ -160,7 +154,7 @@ export function FamilyClient({ domain, tasks, habits, events, schemaReady }: Pro
       </div>
 
       {tab === 'tasks' && (
-        <TasksTab tasks={tasks} accentColor={domain.color} isRTL={isRTL} today={today} />
+        <TasksTab folders={folders} tasks={tasks} accentColor={domain.color} isRTL={isRTL} today={today} />
       )}
       {tab === 'habits' && (
         <HabitsTab habits={habits} accentColor={domain.color} isRTL={isRTL} />
@@ -243,197 +237,350 @@ function TabButton({ active, onClick, color, children }: {
 
 // ─── Tasks Tab ────────────────────────────────────────────────
 
-function TasksTab({ tasks, accentColor, isRTL, today }: {
-  tasks: FamilyTask[]; accentColor: string; isRTL: boolean; today: string
+function TasksTab({ folders, tasks, accentColor, isRTL, today }: {
+  folders: FamilyTaskFolder[]; tasks: FamilyTask[]; accentColor: string; isRTL: boolean; today: string
 }) {
-  const [adding, setAdding] = useState(false)
-  const [title, setTitle] = useState('')
-  const [category, setCategory] = useState<FamilyTaskCategory>('household')
-  const [urgency, setUrgency] = useState<FamilyTaskUrgency>('normal')
-  const [dueDate, setDueDate] = useState('')
-  const [pending, startTransition] = useTransition()
+  const [localFolders, setLocalFolders] = useState(folders)
+  const [addingFolder, setAddingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [activeTaskFolder, setActiveTaskFolder] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
 
-  const submit = () => {
-    if (!title.trim()) return
+  useEffect(() => { setLocalFolders(folders) }, [folders])
+
+  const nextColor = FOLDER_COLORS[localFolders.length % FOLDER_COLORS.length]
+
+  const submitFolder = () => {
+    const name = newFolderName.trim()
+    if (!name) return
     startTransition(async () => {
-      await createFamilyTask({ title: title.trim(), category, urgency, due_date: dueDate || null })
-      setTitle(''); setCategory('household'); setUrgency('normal'); setDueDate('')
-      setAdding(false)
+      await createTaskFolder(name, nextColor)
+      setNewFolderName('')
+      setAddingFolder(false)
     })
   }
 
-  const open = tasks.filter((t) => t.status !== 'done')
-  const done = tasks.filter((t) => t.status === 'done')
+  const handleReorder = useCallback((newOrder: FamilyTaskFolder[]) => {
+    setLocalFolders(newOrder)
+    startTransition(async () => {
+      await updateFolderOrder(newOrder.map((f, i) => ({ id: f.id, sort_order: i })))
+    })
+  }, [])
 
-  const groups = TASK_CATEGORIES
-    .map((cat) => ({ cat, items: open.filter((t) => t.category === cat.value) }))
-    .filter((g) => g.items.length > 0)
+  const unfiledOpen = tasks.filter((t) => !t.folder_id && t.status !== 'done')
+  const done = tasks.filter((t) => t.status === 'done')
+  const hasContent = localFolders.length > 0 || unfiledOpen.length > 0
 
   return (
     <div className="space-y-2">
-      {groups.length === 0 && !adding && (
+      {!hasContent && !addingFolder && (
         <p className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {isRTL ? 'אין משימות פתוחות' : 'No open tasks'}
+          {isRTL ? 'צור תיקייה ראשונה' : 'Create your first folder'}
         </p>
       )}
 
-      {groups.map(({ cat, items }) => (
-        <FolderGroup key={cat.value} cat={cat} tasks={items} isRTL={isRTL} today={today} />
-      ))}
+      <SortableFolderList
+        folders={localFolders}
+        tasks={tasks}
+        isRTL={isRTL}
+        today={today}
+        activeTaskFolder={activeTaskFolder}
+        onSetActiveTaskFolder={setActiveTaskFolder}
+        onReorder={handleReorder}
+      />
+
+      {unfiledOpen.length > 0 && (
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+          <div className="px-3 py-2 flex items-center gap-2" style={{ background: 'var(--secondary)' }}>
+            <Tag size={11} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+            <span className="flex-1 text-[12px]" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'ללא תיקייה' : 'Unfiled'}
+            </span>
+            <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>{unfiledOpen.length}</span>
+          </div>
+          {unfiledOpen.map((t, i) => (
+            <TaskRow key={t.id} task={t} isRTL={isRTL} today={today} divider={i > 0} />
+          ))}
+        </div>
+      )}
 
       {done.length > 0 && <CompletedFolder tasks={done} isRTL={isRTL} today={today} />}
 
-      {adding ? (
-        <Card className="p-4 space-y-3">
+      {addingFolder ? (
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: nextColor }} />
           <Input
             autoFocus
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder={isRTL ? 'מה המשימה?' : 'Task title…'}
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitFolder()
+              if (e.key === 'Escape') { setAddingFolder(false); setNewFolderName('') }
+            }}
+            placeholder={isRTL ? 'שם התיקייה' : 'Folder name'}
+            className="flex-1 h-8 text-[13px]"
           />
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as FamilyTaskCategory)}
-              className="rounded-lg px-3 py-2 text-sm"
-              style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-            >
-              {TASK_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{isRTL ? c.he : c.en}</option>
-              ))}
-            </select>
-            <select
-              value={urgency}
-              onChange={(e) => setUrgency(e.target.value as FamilyTaskUrgency)}
-              className="rounded-lg px-3 py-2 text-sm"
-              style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-            >
-              <option value="low">{isRTL ? 'נמוך' : 'Low'}</option>
-              <option value="normal">{isRTL ? 'רגיל' : 'Normal'}</option>
-              <option value="high">{isRTL ? 'גבוה' : 'High'}</option>
-              <option value="critical">{isRTL ? 'קריטי' : 'Critical'}</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              {isRTL ? 'תאריך יעד (אופציונלי)' : 'Due date (optional)'}
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-sm"
-              style={{
-                background: 'var(--secondary)',
-                border: '1px solid var(--border)',
-                color: 'var(--foreground)',
-                colorScheme: 'dark',
-              }}
-            />
-            {dueDate && (
-              <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
-                {getHebrewDateStr(dueDate)}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={submit} disabled={pending || !title.trim()} className="flex-1"
-              style={{ background: accentColor, color: 'white' }}>
-              {isRTL ? 'שמור' : 'Save'}
-            </Button>
-            <button onClick={() => { setAdding(false); setTitle(''); setDueDate('') }}
-              className="p-2 rounded-lg"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
-              <X size={18} />
-            </button>
-          </div>
-        </Card>
+          <button onClick={submitFolder} disabled={!newFolderName.trim()} className="p-1.5 rounded-lg flex-shrink-0"
+            style={{ background: accentColor, color: 'white' }}>
+            <Check size={13} />
+          </button>
+          <button onClick={() => { setAddingFolder(false); setNewFolderName('') }} className="p-1.5 rounded-lg flex-shrink-0"
+            style={{ color: 'var(--muted-foreground)' }}>
+            <X size={13} />
+          </button>
+        </div>
       ) : (
         <button
-          onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
+          onClick={() => setAddingFolder(true)}
+          className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-dashed"
           style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
         >
-          <Plus size={18} />
-          <span className="text-sm">{isRTL ? 'הוסף משימה' : 'Add Task'}</span>
+          <Plus size={13} />
+          <span className="text-[13px]">{isRTL ? 'תיקייה חדשה' : 'New folder'}</span>
         </button>
       )}
     </div>
   )
 }
 
-function FolderGroup({
-  cat, tasks, isRTL, today,
+// ─── Sortable folder list ─────────────────────────────────────
+
+function SortableFolderList({
+  folders, tasks, isRTL, today, activeTaskFolder, onSetActiveTaskFolder, onReorder,
 }: {
-  cat: typeof TASK_CATEGORIES[number]
-  tasks: FamilyTask[]
-  isRTL: boolean
-  today: string
+  folders: FamilyTaskFolder[]; tasks: FamilyTask[]; isRTL: boolean; today: string
+  activeTaskFolder: string | null; onSetActiveTaskFolder: (id: string | null) => void
+  onReorder: (newOrder: FamilyTaskFolder[]) => void
 }) {
-  const [open, setOpen] = useState(true)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const foldersRef = useRef(folders)
+  foldersRef.current = folders
+
+  useEffect(() => {
+    if (!dragId) return
+    const onMove = (e: PointerEvent) => {
+      if (!listRef.current) return
+      const els = Array.from(listRef.current.children) as HTMLElement[]
+      let idx = els.length - 1
+      for (let i = 0; i < els.length; i++) {
+        const r = els[i].getBoundingClientRect()
+        if (e.clientY < r.top + r.height / 2) { idx = i; break }
+      }
+      setOverIdx(idx)
+    }
+    const onUp = () => {
+      if (overIdx !== null) {
+        const from = foldersRef.current.findIndex((f) => f.id === dragId)
+        if (from !== -1 && from !== overIdx) {
+          const next = [...foldersRef.current]
+          const [moved] = next.splice(from, 1)
+          next.splice(overIdx, 0, moved)
+          onReorder(next)
+        }
+      }
+      setDragId(null)
+      setOverIdx(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [dragId, overIdx, onReorder])
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${cat.color}30` }}>
-      {/* Folder header */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full px-3 py-2 flex items-center gap-2"
-        style={{ background: `${cat.color}10` }}
-      >
-        <span style={{ color: cat.color }}>{cat.icon}</span>
-        <span className="flex-1 text-[13px] font-semibold text-start" style={{ color: 'var(--foreground)' }}>
-          {isRTL ? cat.he : cat.en}
-        </span>
-        <span
-          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-          style={{ background: `${cat.color}20`, color: cat.color }}
-        >
-          {tasks.length}
-        </span>
-        <ChevronRight
-          size={13}
-          style={{
-            color: cat.color,
-            transform: open ? 'rotate(90deg)' : 'none',
-            transition: 'transform 0.15s',
-            flexShrink: 0,
-          }}
-        />
-      </button>
-
-      {/* Task rows */}
-      {open && tasks.map((task, i) => (
-        <TaskRow
-          key={task.id}
-          task={task}
+    <div ref={listRef} className="space-y-2">
+      {folders.map((folder, i) => (
+        <FolderGroup
+          key={folder.id}
+          folder={folder}
+          tasks={tasks.filter((t) => t.folder_id === folder.id)}
           isRTL={isRTL}
           today={today}
-          divider={i > 0}
+          isDragging={dragId === folder.id}
+          isDropTarget={overIdx === i && dragId !== null && dragId !== folder.id}
+          addingTask={activeTaskFolder === folder.id}
+          onToggleAddTask={() => onSetActiveTaskFolder(activeTaskFolder === folder.id ? null : folder.id)}
+          onDragStart={() => setDragId(folder.id)}
         />
       ))}
     </div>
   )
 }
 
-function CompletedFolder({ tasks, isRTL, today }: { tasks: FamilyTask[]; isRTL: boolean; today: string }) {
-  const [open, setOpen] = useState(false)
+// ─── Folder group ─────────────────────────────────────────────
+
+function FolderGroup({
+  folder, tasks, isRTL, today,
+  isDragging, isDropTarget, addingTask, onToggleAddTask, onDragStart,
+}: {
+  folder: FamilyTaskFolder; tasks: FamilyTask[]; isRTL: boolean; today: string
+  isDragging: boolean; isDropTarget: boolean; addingTask: boolean
+  onToggleAddTask: () => void; onDragStart: () => void
+}) {
+  const [open, setOpen] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState(folder.name)
+  const [confirmDel, setConfirmDel] = useState(false)
+  const [taskTitle, setTaskTitle] = useState('')
+  const [taskUrgency, setTaskUrgency] = useState<FamilyTaskUrgency>('normal')
+  const [taskDue, setTaskDue] = useState('')
+  const [, startTransition] = useTransition()
+
+  const { color } = folder
+  const openTasks = tasks.filter((t) => t.status !== 'done')
+
+  const submitRename = () => {
+    if (!editName.trim()) return
+    startTransition(async () => { await renameTaskFolder(folder.id, editName) })
+    setEditing(false)
+  }
+
+  const submitTask = () => {
+    if (!taskTitle.trim()) return
+    startTransition(async () => {
+      await createFamilyTask({ title: taskTitle.trim(), urgency: taskUrgency, due_date: taskDue || null, folder_id: folder.id })
+      setTaskTitle(''); setTaskUrgency('normal'); setTaskDue('')
+      onToggleAddTask()
+    })
+  }
 
   return (
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        border: `1px solid ${isDropTarget ? color : `${color}30`}`,
+        opacity: isDragging ? 0.45 : 1,
+        boxShadow: isDropTarget ? `0 0 0 2px ${color}55` : 'none',
+        transition: 'box-shadow 0.1s, border-color 0.1s',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-stretch" style={{ background: `${color}12` }}>
+        <button
+          onPointerDown={(e) => { e.preventDefault(); onDragStart() }}
+          className="px-2 flex items-center touch-none cursor-grab active:cursor-grabbing"
+          style={{ color: `${color}55` }}
+        >
+          <GripVertical size={14} />
+        </button>
+
+        {editing ? (
+          <input
+            autoFocus
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitRename()
+              if (e.key === 'Escape') { setEditing(false); setEditName(folder.name) }
+            }}
+            onBlur={submitRename}
+            className="flex-1 py-2 text-[13px] font-semibold bg-transparent outline-none"
+            style={{ color: 'var(--foreground)' }}
+          />
+        ) : (
+          <button onClick={() => setOpen(!open)} className="flex-1 flex items-center gap-2 py-2">
+            <span className="flex-1 text-[13px] font-semibold text-start" style={{ color: 'var(--foreground)' }}>
+              {folder.name}
+            </span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: `${color}22`, color }}>
+              {openTasks.length}
+            </span>
+            <ChevronRight size={13} style={{ color, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
+          </button>
+        )}
+
+        <button onClick={() => { setEditing(true); setEditName(folder.name) }}
+          className="px-2 flex items-center" style={{ color: `${color}55` }}>
+          <Pencil size={11} />
+        </button>
+
+        <button
+          onClick={() => {
+            if (!confirmDel) { setConfirmDel(true); setTimeout(() => setConfirmDel(false), 2000) }
+            else { startTransition(async () => { await deleteTaskFolder(folder.id) }) }
+          }}
+          className="px-2 flex items-center transition-colors"
+          style={{ color: confirmDel ? '#ef4444' : `${color}44` }}
+        >
+          <Trash2 size={11} />
+        </button>
+      </div>
+
+      {open && (
+        <>
+          {openTasks.map((task, i) => (
+            <TaskRow key={task.id} task={task} isRTL={isRTL} today={today} divider={i > 0} />
+          ))}
+          {addingTask ? (
+            <div className="px-3 py-2 space-y-2" style={{
+              background: 'var(--card)',
+              borderTop: openTasks.length > 0 ? '1px solid var(--border)' : 'none',
+            }}>
+              <Input
+                autoFocus
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitTask()
+                  if (e.key === 'Escape') onToggleAddTask()
+                }}
+                placeholder={isRTL ? 'שם המשימה' : 'Task name'}
+                className="h-8 text-[13px]"
+              />
+              <div className="flex gap-2">
+                <select value={taskUrgency} onChange={(e) => setTaskUrgency(e.target.value as FamilyTaskUrgency)}
+                  className="rounded-lg px-2 py-1 text-[12px] flex-1"
+                  style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)' }}>
+                  <option value="low">{isRTL ? 'נמוך' : 'Low'}</option>
+                  <option value="normal">{isRTL ? 'רגיל' : 'Normal'}</option>
+                  <option value="high">{isRTL ? 'גבוה' : 'High'}</option>
+                  <option value="critical">{isRTL ? 'קריטי' : 'Critical'}</option>
+                </select>
+                <input type="date" value={taskDue} onChange={(e) => setTaskDue(e.target.value)}
+                  className="rounded-lg px-2 py-1 text-[12px] flex-1"
+                  style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)', colorScheme: 'dark' }} />
+                <button onClick={submitTask} disabled={!taskTitle.trim()} className="p-1.5 rounded-lg flex-shrink-0"
+                  style={{ background: color, color: 'white' }}>
+                  <Check size={13} />
+                </button>
+                <button onClick={onToggleAddTask} className="p-1.5 rounded-lg flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={onToggleAddTask} className="w-full flex items-center gap-1.5 px-3 py-1.5"
+              style={{
+                background: 'var(--card)',
+                borderTop: openTasks.length > 0 ? '1px solid var(--border)' : 'none',
+                color: `${color}66`,
+              }}>
+              <Plus size={11} />
+              <span className="text-[11px]">{isRTL ? 'הוסף משימה' : 'Add task'}</span>
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function CompletedFolder({ tasks, isRTL, today }: { tasks: FamilyTask[]; isRTL: boolean; today: string }) {
+  const [open, setOpen] = useState(false)
+  return (
     <div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-[11px] py-1.5 px-1"
-        style={{ color: 'var(--muted-foreground)' }}
-      >
-        <ChevronRight
-          size={11}
-          style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}
-        />
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-[11px] py-1.5 px-1"
+        style={{ color: 'var(--muted-foreground)' }}>
+        <ChevronRight size={11} style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
         {isRTL ? `הושלמו (${tasks.length})` : `Completed (${tasks.length})`}
       </button>
       {open && (
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', opacity: 0.55 }}>
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', opacity: 0.5 }}>
           {tasks.map((task, i) => (
             <TaskRow key={task.id} task={task} isRTL={isRTL} today={today} divider={i > 0} />
           ))}
@@ -452,38 +599,20 @@ function TaskRow({ task, isRTL, today, divider }: {
   const isOverdue = !done && task.due_date && task.due_date < today
 
   return (
-    <div
-      className="flex items-center gap-2 px-3 py-2"
-      style={{
-        background: 'var(--card)',
-        borderTop: divider ? '1px solid var(--border)' : 'none',
-        opacity: done ? 0.45 : 1,
-      }}
-    >
-      {/* Urgency accent bar */}
-      <div
-        className="w-0.5 self-stretch rounded-full flex-shrink-0"
-        style={{ background: urgencyColor, minHeight: '16px' }}
-      />
-
-      {/* Checkbox */}
+    <div className="flex items-center gap-2 px-3 py-2"
+      style={{ background: 'var(--card)', borderTop: divider ? '1px solid var(--border)' : 'none', opacity: done ? 0.45 : 1 }}>
+      <div className="w-0.5 self-stretch rounded-full flex-shrink-0" style={{ background: urgencyColor, minHeight: '16px' }} />
       <button
-        onClick={() => startTransition(async () => {
-          await updateFamilyTaskStatus(task.id, done ? 'pending' : 'done')
-        })}
+        onClick={() => startTransition(async () => { await updateFamilyTaskStatus(task.id, done ? 'pending' : 'done') })}
         disabled={pending}
         className="w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 transition-all"
         style={{ background: done ? urgencyColor : 'transparent', border: `1.5px solid ${urgencyColor}` }}
       >
         {done && <Check size={10} color="white" />}
       </button>
-
-      {/* Text */}
       <div className="flex-1 min-w-0">
-        <p
-          className="text-[13px] leading-tight truncate"
-          style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}
-        >
+        <p className="text-[13px] leading-tight truncate"
+          style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}>
           {task.title}
         </p>
         {task.due_date && (
@@ -495,8 +624,6 @@ function TaskRow({ task, isRTL, today, divider }: {
           </p>
         )}
       </div>
-
-      {/* Delete */}
       <button
         onClick={() => startTransition(async () => { await deleteFamilyTask(task.id) })}
         disabled={pending}
