@@ -584,3 +584,31 @@ create policy "Users manage own family events"
   on public.family_events for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ============================================================
+-- FAMILY TASK FOLDERS
+-- ============================================================
+
+create table if not exists public.family_task_folders (
+  id         uuid default gen_random_uuid() primary key,
+  user_id    uuid references auth.users on delete cascade not null,
+  name       text not null check (length(trim(name)) > 0),
+  color      text not null default '#6366f1',
+  sort_order integer not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.family_task_folders enable row level security;
+
+create policy "Users manage own family_task_folders"
+  on public.family_task_folders for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Add folder_id to tasks (safe migration — idempotent)
+alter table public.family_tasks
+  add column if not exists folder_id uuid references public.family_task_folders(id) on delete set null;
+
+-- Add sort_order to tasks (idempotent)
+ALTER TABLE public.family_tasks
+  ADD COLUMN IF NOT EXISTS sort_order integer NOT NULL DEFAULT 0;
