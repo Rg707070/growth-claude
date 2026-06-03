@@ -6,7 +6,6 @@ import { Check, Bell, BellOff, X, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getDomainBySlug } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
-import { useToast } from '@/components/ui/toast'
 import {
   getReminderForHabit,
   setHabitReminder,
@@ -15,6 +14,7 @@ import {
   playAlarmSound,
 } from '@/hooks/use-notifications'
 import type { ReminderType, ReminderData } from '@/hooks/use-notifications'
+import { scheduleSwReminder, clearSwReminder } from '@/lib/sw-register'
 import { Input } from '@/components/ui/input'
 import type { Habit } from '@/types'
 
@@ -27,7 +27,6 @@ interface HabitRowProps {
 export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const router = useRouter()
   const { t, isRTL } = useLang()
-  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(isCompleted)
   const [showReminderPicker, setShowReminderPicker] = useState(false)
@@ -84,7 +83,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       router.refresh()
     } catch {
       setDone(prevDone)
-      toast(t('saveFailed'), 'error')
     } finally {
       setLoading(false)
     }
@@ -103,7 +101,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       setEditing(false)
       router.refresh()
     } catch {
-      toast(t('saveFailed'), 'error')
+      // keep editing open on error
     } finally {
       setSaving(false)
     }
@@ -129,7 +127,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     } catch {
       setDeleting(false)
       setConfirmDelete(false)
-      toast(t('saveFailed'), 'error')
     }
   }
 
@@ -147,6 +144,13 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     if (pendingType === 'notification') {
       const granted = await requestNotificationPermission()
       if (!granted) return
+      void scheduleSwReminder(
+        `habit-${habit.id}`,
+        pendingTime,
+        `🔔 ${habit.name}`,
+        t('habitReminderBody'),
+        '/dashboard'
+      )
     } else {
       playAlarmSound()
     }
@@ -159,6 +163,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const removeReminder = async (e: React.MouseEvent) => {
     e.stopPropagation()
     clearHabitReminder(habit.id)
+    void clearSwReminder(`habit-${habit.id}`)
     setReminder(null)
     setPendingTime('')
     setShowReminderPicker(false)
@@ -346,19 +351,22 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           </div>
         </button>
 
-        {/* Bell — always visible, dimmed when no reminder */}
+        {/* Bell — set/active reminder */}
         <button
           type="button"
           onClick={openReminderPicker}
-          className="flex-shrink-0 p-1.5 rounded-lg transition-all active:scale-90"
+          className="flex-shrink-0 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all active:scale-90"
           style={{
             color: reminder ? accentColor : 'var(--muted-foreground)',
-            background: reminder ? `${accentColor}18` : 'transparent',
-            opacity: reminder ? 1 : 0.35,
+            background: reminder ? `${accentColor}18` : 'var(--c-surface-2)',
+            border: `1px solid ${reminder ? `${accentColor}40` : 'var(--c-border)'}`,
           }}
           aria-label={t('setReminder')}
         >
-          {reminder ? <Bell size={13} /> : <BellOff size={13} />}
+          {reminder ? <Bell size={14} /> : <Bell size={14} strokeWidth={1.5} />}
+          <span className="text-[9px] leading-none font-medium" style={{ color: reminder ? accentColor : 'var(--muted-foreground)' }}>
+            {reminder ? reminder.time.slice(0, 5) : (isRTL ? 'תזכורת' : 'remind')}
+          </span>
         </button>
       </div>
 

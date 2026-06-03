@@ -9,6 +9,7 @@ import {
   Moon, Sun, Camera, Pencil, Check, X,
   Download, LogOut, Trash2, ChevronRight,
 } from 'lucide-react'
+import { ReminderSettingsSection } from '@/components/reminder-settings-section'
 
 interface Profile {
   full_name: string | null
@@ -412,6 +413,9 @@ export function SettingsClient({ userId, email, profile }: Props) {
           </div>
         </div>
       </Section>
+
+      {/* ── Reminders ─────────────────────────────────────────────────────── */}
+      <ReminderSettingsSection />
 
       {/* ── Export data ────────────────────────────────────────────────────── */}
       <Section label={t('exportData')}>

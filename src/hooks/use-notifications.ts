@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef } from 'react'
 import { useLang } from '@/lib/lang'
+import { syncHabitsToSw } from '@/lib/sw-register'
 
 const STORAGE_KEY = 'growth-habit-reminders'
 
@@ -130,6 +131,9 @@ export function useHabitReminders(habits: Array<{ id: string; name: string }>) {
 
       active.set(habit.id, timer)
     })
+
+    // Sync to Service Worker for background delivery
+    void syncHabitsToSw(reminders, habits, t('habitReminderBody'))
   }, [habits, t])
 
   useEffect(() => {

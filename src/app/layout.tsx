@@ -3,6 +3,7 @@ import { Geist, Space_Grotesk, Heebo } from 'next/font/google'
 import './globals.css'
 import { LangProvider } from '@/lib/lang'
 import { ThemeProvider } from '@/lib/theme'
+import { SwInit } from '@/components/sw-init'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' })
@@ -14,8 +15,8 @@ export const metadata: Metadata = {
     default: 'GROWTH — אפליקציית הצמיחה האישית',
     template: '%s | GROWTH',
   },
-  description: 'אפליקציית מעקב הרגלים לצמיחה אישית ב-7 תחומי חיים: משפחה, חברים, תורה, ספורט, מוזיקה, פיננסים ולימודים. Personal habit tracker app.',
-  keywords: ['habit tracker', 'growth app', 'אפליקציית הרגלים', 'צמיחה אישית', 'מעקב הרגלים', 'self improvement'],
+  description: 'אפליקציית מעקב הרגלים גמיפייד לצמיחה אישית ב-7 תחומי חיים: משפחה, חברים, תורה, ספורט, מוזיקה, פיננסים ולימודים. Personal habit tracker app.',
+  keywords: ['habit tracker', 'growth app', 'אפליקציית הרגלים', 'צמיחה אישית', 'מעקב הרגלים', 'gamification', 'XP', 'self improvement'],
   authors: [{ name: 'GROWTH App' }],
   manifest: '/manifest.json',
   icons: {
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     url: 'https://growth-claude.vercel.app',
     siteName: 'GROWTH',
     title: 'GROWTH — אפליקציית הצמיחה האישית',
-    description: 'מעקב הרגלים ב-7 תחומי חיים. עקוב, התמד וצמח.',
+    description: 'מעקב הרגלים גמיפייד ב-7 תחומי חיים. צבור XP, עלה ברמות וצמח.',
     images: [
       {
         url: '/growth-emblem.png',
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'GROWTH — אפליקציית הצמיחה האישית',
-    description: 'מעקב הרגלים ב-7 תחומי חיים. עקוב, התמד וצמח.',
+    description: 'מעקב הרגלים גמיפייד ב-7 תחומי חיים. צבור XP, עלה ברמות וצמח.',
     images: ['/growth-emblem.png'],
   },
   verification: {
@@ -86,15 +87,8 @@ export default function RootLayout({
       dir="rtl"
       className={`light ${geist.variable} ${spaceGrotesk.variable} ${heebo.variable}`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var v=localStorage.getItem('growth-theme-v');var t=(v!=='2')?'light':(localStorage.getItem('growth-theme')||'light');var h=document.documentElement;h.classList.remove('light','dark');h.classList.add(t);}catch(e){}})();`,
-          }}
-        />
-      </head>
       <body className="font-sans antialiased min-h-screen bg-background">
-        <ThemeProvider><LangProvider>{children}</LangProvider></ThemeProvider>
+        <ThemeProvider><LangProvider><SwInit />{children}</LangProvider></ThemeProvider>
       </body>
     </html>
   )
