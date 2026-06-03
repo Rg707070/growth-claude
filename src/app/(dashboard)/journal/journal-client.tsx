@@ -33,10 +33,10 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
   ]
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'var(--background)' }}>
-      <div className="max-w-5xl mx-auto px-4 pt-8">
-        {/* Header */}
-        <div className="mb-6">
+    <div className="min-h-screen pb-24 md:pb-8" style={{ background: 'var(--background)' }}>
+      <div className="max-w-5xl mx-auto px-4 pt-8 md:max-w-none md:px-0 md:pt-6">
+        {/* Header (mobile-only; desktop has topbar) */}
+        <div className="mb-6 md:hidden">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
             {isRTL ? 'יומן' : 'Journal'}
           </h1>

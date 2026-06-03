@@ -10,11 +10,16 @@ import {
   X,
   BookOpen,
   NotebookPen,
+  LogOut,
+  Sun,
+  Moon,
+  Languages,
 } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
+import { useTheme } from '@/lib/theme'
 import { GrowthLogo } from '@/components/growth-logo'
 import type { Profile } from '@/types'
 
@@ -34,7 +39,8 @@ interface SidebarProps {
 export function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { isRTL } = useLang()
+  const { isRTL, lang, toggleLang } = useLang()
+  const { theme, toggleTheme } = useTheme()
   const [addOpen, setAddOpen] = useState(false)
   const [step, setStep] = useState<'domain' | 'name'>('domain')
   const [selectedSlug, setSelectedSlug] = useState('')
@@ -85,12 +91,20 @@ export function Sidebar({ profile }: SidebarProps) {
     }
   }
 
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
   const selectedDomain = DOMAINS.find((d) => d.slug === selectedSlug)
+  const activeDomainSlug = pathname.startsWith('/domain/') ? pathname.split('/')[2] : null
 
   return (
     <>
       <aside
-        className="hidden md:flex fixed inset-y-0 start-0 z-40 w-72 flex-col"
+        className="hidden md:flex fixed inset-y-0 start-0 z-40 w-72 xl:w-80 flex-col"
         style={{
           background: 'var(--c-nav)',
           borderInlineEnd: '1px solid var(--c-nav-border)',
@@ -128,38 +142,89 @@ export function Sidebar({ profile }: SidebarProps) {
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3">
+        {/* Scrollable middle area: nav + domain shortcuts */}
+        <div className="flex-1 overflow-y-auto px-3 pb-2">
+          {/* Primary nav */}
+          <p
+            className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            {isRTL ? 'ניווט' : 'Navigation'}
+          </p>
+          <nav>
+            <ul className="space-y-0.5">
+              {navItems.map(({ icon: Icon, href, labelHe, labelEn }) => {
+                const isActive =
+                  pathname === href ||
+                  (href !== '/dashboard' && pathname.startsWith(href))
+                return (
+                  <li key={href}>
+                    <button
+                      onClick={() => router.push(href)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
+                      style={isActive ? {
+                        background: 'var(--c-primary-glow)',
+                        color: 'var(--primary)',
+                      } : {
+                        color: 'var(--muted-foreground)',
+                      }}
+                    >
+                      <Icon size={18} strokeWidth={isActive ? 2.5 : 1.75} />
+                      <span className="text-sm font-medium">
+                        {isRTL ? labelHe : labelEn}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          {/* Domain shortcuts */}
+          <p
+            className="px-3 pt-5 pb-2 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            {isRTL ? 'תחומים' : 'Domains'}
+          </p>
           <ul className="space-y-0.5">
-            {navItems.map(({ icon: Icon, href, labelHe, labelEn }) => {
-              const isActive =
-                pathname === href ||
-                (href !== '/dashboard' && pathname.startsWith(href))
+            {DOMAINS.map((d) => {
+              const isActive = activeDomainSlug === d.slug
               return (
-                <li key={href}>
+                <li key={d.slug}>
                   <button
-                    onClick={() => router.push(href)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
+                    onClick={() => router.push(`/domain/${d.slug}`)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-150 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] group"
                     style={isActive ? {
-                      background: 'var(--c-primary-glow)',
-                      color: 'var(--primary)',
-                    } : {
-                      color: 'var(--muted-foreground)',
-                    }}
+                      background: `${d.color}15`,
+                    } : {}}
                   >
-                    <Icon size={18} strokeWidth={isActive ? 2.5 : 1.75} />
-                    <span className="text-sm font-medium">
-                      {isRTL ? labelHe : labelEn}
+                    <span
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-[14px] flex-shrink-0 transition-transform group-hover:scale-110"
+                      style={{
+                        background: `${d.color}1f`,
+                        border: `1px solid ${d.color}30`,
+                      }}
+                    >
+                      {d.icon}
+                    </span>
+                    <span
+                      className="text-[13px] font-medium truncate"
+                      style={isActive
+                        ? { color: d.color }
+                        : { color: 'var(--foreground)' }}
+                    >
+                      {isRTL ? d.nameHe : d.nameEn}
                     </span>
                   </button>
                 </li>
               )
             })}
           </ul>
-        </nav>
+        </div>
 
-        {/* Add habit button */}
-        <div className="px-4 pb-6">
+        {/* Footer: add habit + utilities */}
+        <div className="px-4 pt-3 pb-5 border-t space-y-3" style={{ borderColor: 'var(--c-nav-border)' }}>
           <button
             onClick={() => setAddOpen(true)}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold text-sm text-white transition-all hover:opacity-95 hover:shadow-lg active:scale-[0.97]"
@@ -171,6 +236,48 @@ export function Sidebar({ profile }: SidebarProps) {
             <Plus size={16} strokeWidth={2.6} />
             <span>{isRTL ? 'הוסף הרגל' : 'Add habit'}</span>
           </button>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={toggleTheme}
+              aria-label={isRTL ? 'מצב תצוגה' : 'Toggle theme'}
+              title={isRTL ? 'מצב תצוגה' : 'Toggle theme'}
+              className="flex-1 flex items-center justify-center py-2 rounded-xl transition-all hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
+              style={{
+                border: '1px solid var(--c-border)',
+                color: 'var(--muted-foreground)',
+              }}
+            >
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+            <button
+              onClick={toggleLang}
+              aria-label={isRTL ? 'שפה' : 'Language'}
+              title={isRTL ? 'שפה' : 'Language'}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
+              style={{
+                border: '1px solid var(--c-border)',
+                color: 'var(--muted-foreground)',
+              }}
+            >
+              <Languages size={14} />
+              <span className="text-[11px] font-semibold">
+                {lang === 'he' ? 'EN' : 'עב'}
+              </span>
+            </button>
+            <button
+              onClick={handleLogout}
+              aria-label={isRTL ? 'התנתק' : 'Sign out'}
+              title={isRTL ? 'התנתק' : 'Sign out'}
+              className="flex-1 flex items-center justify-center py-2 rounded-xl transition-all hover:bg-red-500/10"
+              style={{
+                border: '1px solid var(--c-border)',
+                color: 'var(--muted-foreground)',
+              }}
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </aside>
 

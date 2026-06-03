@@ -248,7 +248,7 @@ export function SettingsClient({ userId, email, profile }: Props) {
   const avatarSrc = avatarUrl ? `${avatarUrl}?t=${avatarTs}` : null
 
   return (
-    <div className="px-4 pt-12 pb-24 md:px-0 md:pt-8 space-y-6 md:max-w-md">
+    <div className="px-4 pt-12 pb-24 md:px-0 md:pt-6 space-y-6">
 
       {/* Toast */}
       {toast && (
@@ -260,9 +260,9 @@ export function SettingsClient({ userId, email, profile }: Props) {
         </div>
       )}
 
-      {/* ── Profile card ──────────────────────────────────────────────────── */}
+      {/* ── Profile card (full-width on desktop) ──────────────────────────── */}
       <div
-        className="rounded-2xl p-5 flex flex-col items-center gap-4"
+        className="rounded-2xl p-5 flex flex-col items-center gap-4 md:max-w-2xl md:mx-auto md:w-full"
         style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
       >
         {/* Avatar */}
@@ -359,6 +359,8 @@ export function SettingsClient({ userId, email, profile }: Props) {
           </div>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
 
       {/* ── Appearance ────────────────────────────────────────────────────── */}
       <Section label={isRTL ? 'מראה' : 'Appearance'}>
@@ -460,6 +462,8 @@ export function SettingsClient({ userId, email, profile }: Props) {
           rightEl={<span />}
         />
       </Section>
+
+      </div>
 
       {/* ── Delete confirmation sheet ──────────────────────────────────────── */}
       {showDelete && (
