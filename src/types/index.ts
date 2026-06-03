@@ -10,6 +10,17 @@ export interface Domain {
   glowColor: string
 }
 
+export interface UserDomain {
+  id: string
+  user_id: string
+  slug: string
+  name: string
+  icon: string
+  color: string
+  sort_order: number
+  created_at: string
+}
+
 export interface Habit {
   id: string
   user_id: string

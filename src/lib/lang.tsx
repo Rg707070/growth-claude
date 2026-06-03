@@ -138,8 +138,8 @@ const translations = {
     // Onboarding
     onbWelcomeTitle: 'ברוך הבא ל‑GROWTH',
     onbWelcomeBody: 'בוא נבנה יחד את הצמיחה האישית שלך בכמה צעדים קצרים.',
-    onbDomainsTitle: 'שבעת תחומי החיים',
-    onbDomainsBody: 'GROWTH עוקב אחרי ההרגלים שלך בשבעה תחומים. אלה הם:',
+    onbDomainsTitle: 'בחר את תחומי החיים שלך',
+    onbDomainsBody: 'בחר את התחומים שחשובים לך. תוכל להוסיף ולשנות אחר כך.',
     onbHabitsTitle: 'בחר הרגלים להתחלה',
     onbHabitsBody: 'בחר כמה הרגלים שתרצה להתחיל לעקוב אחריהם. תמיד אפשר להוסיף עוד.',
     onbNext: 'הבא',
@@ -315,8 +315,8 @@ const translations = {
     // Onboarding
     onbWelcomeTitle: 'Welcome to GROWTH',
     onbWelcomeBody: "Let's build your personal growth in a few short steps.",
-    onbDomainsTitle: 'The seven life domains',
-    onbDomainsBody: 'GROWTH tracks your habits across seven domains. These are:',
+    onbDomainsTitle: 'Choose your life domains',
+    onbDomainsBody: 'Pick the domains that matter to you. You can always add or change them later.',
     onbHabitsTitle: 'Pick habits to start',
     onbHabitsBody: 'Choose a few habits to start tracking. You can always add more.',
     onbNext: 'Next',

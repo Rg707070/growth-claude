@@ -21,6 +21,7 @@ interface DashboardClientProps {
   weeklyActivity: { date: string; count: number }[]
   domainStats: DomainStats[]
   overallStreak: number
+  hasCustomDomains: boolean
 }
 
 function getGreeting(name: string | null, isRTL: boolean) {
@@ -45,6 +46,7 @@ export function DashboardClient({
   weeklyActivity,
   domainStats,
   overallStreak,
+  hasCustomDomains,
 }: DashboardClientProps) {
   const { t, isRTL } = useLang()
   const router = useRouter()
@@ -206,12 +208,23 @@ export function DashboardClient({
 
             {/* DOMAIN GRID */}
             <div>
-              <h2
-                className="text-xs font-semibold uppercase tracking-wider mb-3"
-                style={{ color: 'var(--muted-foreground)' }}
-              >
-                {t('allDomains')}
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  {t('allDomains')}
+                </h2>
+                {hasCustomDomains && (
+                  <button
+                    onClick={() => router.push('/domains')}
+                    className="text-xs font-semibold transition-colors"
+                    style={{ color: 'var(--primary)' }}
+                  >
+                    {isRTL ? '+ ערוך' : '+ Edit'}
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {domainsToShow.map((dp) => {
                   const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Grid3X3, CalendarDays, Settings, BookOpen, NotebookPen, Plus, X, type LucideIcon } from 'lucide-react'
+import { Home, Grid3X3, CalendarDays, Settings, NotebookPen, Plus, X, type LucideIcon } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -32,12 +32,12 @@ type NavItem = {
 }
 
 const DEFAULT_ITEMS: NavItem[] = [
-  { id: 'dashboard', icon: Home,         href: '/dashboard', labelHe: 'בית',    labelEn: 'Home'     },
-  { id: 'domains',   icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים', labelEn: 'Domains'  },
-  { id: 'reading',   icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',  labelEn: 'Books'    },
-  { id: 'journal',   icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',   labelEn: 'Journal'  },
-  { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',    labelEn: 'Schedule' },
-  { id: 'settings',  icon: Settings,     href: '/settings',  labelHe: 'הגדרות', labelEn: 'Settings' },
+  { id: 'dashboard', icon: Home,         href: '/dashboard', labelHe: 'בית',       labelEn: 'Home'     },
+  { id: 'domains',   icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',    labelEn: 'Domains'  },
+  { id: 'calendar',  icon: CalendarDays, href: '/calendar',  labelHe: 'לוח שנה',   labelEn: 'Calendar' },
+  { id: 'journal',   icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',      labelEn: 'Journal'  },
+  { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',       labelEn: 'Schedule' },
+  { id: 'settings',  icon: Settings,     href: '/settings',  labelHe: 'הגדרות',    labelEn: 'Settings' },
 ]
 
 const STORAGE_KEY = 'nav-order'

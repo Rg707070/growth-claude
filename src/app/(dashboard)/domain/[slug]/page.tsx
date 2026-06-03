@@ -22,14 +22,33 @@ interface Props {
 
 export default async function DomainPage({ params }: Props) {
   const { slug } = await params
-  const domain = getDomainBySlug(slug)
-  if (!domain) notFound()
 
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  let domain = getDomainBySlug(slug)
+
+  if (!domain) {
+    const { data: ud } = await supabase
+      .from('user_domains')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('slug', slug)
+      .single()
+    if (!ud) notFound()
+    domain = {
+      slug: ud.slug,
+      nameHe: ud.name,
+      nameEn: ud.name,
+      icon: ud.icon,
+      color: ud.color,
+      gradient: '',
+      glowColor: `${ud.color}33`,
+    }
+  }
 
   if (slug === 'torah') {
     const today = new Date().toISOString().split('T')[0]

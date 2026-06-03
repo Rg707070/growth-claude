@@ -9,7 +9,7 @@ import { LangToggle } from '@/components/lang-toggle'
 import { GrowthLogo } from '@/components/growth-logo'
 
 export default function SignupPage() {
-  const { t } = useLang()
+  const { t, isRTL } = useLang()
   const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -88,7 +88,7 @@ export default function SignupPage() {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="רותם"
+                placeholder={isRTL ? 'שמך' : 'Your name'}
                 className="w-full h-12 rounded-xl px-4 text-sm focus:outline-none transition-all"
                 style={{
                   background: 'var(--c-input)',
