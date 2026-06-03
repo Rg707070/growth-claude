@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DOMAINS } from '@/lib/domains'
 import { DashboardClient } from './dashboard-client'
-import type { Habit, HabitLog, DomainProgress, DomainStats } from '@/types'
+import type { Habit, HabitLog, DomainProgress, DomainStats, Domain, UserDomain } from '@/types'
 
 function computeDomainStats(
   completedDays: Set<string>,
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13)
   const twoWeeksStart = fourteenDaysAgo.toISOString().split('T')[0]
 
-  const [profileRes, habitsRes, allHabitsRes, logsRes, allLogsRes] = await Promise.all([
+  const [profileRes, habitsRes, allHabitsRes, logsRes, allLogsRes, userDomainsRes] = await Promise.all([
     supabase.from('profiles').select('full_name, last_activity_date, onboarding_complete, created_at').eq('id', user.id).single(),
     supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
     // All habits (incl. inactive) — needed to map old log entries to their domain
@@ -57,6 +57,7 @@ export default async function DashboardPage() {
       .select('completed_at, habit_id')
       .eq('user_id', user.id)
       .gte('completed_at', twoWeeksStart),
+    supabase.from('user_domains').select('*').eq('user_id', user.id).order('sort_order', { ascending: true }),
   ])
 
   const profile = (profileRes.data ?? {
@@ -77,6 +78,19 @@ export default async function DashboardPage() {
   const todayLogs = (logsRes.data as HabitLog[]) ?? []
   const allLogs = (allLogsRes.data as { completed_at: string; habit_id: string }[]) ?? []
   const completedIds = new Set(todayLogs.map((l) => l.habit_id))
+
+  const rawUserDomains = (userDomainsRes.data as UserDomain[]) ?? []
+  const activeDomains: Domain[] = rawUserDomains.length > 0
+    ? rawUserDomains.map((ud) => ({
+        slug: ud.slug,
+        nameHe: ud.name,
+        nameEn: ud.name,
+        icon: ud.icon,
+        color: ud.color,
+        gradient: '',
+        glowColor: `${ud.color}33`,
+      }))
+    : DOMAINS
 
   // Use ALL habits (including inactive) so historical logs still map to their domain
   const habitDomainMap: Record<string, string> = {}
@@ -107,13 +121,13 @@ export default async function DashboardPage() {
     return { date: dateStr, count: countByDay[dateStr] ?? 0 }
   })
 
-  const domainProgress: DomainProgress[] = DOMAINS.map((domain) => {
+  const domainProgress: DomainProgress[] = activeDomains.map((domain) => {
     const domainHabits = habits.filter((h) => h.domain_slug === domain.slug)
     const completedToday = domainHabits.filter((h) => completedIds.has(h.id)).length
     return { domain, totalHabits: domainHabits.length, completedToday }
   })
 
-  const domainStats: DomainStats[] = DOMAINS.map((domain) => {
+  const domainStats: DomainStats[] = activeDomains.map((domain) => {
     const domainHabits = habits.filter((h) => h.domain_slug === domain.slug)
     if (domainHabits.length === 0) return { slug: domain.slug, streak: 0, failingDays: 0 }
     const completed = domainCompletedDays[domain.slug] ?? new Set<string>()
@@ -131,6 +145,7 @@ export default async function DashboardPage() {
       weeklyActivity={weeklyActivity}
       domainStats={domainStats}
       overallStreak={overallStreak}
+      hasCustomDomains={rawUserDomains.length > 0}
     />
   )
 }
