@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useTheme } from '@/lib/theme'
 import { Moon, Sun } from 'lucide-react'
+import { ReminderSettingsSection } from '@/components/reminder-settings-section'
 
 export default function SettingsPage() {
   const { t, lang, toggleLang, isRTL } = useLang()
@@ -88,6 +89,9 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
+
+        {/* Reminders */}
+        <ReminderSettingsSection />
 
         {/* Logout */}
         <button

@@ -3,6 +3,7 @@ import { Geist, Space_Grotesk, Heebo } from 'next/font/google'
 import './globals.css'
 import { LangProvider } from '@/lib/lang'
 import { ThemeProvider } from '@/lib/theme'
+import { SwInit } from '@/components/sw-init'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' })
@@ -87,7 +88,7 @@ export default function RootLayout({
       className={`light ${geist.variable} ${spaceGrotesk.variable} ${heebo.variable}`}
     >
       <body className="font-sans antialiased min-h-screen bg-background">
-        <ThemeProvider><LangProvider>{children}</LangProvider></ThemeProvider>
+        <ThemeProvider><LangProvider><SwInit />{children}</LangProvider></ThemeProvider>
       </body>
     </html>
   )
