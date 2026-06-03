@@ -609,3 +609,28 @@ create policy "Users manage own family_task_folders"
 -- Add folder_id to tasks (safe migration — idempotent)
 alter table public.family_tasks
   add column if not exists folder_id uuid references public.family_task_folders(id) on delete set null;
+
+-- ============================================================
+-- USER DOMAINS (custom per-user domains)
+-- ============================================================
+
+create table if not exists public.user_domains (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  slug text not null,
+  name text not null,
+  icon text not null default '⭐',
+  color text not null default '#6B7280',
+  sort_order integer default 0 not null,
+  created_at timestamptz default timezone('utc'::text, now()) not null,
+  unique(user_id, slug)
+);
+
+alter table public.user_domains enable row level security;
+
+create policy "Users manage own domains"
+  on public.user_domains for all
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+create index if not exists user_domains_user_id_idx on public.user_domains(user_id);
