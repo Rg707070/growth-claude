@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useTheme } from '@/lib/theme'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, LogOut, Palette, Languages, UserCircle } from 'lucide-react'
 
 export default function SettingsPage() {
   const { t, lang, toggleLang, isRTL } = useLang()
@@ -19,17 +19,34 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-4 pt-12 pb-8 md:px-0 md:pt-8">
-      <div className="space-y-6 md:max-w-md">
-        <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
-          {t('settings')}
-        </h1>
+    <div className="px-4 pt-12 pb-8 md:px-0 md:pt-6">
+      {/* Mobile-only heading; desktop has topbar */}
+      <h1 className="text-xl font-bold mb-6 md:hidden" style={{ color: 'var(--foreground)' }}>
+        {t('settings')}
+      </h1>
 
-        {/* Theme */}
-        <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {isRTL ? 'מצב תצוגה' : 'Display mode'}
-          </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+        {/* Appearance — Theme */}
+        <div
+          className="rounded-2xl p-5 space-y-4"
+          style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+            >
+              <Palette size={17} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                {isRTL ? 'מראה' : 'Appearance'}
+              </p>
+              <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'מצב תצוגה' : 'Display mode'}
+              </p>
+            </div>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => theme !== 'dark' && toggleTheme()}
@@ -59,10 +76,26 @@ export default function SettingsPage() {
         </div>
 
         {/* Language */}
-        <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {t('language')}
-          </p>
+        <div
+          className="rounded-2xl p-5 space-y-4"
+          style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+            >
+              <Languages size={17} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                {t('language')}
+              </p>
+              <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'עברית או אנגלית' : 'Hebrew or English'}
+              </p>
+            </div>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => lang !== 'he' && toggleLang()}
@@ -89,14 +122,40 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="w-full h-12 rounded-xl text-sm font-semibold transition-all"
-          style={{ background: 'oklch(0.65 0.22 25 / 10%)', color: 'oklch(0.60 0.22 25)', border: '1px solid oklch(0.65 0.22 25 / 25%)' }}
+        {/* Account */}
+        <div
+          className="rounded-2xl p-5 space-y-4 md:col-span-2"
+          style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}
         >
-          {t('logout')}
-        </button>
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}
+            >
+              <UserCircle size={17} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                {isRTL ? 'חשבון' : 'Account'}
+              </p>
+              <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'התנתקות מהמכשיר' : 'Sign out of this device'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full md:w-auto md:min-w-[200px] h-11 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 md:ms-auto md:flex"
+            style={{
+              background: 'oklch(0.65 0.22 25 / 10%)',
+              color: 'oklch(0.60 0.22 25)',
+              border: '1px solid oklch(0.65 0.22 25 / 25%)',
+            }}
+          >
+            <LogOut size={15} />
+            {t('logout')}
+          </button>
+        </div>
       </div>
     </div>
   )

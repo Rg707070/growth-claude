@@ -73,7 +73,7 @@ export function DashboardClient({
 
   return (
     <TimeBackground>
-      <div className="px-4 pt-12 pb-32 md:px-0 md:pt-8 md:pb-12">
+      <div className="px-4 pt-12 pb-32 md:px-0 md:pt-6 md:pb-12">
 
         {/* Desktop: two-column grid. Tablet/mobile: single-column flow */}
         <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] lg:gap-8 xl:gap-10 lg:items-start">
