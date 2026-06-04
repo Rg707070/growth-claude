@@ -2,7 +2,7 @@
 
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="en" dir="ltr">
       <body
         style={{
           minHeight: '100vh',
@@ -20,10 +20,10 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
         <div style={{ maxWidth: '24rem' }}>
           <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌊</p>
           <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-            משהו השתבש
+            Something went wrong
           </h1>
           <p style={{ fontSize: '0.875rem', opacity: 0.7, marginBottom: '1.5rem' }}>
-            אירעה שגיאה לא צפויה. נסה שוב.
+            An unexpected error occurred. Please try again.
           </p>
           <button
             onClick={reset}
@@ -39,7 +39,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
               background: 'linear-gradient(135deg, #0B2447 0%, #1E5F74 35%, #10B981 72%, #A3E635 100%)',
             }}
           >
-            נסה שוב
+            Try again
           </button>
         </div>
       </body>

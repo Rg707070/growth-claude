@@ -374,14 +374,14 @@ interface LangContextType {
 }
 
 const LangContext = createContext<LangContextType>({
-  lang: 'he',
+  lang: 'en',
   t: (key) => key,
   toggleLang: () => {},
-  isRTL: true,
+  isRTL: false,
 })
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Language>('he')
+  const [lang, setLang] = useState<Language>('en')
 
   useEffect(() => {
     const saved = localStorage.getItem('growth-lang') as Language | null
