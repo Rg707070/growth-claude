@@ -9,6 +9,8 @@ import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check, CalendarDays } from 
 import { useTheme } from '@/lib/theme'
 import { useLang } from '@/lib/lang'
 import { useToast } from '@/components/ui/toast'
+import type { DomainTask, DomainGoal } from '@/types/ecosystem'
+import type { FamilyTask, FamilyEvent } from '@/types/family'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOUR_START = 5
@@ -44,7 +46,7 @@ const MONTH_NAMES_HE = ['ינואר','פברואר','מרץ','אפריל','מא�
 const DAY_SHORT_HE = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שב']
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type CalendarView = 'daily' | 'weekly' | 'monthly' | 'yearly'
+type CalendarView = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all'
 
 interface ScheduleItem {
   id: string
@@ -100,6 +102,10 @@ interface Props {
   allHabits: HabitFull[]
   weekHabitLogs: HabitLogEntry[]
   weekActivityChecks: ActivityCheckEntry[]
+  domainTasks: DomainTask[]
+  domainGoals: DomainGoal[]
+  familyTasks: FamilyTask[]
+  familyEvents: FamilyEvent[]
 }
 
 interface WeekDayData {
@@ -1206,10 +1212,237 @@ function YearlyView({ userId, allHabits, isDark, onSelectDate }: {
   )
 }
 
+// ─── Sync Overview ────────────────────────────────────────────────────────────
+const URGENCY_COLORS: Record<string, string> = {
+  critical: '#ef4444',
+  high: '#f97316',
+  normal: '#eab308',
+  low: '#6b7280',
+}
+
+const URGENCY_LABELS: Record<string, { he: string; en: string }> = {
+  critical: { he: 'קריטי', en: 'Crit' },
+  high:     { he: 'גבוה',  en: 'High' },
+  normal:   { he: 'רגיל',  en: 'Norm' },
+  low:      { he: 'נמוך',  en: 'Low'  },
+}
+
+function urgOrder(u: string): number {
+  return u === 'critical' ? 0 : u === 'high' ? 1 : u === 'normal' ? 2 : 3
+}
+
+type SyncPeriod = 'day' | 'week' | 'month'
+type NormTask = { id: string; title: string; urgency: string; due_date: string | null }
+
+function AllItemsOverview({
+  allHabits, completedHabitIds, domainTasks, domainGoals, familyTasks, familyEvents, isDark,
+}: {
+  allHabits: HabitFull[]
+  completedHabitIds: Set<string>
+  domainTasks: DomainTask[]
+  domainGoals: DomainGoal[]
+  familyTasks: FamilyTask[]
+  familyEvents: FamilyEvent[]
+  isDark: boolean
+}) {
+  const [period, setPeriod] = useState<SyncPeriod>('day')
+  const { isRTL, t } = useLang()
+
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+
+  const weekStartDate = new Date(today)
+  weekStartDate.setDate(today.getDate() - today.getDay())
+  const weekEndDate = new Date(weekStartDate)
+  weekEndDate.setDate(weekStartDate.getDate() + 6)
+  const weekStartStr = weekStartDate.toISOString().split('T')[0]
+  const weekEndStr   = weekEndDate.toISOString().split('T')[0]
+
+  const monthStartStr = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+  const monthEndStr   = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  function isTaskDateInPeriod(dateStr: string | null): boolean {
+    if (!dateStr) return true
+    if (period === 'day')  return dateStr <= todayStr
+    if (period === 'week') return dateStr >= weekStartStr && dateStr <= weekEndStr
+    return dateStr >= monthStartStr && dateStr <= monthEndStr
+  }
+
+  function isEventInPeriod(eventDate: string): boolean {
+    if (period === 'day')  return eventDate === todayStr
+    if (period === 'week') return eventDate >= weekStartStr && eventDate <= weekEndStr
+    return eventDate >= monthStartStr && eventDate <= monthEndStr
+  }
+
+  function fmtDate(dateStr: string): string {
+    const d = new Date(dateStr + 'T12:00:00')
+    return `${d.getDate()}/${d.getMonth() + 1}`
+  }
+
+  const cards = DOMAINS.map(domain => {
+    const habits = allHabits.filter(h => h.domain_slug === domain.slug)
+
+    let tasks: NormTask[]
+    if (domain.slug === 'family') {
+      tasks = familyTasks
+        .filter(ft => isTaskDateInPeriod(ft.due_date))
+        .map(ft => ({ id: ft.id, title: ft.title, urgency: ft.urgency, due_date: ft.due_date }))
+    } else {
+      tasks = domainTasks
+        .filter(dt => dt.domain_slug === domain.slug && isTaskDateInPeriod(dt.due_date))
+        .map(dt => ({ id: dt.id, title: dt.title, urgency: dt.urgency, due_date: dt.due_date }))
+    }
+    tasks.sort((a, b) => {
+      const diff = urgOrder(a.urgency) - urgOrder(b.urgency)
+      if (diff !== 0) return diff
+      if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
+      return a.due_date ? -1 : b.due_date ? 1 : 0
+    })
+
+    const goals = domain.slug !== 'family'
+      ? domainGoals.filter(g => g.domain_slug === domain.slug)
+      : []
+    const events = domain.slug === 'family'
+      ? familyEvents.filter(e => isEventInPeriod(e.event_date))
+      : []
+
+    return { domain, habits, tasks, goals, events }
+  }).filter(c => c.habits.length > 0 || c.tasks.length > 0 || c.goals.length > 0 || c.events.length > 0)
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col" style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
+      {/* Period filter */}
+      <div className="flex-shrink-0 max-w-2xl mx-auto w-full px-4 py-2">
+        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: w(0.05, isDark) }}>
+          {([
+            { id: 'day'   as const, label: isRTL ? 'היום' : 'Today' },
+            { id: 'week'  as const, label: isRTL ? 'שבוע' : 'Week'  },
+            { id: 'month' as const, label: isRTL ? 'חודש' : 'Month' },
+          ]).map(p => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className="flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={{
+                background: period === p.id ? 'rgba(34,211,238,0.12)' : 'transparent',
+                color:      period === p.id ? 'rgb(103,232,249)' : w(0.4, isDark),
+                border:     period === p.id ? '1px solid rgba(34,211,238,0.25)' : '1px solid transparent',
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Domain cards */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 max-w-2xl mx-auto w-full">
+        {cards.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <p className="text-sm" style={{ color: w(0.3, isDark) }}>{t('noItemsForPeriod')}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {cards.map(({ domain, habits, tasks, goals, events }) => {
+              const total = habits.length + tasks.length + goals.length + events.length
+              return (
+                <div
+                  key={domain.slug}
+                  className="rounded-2xl p-4"
+                  style={{ background: `${domain.color}10`, border: `1px solid ${domain.color}30` }}
+                >
+                  {/* Domain header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base leading-none">{domain.icon}</span>
+                      <span className="text-sm font-bold" style={{ color: domain.color }}>
+                        {isRTL ? domain.nameHe : domain.nameEn}
+                      </span>
+                    </div>
+                    <span className="text-[10px]" style={{ color: w(0.3, isDark) }}>{total}</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {/* Habits */}
+                    {habits.map(h => {
+                      const done = completedHabitIds.has(h.id)
+                      return (
+                        <div key={h.id} className="flex items-center gap-2 text-xs">
+                          <span
+                            className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold"
+                            style={{
+                              background: done ? `${domain.color}35` : w(0.07, isDark),
+                              color: done ? domain.color : w(0.3, isDark),
+                            }}
+                          >
+                            {done ? '✓' : '○'}
+                          </span>
+                          <span style={{ color: done ? w(0.35, isDark) : w(0.75, isDark), textDecoration: done ? 'line-through' : 'none' }}>
+                            {h.name}
+                          </span>
+                        </div>
+                      )
+                    })}
+
+                    {/* Tasks */}
+                    {tasks.map(task => {
+                      const od = task.due_date !== null && task.due_date < todayStr
+                      const urg = URGENCY_LABELS[task.urgency] ?? { he: 'רגיל', en: 'Norm' }
+                      return (
+                        <div key={task.id} className="flex items-center gap-2 text-xs">
+                          <span
+                            className="px-1.5 py-0.5 rounded-md text-[9px] font-bold flex-shrink-0"
+                            style={{
+                              background: `${URGENCY_COLORS[task.urgency] ?? '#6b7280'}22`,
+                              color: URGENCY_COLORS[task.urgency] ?? '#6b7280',
+                            }}
+                          >
+                            {isRTL ? urg.he : urg.en}
+                          </span>
+                          <span className="flex-1 min-w-0 truncate" style={{ color: w(0.75, isDark) }}>{task.title}</span>
+                          {task.due_date && (
+                            <span className="text-[10px] flex-shrink-0" style={{ color: od ? '#ef4444' : w(0.35, isDark) }}>
+                              {fmtDate(task.due_date)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {/* Goals */}
+                    {goals.map(g => (
+                      <div key={g.id} className="flex items-center gap-2 text-xs">
+                        <span className="text-[11px] flex-shrink-0">🎯</span>
+                        <span className="flex-1 min-w-0 truncate" style={{ color: w(0.65, isDark) }}>{g.title}</span>
+                      </div>
+                    ))}
+
+                    {/* Family events */}
+                    {events.map(e => (
+                      <div key={e.id} className="flex items-center gap-2 text-xs">
+                        <span className="text-[11px] flex-shrink-0">📅</span>
+                        <span className="flex-1 min-w-0 truncate" style={{ color: w(0.75, isDark) }}>{e.title}</span>
+                        <span className="text-[10px] flex-shrink-0" style={{ color: w(0.35, isDark) }}>
+                          {fmtDate(e.event_date)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function SchedulePageClient({
   userId, userItems, allItems, todayChecks, scheduledHabits, todayCompletedHabitIds,
   allHabits, weekHabitLogs, weekActivityChecks,
+  domainTasks, domainGoals, familyTasks, familyEvents,
 }: Props) {
   const { isDark } = useTheme()
   const { isRTL, t }  = useLang()
@@ -1443,6 +1676,7 @@ export function SchedulePageClient({
             { id: 'weekly'  as const, label: 'שבועי'  },
             { id: 'monthly' as const, label: 'חודשי'  },
             { id: 'yearly'  as const, label: 'שנתי'   },
+            { id: 'all'     as const, label: isRTL ? 'הכל' : 'All' },
           ]).map(tab => (
             <button
               key={tab.id}
@@ -1579,6 +1813,19 @@ export function SchedulePageClient({
           style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
           <YearlyView userId={userId} allHabits={allHabits} isDark={isDark} onSelectDate={drillFromYearly} />
         </div>
+      )}
+
+      {/* All items view */}
+      {view === 'all' && (
+        <AllItemsOverview
+          allHabits={allHabits}
+          completedHabitIds={completedHabitIds}
+          domainTasks={domainTasks}
+          domainGoals={domainGoals}
+          familyTasks={familyTasks}
+          familyEvents={familyEvents}
+          isDark={isDark}
+        />
       )}
 
       {/* Sheets */}

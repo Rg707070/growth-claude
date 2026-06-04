@@ -180,6 +180,8 @@ const translations = {
     typeToConfirm: 'הקלד "מחק" לאישור',
     deleting: 'מוחק...',
     deleteSuccess: 'החשבון נמחק',
+    // Sync overview
+    noItemsForPeriod: 'אין פריטים לתקופה זו',
   },
   en: {
     appName: 'GROWTH',
@@ -357,6 +359,8 @@ const translations = {
     typeToConfirm: 'Type "delete" to confirm',
     deleting: 'Deleting...',
     deleteSuccess: 'Account deleted',
+    // Sync overview
+    noItemsForPeriod: 'No items for this period',
   },
 }
 
