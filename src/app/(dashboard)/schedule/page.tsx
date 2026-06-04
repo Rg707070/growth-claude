@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { WEEKLY_SCHEDULE } from '@/lib/schedule'
 import { SchedulePageClient } from './schedule-client'
+import type { DomainTask, DomainGoal } from '@/types/ecosystem'
+import type { FamilyTask, FamilyEvent } from '@/types/family'
 
 function getWeekDate(dayOfWeek: number): string {
   const today = new Date()
@@ -49,6 +51,10 @@ export default async function SchedulePage() {
     allHabitsRes,
     weekHabitLogsRes,
     weekActivityChecksRes,
+    domainTasksRes,
+    domainGoalsRes,
+    familyTasksRes,
+    familyEventsRes,
   ] = await Promise.all([
     supabase
       .from('user_schedule')
@@ -82,6 +88,30 @@ export default async function SchedulePage() {
       .select('date, time')
       .eq('user_id', user.id)
       .in('date', weekDates),
+    supabase
+      .from('domain_tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .neq('status', 'done')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('domain_goals')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('family_tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .neq('status', 'done')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('family_events')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'upcoming')
+      .order('event_date', { ascending: true }),
   ])
 
   const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null }[]> = {}
@@ -117,6 +147,10 @@ export default async function SchedulePage() {
       allHabits={allHabits}
       weekHabitLogs={weekHabitLogs}
       weekActivityChecks={weekActivityChecks}
+      domainTasks={(domainTasksRes.data ?? []) as DomainTask[]}
+      domainGoals={(domainGoalsRes.data ?? []) as DomainGoal[]}
+      familyTasks={(familyTasksRes.data ?? []) as FamilyTask[]}
+      familyEvents={(familyEventsRes.data ?? []) as FamilyEvent[]}
     />
   )
 }
