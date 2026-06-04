@@ -1235,10 +1235,13 @@ type SyncPeriod = 'day' | 'week' | 'month'
 type NormTask = { id: string; title: string; urgency: string; due_date: string | null }
 
 function AllItemsOverview({
-  allHabits, completedHabitIds, domainTasks, domainGoals, familyTasks, familyEvents, isDark,
+  userId, allHabits, completedHabitIds, onToggleHabit,
+  domainTasks, domainGoals, familyTasks, familyEvents, isDark,
 }: {
+  userId: string
   allHabits: HabitFull[]
   completedHabitIds: Set<string>
+  onToggleHabit: (id: string) => Promise<void>
   domainTasks: DomainTask[]
   domainGoals: DomainGoal[]
   familyTasks: FamilyTask[]
@@ -1246,7 +1249,10 @@ function AllItemsOverview({
   isDark: boolean
 }) {
   const [period, setPeriod] = useState<SyncPeriod>('day')
+  const [doneTaskIds, setDoneTaskIds] = useState<Set<string>>(new Set())
+  const [doneGoalIds, setDoneGoalIds] = useState<Set<string>>(new Set())
   const { isRTL, t } = useLang()
+  const { toast } = useToast()
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
@@ -1279,17 +1285,36 @@ function AllItemsOverview({
     return `${d.getDate()}/${d.getMonth() + 1}`
   }
 
+  async function toggleTask(taskId: string, domainSlug: string) {
+    setDoneTaskIds(prev => new Set([...prev, taskId]))
+    const table = domainSlug === 'family' ? 'family_tasks' : 'domain_tasks'
+    const { error } = await createClient().from(table).update({ status: 'done' }).eq('id', taskId).eq('user_id', userId)
+    if (error) {
+      setDoneTaskIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
+      toast(t('saveFailed'), 'error')
+    }
+  }
+
+  async function toggleGoal(goalId: string) {
+    setDoneGoalIds(prev => new Set([...prev, goalId]))
+    const { error } = await createClient().from('domain_goals').update({ status: 'done' }).eq('id', goalId).eq('user_id', userId)
+    if (error) {
+      setDoneGoalIds(prev => { const n = new Set(prev); n.delete(goalId); return n })
+      toast(t('saveFailed'), 'error')
+    }
+  }
+
   const cards = DOMAINS.map(domain => {
     const habits = allHabits.filter(h => h.domain_slug === domain.slug)
 
     let tasks: NormTask[]
     if (domain.slug === 'family') {
       tasks = familyTasks
-        .filter(ft => isTaskDateInPeriod(ft.due_date))
+        .filter(ft => !doneTaskIds.has(ft.id) && isTaskDateInPeriod(ft.due_date))
         .map(ft => ({ id: ft.id, title: ft.title, urgency: ft.urgency, due_date: ft.due_date }))
     } else {
       tasks = domainTasks
-        .filter(dt => dt.domain_slug === domain.slug && isTaskDateInPeriod(dt.due_date))
+        .filter(dt => !doneTaskIds.has(dt.id) && dt.domain_slug === domain.slug && isTaskDateInPeriod(dt.due_date))
         .map(dt => ({ id: dt.id, title: dt.title, urgency: dt.urgency, due_date: dt.due_date }))
     }
     tasks.sort((a, b) => {
@@ -1300,7 +1325,7 @@ function AllItemsOverview({
     })
 
     const goals = domain.slug !== 'family'
-      ? domainGoals.filter(g => g.domain_slug === domain.slug)
+      ? domainGoals.filter(g => !doneGoalIds.has(g.id) && g.domain_slug === domain.slug)
       : []
     const events = domain.slug === 'family'
       ? familyEvents.filter(e => isEventInPeriod(e.event_date))
@@ -1363,13 +1388,17 @@ function AllItemsOverview({
                   </div>
 
                   <div className="space-y-1.5">
-                    {/* Habits */}
+                    {/* Habits — clickable */}
                     {habits.map(h => {
                       const done = completedHabitIds.has(h.id)
                       return (
-                        <div key={h.id} className="flex items-center gap-2 text-xs">
+                        <button
+                          key={h.id}
+                          onClick={() => onToggleHabit(h.id)}
+                          className="flex items-center gap-2 text-xs w-full text-start"
+                        >
                           <span
-                            className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold"
+                            className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all"
                             style={{
                               background: done ? `${domain.color}35` : w(0.07, isDark),
                               color: done ? domain.color : w(0.3, isDark),
@@ -1380,16 +1409,24 @@ function AllItemsOverview({
                           <span style={{ color: done ? w(0.35, isDark) : w(0.75, isDark), textDecoration: done ? 'line-through' : 'none' }}>
                             {h.name}
                           </span>
-                        </div>
+                        </button>
                       )
                     })}
 
-                    {/* Tasks */}
+                    {/* Tasks — tap to mark done */}
                     {tasks.map(task => {
                       const od = task.due_date !== null && task.due_date < todayStr
                       const urg = URGENCY_LABELS[task.urgency] ?? { he: 'רגיל', en: 'Norm' }
                       return (
                         <div key={task.id} className="flex items-center gap-2 text-xs">
+                          <button
+                            onClick={() => toggleTask(task.id, domain.slug)}
+                            className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                            style={{ background: w(0.07, isDark), border: `1px solid ${w(0.15, isDark)}` }}
+                            aria-label="סמן כבוצע"
+                          >
+                            <span className="text-[8px]" style={{ color: w(0.3, isDark) }}>○</span>
+                          </button>
                           <span
                             className="px-1.5 py-0.5 rounded-md text-[9px] font-bold flex-shrink-0"
                             style={{
@@ -1409,9 +1446,17 @@ function AllItemsOverview({
                       )
                     })}
 
-                    {/* Goals */}
+                    {/* Goals — tap to mark done */}
                     {goals.map(g => (
                       <div key={g.id} className="flex items-center gap-2 text-xs">
+                        <button
+                          onClick={() => toggleGoal(g.id)}
+                          className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                          style={{ background: w(0.07, isDark), border: `1px solid ${w(0.15, isDark)}` }}
+                          aria-label="סמן כבוצע"
+                        >
+                          <span className="text-[8px]" style={{ color: w(0.3, isDark) }}>○</span>
+                        </button>
                         <span className="text-[11px] flex-shrink-0">🎯</span>
                         <span className="flex-1 min-w-0 truncate" style={{ color: w(0.65, isDark) }}>{g.title}</span>
                       </div>
@@ -1818,8 +1863,10 @@ export function SchedulePageClient({
       {/* All items view */}
       {view === 'all' && (
         <AllItemsOverview
+          userId={userId}
           allHabits={allHabits}
           completedHabitIds={completedHabitIds}
+          onToggleHabit={toggleHabit}
           domainTasks={domainTasks}
           domainGoals={domainGoals}
           familyTasks={familyTasks}
