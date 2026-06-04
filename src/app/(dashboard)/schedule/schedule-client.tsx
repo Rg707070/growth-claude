@@ -1338,9 +1338,19 @@ function AllItemsOverview({
   }).filter(c => c.habits.length > 0 || c.tasks.length > 0 || c.goals.length > 0 || c.events.length > 0)
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col" style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
+    <div className="pt-3 mt-1" style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
+      {/* Section header */}
+      <div className="max-w-2xl mx-auto w-full px-4 flex items-baseline gap-2 flex-wrap" dir={isRTL ? 'rtl' : 'ltr'}>
+        <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>
+          {isRTL ? 'כל הפעילות שלי' : 'All my activity'}
+        </span>
+        <span className="text-[11px]" style={{ color: w(0.4, isDark) }}>
+          {isRTL ? 'משימות · אירועים · הרגלים · יעדים' : 'tasks · events · habits · goals'}
+        </span>
+      </div>
+
       {/* Period filter */}
-      <div className="flex-shrink-0 max-w-2xl mx-auto w-full px-4 py-2">
+      <div className="max-w-2xl mx-auto w-full px-4 py-2">
         <div className="flex gap-1 p-1 rounded-2xl" style={{ background: w(0.05, isDark) }}>
           {([
             { id: 'day'   as const, label: isRTL ? 'היום' : 'Today' },
@@ -1364,7 +1374,7 @@ function AllItemsOverview({
       </div>
 
       {/* Domain cards */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 max-w-2xl mx-auto w-full">
+      <div className="px-4 pb-4 max-w-2xl mx-auto w-full">
         {cards.length === 0 ? (
           <div className="flex items-center justify-center h-32">
             <p className="text-sm" style={{ color: w(0.3, isDark) }}>{t('noItemsForPeriod')}</p>
@@ -1823,11 +1833,24 @@ export function SchedulePageClient({
         </>
       )}
 
-      {/* Habit calendar view */}
+      {/* Habit calendar view + aggregated activity digest */}
       {view === 'habit-calendar' && (
-        <div className="flex-1 min-h-0 overflow-y-auto max-w-2xl mx-auto w-full px-4 pb-24"
+        <div className="flex-1 min-h-0 overflow-y-auto max-w-2xl mx-auto w-full pb-24"
           style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
-          <CalendarClient habits={allHabits} logs={calendarLogs} />
+          <div className="px-4">
+            <CalendarClient habits={allHabits} logs={calendarLogs} embedded />
+          </div>
+          <AllItemsOverview
+            userId={userId}
+            allHabits={allHabits}
+            completedHabitIds={completedHabitIds}
+            onToggleHabit={toggleHabit}
+            domainTasks={domainTasks}
+            domainGoals={domainGoals}
+            familyTasks={familyTasks}
+            familyEvents={familyEvents}
+            isDark={isDark}
+          />
         </div>
       )}
 
