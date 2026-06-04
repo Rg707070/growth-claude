@@ -1720,9 +1720,8 @@ export function SchedulePageClient({
       <div className="flex-shrink-0 max-w-2xl mx-auto w-full px-4 pb-2">
         <div className="flex gap-1 p-1 rounded-2xl" style={{ background: w(0.05, isDark) }}>
           {([
-            { id: 'daily'          as const, label: isRTL ? 'היום'      : 'Today'    },
+            { id: 'daily'          as const, label: isRTL ? 'לו"ז'      : 'Schedule' },
             { id: 'habit-calendar' as const, label: isRTL ? 'לוח שנה'   : 'Calendar' },
-            { id: 'all'            as const, label: isRTL ? 'לוז'        : 'Schedule' },
           ]).map(tab => (
             <button
               key={tab.id}
@@ -1869,20 +1868,6 @@ export function SchedulePageClient({
         </div>
       )}
 
-      {/* All items view */}
-      {view === 'all' && (
-        <AllItemsOverview
-          userId={userId}
-          allHabits={allHabits}
-          completedHabitIds={completedHabitIds}
-          onToggleHabit={toggleHabit}
-          domainTasks={domainTasks}
-          domainGoals={domainGoals}
-          familyTasks={familyTasks}
-          familyEvents={familyEvents}
-          isDark={isDark}
-        />
-      )}
 
       {/* Sheets */}
       {editItem && (

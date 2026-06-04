@@ -28,7 +28,7 @@ const navItems = [
   { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',  labelEn: 'Domains'  },
   { icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',   labelEn: 'Books'    },
   { icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',    labelEn: 'Journal'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',     labelEn: 'Schedule' },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',    labelEn: 'Schedule' },
   { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',  labelEn: 'Settings' },
 ]
 

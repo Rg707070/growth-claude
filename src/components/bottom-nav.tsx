@@ -36,7 +36,7 @@ const DEFAULT_ITEMS: NavItem[] = [
   { id: 'domains',   icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',    labelEn: 'Domains'  },
   { id: 'reading',   icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',     labelEn: 'Books'    },
   { id: 'journal',   icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',      labelEn: 'Journal'  },
-  { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לוז',       labelEn: 'Schedule' },
+  { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',      labelEn: 'Schedule' },
   { id: 'settings',  icon: Settings,     href: '/settings',  labelHe: 'הגדרות',    labelEn: 'Settings' },
 ]
 

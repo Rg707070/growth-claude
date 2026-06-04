@@ -26,7 +26,7 @@ function useCrumbs(): { title: string; crumbs: Crumb[] } {
     return { title: t('יומן', 'Journal'), crumbs: [{ label: t('יומן', 'Journal') }] }
   }
   if (pathname === '/schedule' || pathname.startsWith('/schedule')) {
-    return { title: t('לוז שבועי', 'Weekly Schedule'), crumbs: [{ label: t('לוז', 'Schedule') }] }
+    return { title: t('לו"ז', 'Schedule'), crumbs: [{ label: t('לו"ז', 'Schedule') }] }
   }
   if (pathname === '/reading' || pathname.startsWith('/reading')) {
     return { title: t('ספרים', 'Books'), crumbs: [{ label: t('ספרים', 'Books') }] }
