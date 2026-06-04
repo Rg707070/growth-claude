@@ -44,6 +44,10 @@ export default async function SchedulePage() {
 
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map(getWeekDate)
 
+  const threeMonthsAgo = new Date()
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  const calendarStartDate = threeMonthsAgo.toISOString().split('T')[0]
+
   const [
     { data: scheduleRows },
     { data: checkRows },
@@ -55,6 +59,7 @@ export default async function SchedulePage() {
     domainGoalsRes,
     familyTasksRes,
     familyEventsRes,
+    calendarLogsRes,
   ] = await Promise.all([
     supabase
       .from('user_schedule')
@@ -75,7 +80,7 @@ export default async function SchedulePage() {
       .not('schedule_time', 'is', null),
     supabase
       .from('habits')
-      .select('id, name, domain_slug, frequency, schedule_time')
+      .select('id, name, domain_slug, frequency, schedule_time, is_active')
       .eq('user_id', user.id)
       .eq('is_active', true),
     supabase
@@ -112,6 +117,11 @@ export default async function SchedulePage() {
       .eq('user_id', user.id)
       .eq('status', 'upcoming')
       .order('event_date', { ascending: true }),
+    supabase
+      .from('habit_logs')
+      .select('habit_id, completed_at')
+      .eq('user_id', user.id)
+      .gte('completed_at', calendarStartDate),
   ])
 
   const userItems: Record<number, { id: string; time: string; label: string; type: string; color?: string | null; specificDate: string | null }[]> = {}
@@ -128,13 +138,14 @@ export default async function SchedulePage() {
     .filter((r: { habit_id: string; completed_at: string }) => r.completed_at === todayDate)
     .map((r: { habit_id: string }) => r.habit_id)
 
-  type HabitForCalendar = { id: string; name: string; domain_slug: string; frequency: 'daily' | 'weekly'; schedule_time: string | null }
+  type HabitForCalendar = { id: string; name: string; domain_slug: string; frequency: 'daily' | 'weekly'; schedule_time: string | null; is_active: boolean }
   type HabitLogEntry    = { habit_id: string; completed_at: string }
   type ActivityCheckEntry = { date: string; time: string }
 
-  const allHabits         = (allHabitsRes.data ?? []) as HabitForCalendar[]
-  const weekHabitLogs     = (weekHabitLogsRes.data ?? []) as HabitLogEntry[]
+  const allHabits          = (allHabitsRes.data ?? []) as HabitForCalendar[]
+  const weekHabitLogs      = (weekHabitLogsRes.data ?? []) as HabitLogEntry[]
   const weekActivityChecks = (weekActivityChecksRes.data ?? []) as ActivityCheckEntry[]
+  const calendarLogs       = (calendarLogsRes.data ?? []) as HabitLogEntry[]
 
   return (
     <SchedulePageClient
@@ -147,6 +158,7 @@ export default async function SchedulePage() {
       allHabits={allHabits}
       weekHabitLogs={weekHabitLogs}
       weekActivityChecks={weekActivityChecks}
+      calendarLogs={calendarLogs}
       domainTasks={(domainTasksRes.data ?? []) as DomainTask[]}
       domainGoals={(domainGoalsRes.data ?? []) as DomainGoal[]}
       familyTasks={(familyTasksRes.data ?? []) as FamilyTask[]}
