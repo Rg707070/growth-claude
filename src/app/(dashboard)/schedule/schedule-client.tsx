@@ -3,3 +3,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { DAY_NAMES_HE } from '@/lib/schedule'
+import { DOMAINS } from '@/lib/domains'
+import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check, CalendarDays } from 'lucide-react'
+import { CalendarClient } from '@/app/(dashboard)/calendar/calendar-client'
+import { useTheme } from '@/lib/theme'
