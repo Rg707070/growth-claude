@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
@@ -11,6 +12,7 @@ import { TimeBackground } from '@/components/time-background'
 import { WaveAnimation } from '@/components/wave-animation'
 import { WeeklyChart } from '@/components/weekly-chart'
 import { ProgressRing } from '@/components/progress-ring'
+import { createClient } from '@/lib/supabase/client'
 import type { Profile, Habit, DomainProgress, DomainStats } from '@/types'
 
 interface DashboardClientProps {
@@ -51,6 +53,27 @@ export function DashboardClient({
   const { t, isRTL } = useLang()
   const router = useRouter()
   useHabitReminders(habits)
+
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [resetting, setResetting] = useState(false)
+
+  const handleResetDay = async () => {
+    setResetting(true)
+    const sb = createClient()
+    const today = new Date().toISOString().split('T')[0]
+    await Promise.all([
+      sb.from('habit_logs').delete().eq('user_id', profile.id).eq('completed_at', today),
+      sb.from('activity_checks').delete().eq('user_id', profile.id).eq('date', today),
+      sb.from('night_checkins').delete().eq('user_id', profile.id).eq('date', today),
+      sb.from('schedule_reflections').delete().eq('user_id', profile.id).eq('date', today),
+    ])
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`night_checkin_${today}`)
+    }
+    setResetting(false)
+    setConfirmReset(false)
+    router.refresh()
+  }
 
   const completedSet = new Set(completedIds)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')
@@ -158,6 +181,42 @@ export function DashboardClient({
                   ) : null}
                 </div>
               </div>
+
+              {/* Reset day */}
+              {completedToday > 0 && (
+                <div className="relative mt-4 flex justify-end items-center gap-2">
+                  {!confirmReset ? (
+                    <button
+                      onClick={() => setConfirmReset(true)}
+                      className="text-[11px] flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-opacity hover:opacity-90"
+                      style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)' }}
+                    >
+                      ↺ {isRTL ? 'אפס יום' : 'Reset day'}
+                    </button>
+                  ) : (
+                    <>
+                      <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                        {isRTL ? 'למחוק את כל ההתקדמות של היום?' : 'Clear all today\'s progress?'}
+                      </span>
+                      <button
+                        onClick={() => setConfirmReset(false)}
+                        className="text-[11px] px-2.5 py-1 rounded-lg"
+                        style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
+                      >
+                        {isRTL ? 'ביטול' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handleResetDay}
+                        disabled={resetting}
+                        className="text-[11px] px-2.5 py-1 rounded-lg font-semibold disabled:opacity-50"
+                        style={{ background: 'rgba(239,68,68,0.55)', color: '#fff' }}
+                      >
+                        {resetting ? '...' : isRTL ? 'אפס' : 'Reset'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* NEEDS ATTENTION */}
