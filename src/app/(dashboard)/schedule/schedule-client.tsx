@@ -1671,14 +1671,9 @@ export function SchedulePageClient({
   const handleResetDay = async () => {
     setResetting(true)
     const sb = createClient()
-    await Promise.all([
-      sb.from('habit_logs').delete().eq('user_id', userId).eq('completed_at', todayDate),
-      sb.from('activity_checks').delete().eq('user_id', userId).eq('date', todayDate),
-      sb.from('night_checkins').delete().eq('user_id', userId).eq('date', todayDate),
-      sb.from('schedule_reflections').delete().eq('user_id', userId).eq('date', todayDate),
-    ])
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(`night_checkin_${todayDate}`)
+    const ids = items.map(i => i.id)
+    if (ids.length > 0) {
+      await sb.from('user_schedule').delete().eq('user_id', userId).in('id', ids)
     }
     setResetting(false)
     setConfirmReset(false)
@@ -1705,7 +1700,7 @@ export function SchedulePageClient({
             {isRTL ? 'תכנן את השבוע שלך' : 'Plan your week'}
           </p>
         </div>
-        {completedHabitIds.size > 0 && (
+        {items.length > 0 && (
           <div className="flex items-center gap-2">
             {!confirmReset ? (
               <button
@@ -1713,12 +1708,12 @@ export function SchedulePageClient({
                 className="text-[11px] flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-opacity hover:opacity-90"
                 style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)' }}
               >
-                ↺ {isRTL ? 'אפס יום' : 'Reset day'}
+                ↺ {isRTL ? 'נקה לוח' : 'Clear schedule'}
               </button>
             ) : (
               <>
                 <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                  {isRTL ? 'למחוק את כל ההתקדמות של היום?' : "Clear all today's progress?"}
+                  {isRTL ? 'למחוק את כל פריטי הלוח ליום זה?' : 'Clear all schedule items for this day?'}
                 </span>
                 <button
                   onClick={() => setConfirmReset(false)}
@@ -1733,7 +1728,7 @@ export function SchedulePageClient({
                   className="text-[11px] px-2.5 py-1 rounded-lg font-semibold disabled:opacity-50"
                   style={{ background: 'rgba(239,68,68,0.55)', color: '#fff' }}
                 >
-                  {resetting ? '...' : isRTL ? 'אפס' : 'Reset'}
+                  {resetting ? '...' : isRTL ? 'נקה' : 'Clear'}
                 </button>
               </>
             )}
