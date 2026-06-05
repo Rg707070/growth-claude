@@ -27,9 +27,10 @@ interface DayData {
 interface CalendarClientProps {
   habits: HabitRow[]
   logs: LogRow[]
+  embedded?: boolean
 }
 
-export function CalendarClient({ habits, logs }: CalendarClientProps) {
+export function CalendarClient({ habits, logs, embedded = false }: CalendarClientProps) {
   const { isRTL } = useLang()
   const [viewDate, setViewDate] = useState(() => {
     const d = new Date()
@@ -192,10 +193,11 @@ export function CalendarClient({ habits, logs }: CalendarClientProps) {
   )
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6">
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-5 md:max-w-none md:px-0 md:py-8">
+    <div className={embedded ? undefined : 'flex-1 min-h-0 overflow-y-auto pb-24 md:pb-6'}>
+      <div className={`max-w-lg mx-auto px-4 space-y-5 md:max-w-none md:px-0 ${embedded ? 'pt-1' : 'py-6 md:py-8'}`}>
 
         {/* Standalone page header */}
+        {!embedded && (
         <div className="flex items-center gap-3 md:hidden">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
             style={{ background: 'var(--c-primary-glow)', color: 'var(--primary)' }}>
@@ -210,6 +212,7 @@ export function CalendarClient({ habits, logs }: CalendarClientProps) {
             </p>
           </div>
         </div>
+        )}
 
         {/* Month navigation */}
         <div className="rounded-3xl p-4" style={{ background: 'var(--c-card)', border: '1px solid var(--c-border)' }}>
