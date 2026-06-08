@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { DOMAINS } from '@/lib/domains'
 import { createClient } from '@/lib/supabase/client'
-import { ChevronRight, LayoutGrid, Plus, Trash2, X } from 'lucide-react'
+import { Check, ChevronRight, LayoutGrid, Plus, Trash2, X } from 'lucide-react'
 import type { Domain } from '@/types'
 
 const PRESET_COLORS = [
@@ -46,6 +46,7 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
   const addDomain = async () => {
     if (!newName.trim() || saving) return
     setSaving(true)
+    await ensureMigrated()
     const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-֐-׿]/g, '') || `domain-${Date.now()}`
     const supabase = createClient()
     const { error } = await supabase.from('user_domains').insert({
@@ -85,6 +86,42 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
     }))
     await supabase.from('user_domains').insert(rows)
     setSaving(false)
+    router.refresh()
+  }
+
+  // Ensure current defaults are saved before any custom modification
+  const ensureMigrated = async () => {
+    if (hasCustomDomains) return
+    const supabase = createClient()
+    const rows = DOMAINS.map((d, i) => ({
+      user_id: userId,
+      slug: d.slug,
+      name: isRTL ? d.nameHe : d.nameEn,
+      icon: d.icon,
+      color: d.color,
+      sort_order: i,
+    }))
+    await supabase.from('user_domains').upsert(rows, { onConflict: 'slug' })
+  }
+
+  const addPresetDomain = async (d: typeof DOMAINS[number]) => {
+    if (saving) return
+    setSaving(true)
+    await ensureMigrated()
+    const alreadyActive = domains.some((dom) => dom.slug === d.slug)
+    if (!alreadyActive) {
+      const supabase = createClient()
+      await supabase.from('user_domains').insert({
+        user_id: userId,
+        slug: d.slug,
+        name: isRTL ? d.nameHe : d.nameEn,
+        icon: d.icon,
+        color: d.color,
+        sort_order: domains.length,
+      })
+    }
+    setSaving(false)
+    resetAdd()
     router.refresh()
   }
 
@@ -160,24 +197,71 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
         {/* Add domain form */}
         {showAdd && (
           <div
-            className="rounded-2xl p-4 space-y-3"
+            className="rounded-2xl p-4 space-y-4"
             style={{ background: 'var(--c-card)', border: '1px solid var(--c-border)' }}
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                {isRTL ? 'תחום חדש' : 'New domain'}
+                {isRTL ? 'הוסף תחום' : 'Add domain'}
               </span>
               <button onClick={resetAdd} style={{ color: 'var(--muted-foreground)' }}>
                 <X size={16} />
               </button>
             </div>
 
+            {/* Preset domains section */}
+            <div>
+              <p className="text-[11px] font-semibold mb-2 uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'מהמוצעים' : 'From suggestions'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {DOMAINS.map((d) => {
+                  const active = domains.some((dom) => dom.slug === d.slug)
+                  return (
+                    <button
+                      key={d.slug}
+                      onClick={() => !active && addPresetDomain(d)}
+                      disabled={saving}
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-start transition-all active:scale-[0.97] disabled:opacity-60"
+                      style={{
+                        background: active ? `${d.color}12` : 'var(--c-surface-2)',
+                        border: `1.5px solid ${active ? d.color + '50' : 'var(--c-border)'}`,
+                        cursor: active ? 'default' : 'pointer',
+                      }}
+                    >
+                      <span
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                        style={{ background: `${d.color}22` }}
+                      >
+                        {d.icon}
+                      </span>
+                      <span className="flex-1 text-xs font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                        {isRTL ? d.nameHe : d.nameEn}
+                      </span>
+                      {active && (
+                        <Check size={13} strokeWidth={2.5} style={{ color: d.color, flexShrink: 0 }} />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+              <span className="text-[11px] font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'או צור חדש' : 'or create custom'}
+              </span>
+              <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+            </div>
+
+            {/* Custom domain */}
             <input
-              autoFocus
               value={newName}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value)}
               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addDomain()}
-              placeholder={isRTL ? 'שם התחום...' : 'Domain name...'}
+              placeholder={isRTL ? 'שם התחום המותאם...' : 'Custom domain name...'}
               className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none transition-all"
               style={{
                 background: 'var(--c-input)',
@@ -188,69 +272,73 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => (e.target.style.borderColor = 'var(--c-input-border)')}
             />
 
-            {/* Emoji picker */}
-            <div>
-              <p className="text-[11px] font-medium mb-1.5" style={{ color: 'var(--muted-foreground)' }}>
-                {isRTL ? 'אייקון' : 'Icon'}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_EMOJIS.map((e) => (
-                  <button
-                    key={e}
-                    onClick={() => setNewIcon(e)}
-                    className="w-8 h-8 rounded-lg text-base transition-all active:scale-90"
-                    style={{
-                      background: newIcon === e ? `${newColor}22` : 'var(--c-surface-2)',
-                      border: newIcon === e ? `1.5px solid ${newColor}` : '1px solid var(--c-border)',
-                    }}
+            {newName.trim() && (
+              <>
+                {/* Emoji picker */}
+                <div>
+                  <p className="text-[11px] font-medium mb-1.5" style={{ color: 'var(--muted-foreground)' }}>
+                    {isRTL ? 'אייקון' : 'Icon'}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_EMOJIS.map((e) => (
+                      <button
+                        key={e}
+                        onClick={() => setNewIcon(e)}
+                        className="w-8 h-8 rounded-lg text-base transition-all active:scale-90"
+                        style={{
+                          background: newIcon === e ? `${newColor}22` : 'var(--c-surface-2)',
+                          border: newIcon === e ? `1.5px solid ${newColor}` : '1px solid var(--c-border)',
+                        }}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Color picker */}
+                <div>
+                  <p className="text-[11px] font-medium mb-1.5" style={{ color: 'var(--muted-foreground)' }}>
+                    {isRTL ? 'צבע' : 'Color'}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setNewColor(c)}
+                        className="w-7 h-7 rounded-full transition-all active:scale-90"
+                        style={{
+                          background: c,
+                          outline: newColor === c ? `2px solid ${c}` : 'none',
+                          outlineOffset: '2px',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview + save */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ background: `${newColor}22`, border: `1px solid ${newColor}44` }}
                   >
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Color picker */}
-            <div>
-              <p className="text-[11px] font-medium mb-1.5" style={{ color: 'var(--muted-foreground)' }}>
-                {isRTL ? 'צבע' : 'Color'}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_COLORS.map((c) => (
+                    {newIcon}
+                  </div>
+                  <span className="flex-1 text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                    {newName}
+                  </span>
                   <button
-                    key={c}
-                    onClick={() => setNewColor(c)}
-                    className="w-7 h-7 rounded-full transition-all active:scale-90"
-                    style={{
-                      background: c,
-                      outline: newColor === c ? `2px solid ${c}` : 'none',
-                      outlineOffset: '2px',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Preview + save */}
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: `${newColor}22`, border: `1px solid ${newColor}44` }}
-              >
-                {newIcon}
-              </div>
-              <span className="flex-1 text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-                {newName || (isRTL ? 'שם התחום' : 'Domain name')}
-              </span>
-              <button
-                onClick={addDomain}
-                disabled={!newName.trim() || saving}
-                className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 active:scale-95"
-                style={{ background: 'var(--brand-gradient)' }}
-              >
-                {saving ? '...' : isRTL ? 'הוסף' : 'Add'}
-              </button>
-            </div>
+                    onClick={addDomain}
+                    disabled={saving}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 active:scale-95"
+                    style={{ background: 'var(--brand-gradient)' }}
+                  >
+                    {saving ? '...' : isRTL ? 'הוסף' : 'Add'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
