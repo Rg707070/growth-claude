@@ -101,7 +101,7 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
       color: d.color,
       sort_order: i,
     }))
-    await supabase.from('user_domains').upsert(rows, { onConflict: 'slug' })
+    await supabase.from('user_domains').upsert(rows, { ignoreDuplicates: true })
   }
 
   const addPresetDomain = async (d: typeof DOMAINS[number]) => {

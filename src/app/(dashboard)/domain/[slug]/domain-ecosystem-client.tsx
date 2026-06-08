@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight, Plus, X, Check, Trash2,
-  ListChecks, Target, Flame, Calendar, Tag,
+  ListChecks, Target, Flame, Calendar, Tag, LayoutDashboard,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
-import { HabitRow } from '@/components/habit-row'
+import { DomainHabitsTab } from '@/components/domain-habits-tab'
 import { ProgressRing } from '@/components/progress-ring'
 import { DomainJournal } from '@/components/domain-journal'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,7 @@ import type {
   DomainTaskUrgency, DomainGoalStatus,
 } from '@/types/ecosystem'
 
-type Tab = 'tasks' | 'habits' | 'goals'
+type Tab = 'habits' | 'tasks' | 'goals' | 'board'
 
 interface Props {
   domain: Domain
@@ -60,7 +60,7 @@ export function DomainEcosystemClient({
   useHabitReminders(habits)
 
   const completedSet = useMemo(() => new Set(completedIds), [completedIds])
-  const completedCount = habits.filter((h) => completedSet.has(h.id)).length
+  const completedCount = habits.filter((h: Habit) => completedSet.has(h.id)).length
   const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0
   const openTasksCount = tasks.filter((tk) => tk.status !== 'done').length
   const activeGoalsCount = goals.filter((g) => g.status === 'active').length
@@ -116,7 +116,7 @@ export function DomainEcosystemClient({
             color={domain.color}
             icon={<Flame size={15} />}
             label={isRTL ? 'הרגלים' : 'Habits'}
-            value={completedCount}
+            value={`${completedCount}/${habits.length}`}
           />
           <StatTile
             color={domain.color}
@@ -140,15 +140,19 @@ export function DomainEcosystemClient({
           <TabButton active={tab === 'goals'} onClick={() => setTab('goals')} color={domain.color}>
             {isRTL ? config.goals.tabHe : config.goals.tabEn}
           </TabButton>
+          <TabButton active={tab === 'board'} onClick={() => setTab('board')} color={domain.color}>
+            {isRTL ? 'לוח' : 'Board'}
+          </TabButton>
         </div>
 
         {tab === 'habits' && (
-          <HabitsTab
+          <DomainHabitsTab
             habits={habits}
             completedSet={completedSet}
             domain={domain}
             userId={userId}
-            onHabitAdded={(h) => setHabits((prev) => [...prev, h])}
+            onAdded={(h: Habit) => setHabits((prev: Habit[]) => [...prev, h])}
+            isRTL={isRTL}
           />
         )}
         {tab === 'tasks' && (
@@ -167,6 +171,17 @@ export function DomainEcosystemClient({
             config={config.goals}
             accentColor={domain.color}
             isRTL={isRTL}
+          />
+        )}
+        {tab === 'board' && (
+          <BoardTab
+            habits={habits}
+            completedSet={completedSet}
+            tasks={tasks}
+            goals={goals}
+            domain={domain}
+            isRTL={isRTL}
+            config={config}
           />
         )}
 
@@ -198,7 +213,7 @@ function MigrationBanner({ isRTL }: { isRTL: boolean }) {
 
 function StatTile({
   color, icon, label, value,
-}: { color: string; icon: React.ReactNode; label: string; value: number }) {
+}: { color: string; icon: React.ReactNode; label: string; value: number | string }) {
   return (
     <div
       className="rounded-xl p-3 flex flex-col gap-1"
@@ -229,130 +244,6 @@ function TabButton({
     >
       {children}
     </button>
-  )
-}
-
-// ── Habits Tab ─────────────────────────────────────────────────
-
-interface HabitsTabProps {
-  habits: Habit[]
-  completedSet: Set<string>
-  domain: Domain
-  userId: string
-  onHabitAdded: (h: Habit) => void
-}
-
-function HabitsTab({
-  habits, completedSet, domain, userId, onHabitAdded,
-}: HabitsTabProps) {
-  const router = useRouter()
-  const { t, isRTL } = useLang()
-  const [adding, setAdding] = useState(false)
-  const [name, setName] = useState('')
-  const [time, setTime] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-
-  const addHabit = async () => {
-    if (!name.trim() || saving) return
-    setSaving(true)
-    setSaveError(null)
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('habits')
-        .insert({
-          user_id: userId,
-          domain_slug: domain.slug,
-          name: name.trim(),
-          frequency: 'daily',
-          schedule_time: time || null,
-        })
-        .select()
-        .single()
-      if (error || !data) {
-        setSaveError(isRTL ? 'שגיאה בשמירה — נסה שוב' : 'Save failed — try again')
-        return
-      }
-      onHabitAdded(data as Habit)
-      setName('')
-      setTime('')
-      setAdding(false)
-      router.refresh()
-    } catch {
-      setSaveError(isRTL ? 'שגיאה — נסה שוב' : 'Error — try again')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      {habits.length === 0 && !adding && (
-        <p className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {t('noHabitsYet')}
-        </p>
-      )}
-      {habits.map((habit) => (
-        <HabitRow key={habit.id} habit={habit} isCompleted={completedSet.has(habit.id)} />
-      ))}
-
-      {adding ? (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <Input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addHabit()}
-              placeholder={t('habitName')}
-              className="rounded-xl"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
-            />
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
-            />
-            <Button
-              onClick={addHabit}
-              disabled={saving || !name.trim()}
-              className="rounded-xl flex-shrink-0"
-              style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
-            >
-              {t('save')}
-            </Button>
-            <button
-              onClick={() => { setAdding(false); setName(''); setTime(''); setSaveError(null) }}
-              className="p-2 rounded-xl"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-          {saveError && <p className="text-red-400 text-xs text-center">{saveError}</p>}
-        </div>
-      ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
-          style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
-        >
-          <Plus size={18} />
-          <span className="text-sm">{t('addHabit')}</span>
-        </button>
-      )}
-    </div>
   )
 }
 
@@ -745,5 +636,247 @@ function GoalCard({
         </button>
       </div>
     </Card>
+  )
+}
+
+// ── Board Tab (לוח מעכב) ───────────────────────────────────────
+
+function boardLast7Days(): string[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return d.toISOString().split('T')[0]
+  })
+}
+
+function boardComputeStreak(dates: Set<string>): number {
+  let s = 0
+  const today = new Date()
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    if (dates.has(d.toISOString().split('T')[0])) s++
+    else break
+  }
+  return s
+}
+
+function BoardTab({
+  habits, completedSet, tasks, goals, domain, isRTL, config,
+}: {
+  habits: Habit[]
+  completedSet: Set<string>
+  tasks: DomainTask[]
+  goals: DomainGoal[]
+  domain: Domain
+  isRTL: boolean
+  config: ReturnType<typeof getDomainEcosystemConfig>
+}) {
+  const days7 = useMemo(boardLast7Days, [])
+  const [historyMap, setHistoryMap] = useState<Record<string, Set<string>>>({})
+  const [historyLoaded, setHistoryLoaded] = useState(false)
+
+  useEffect(() => {
+    if (habits.length === 0) { setHistoryLoaded(true); return }
+    const ids = habits.map((h) => h.id)
+    createClient()
+      .from('habit_logs')
+      .select('habit_id, completed_at')
+      .in('habit_id', ids)
+      .gte('completed_at', days7[0])
+      .then(({ data }: { data: Array<{ habit_id: string; completed_at: string }> | null }) => {
+        const map: Record<string, Set<string>> = {}
+        for (const id of ids) map[id] = new Set()
+        for (const row of data ?? []) map[row.habit_id]?.add(row.completed_at)
+        setHistoryMap(map)
+        setHistoryLoaded(true)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits.length])
+
+  const completedCount = habits.filter((h) => completedSet.has(h.id)).length
+  const openTasks = tasks.filter((t) => t.status !== 'done')
+  const urgentTasks = openTasks.filter((t) => t.urgency === 'high' || t.urgency === 'critical')
+  const normalTasks = openTasks.filter((t) => t.urgency !== 'high' && t.urgency !== 'critical')
+  const activeGoals = goals.filter((g) => g.status === 'active')
+
+  // Day name abbreviations
+  const HE_DAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']
+  const EN_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+  const dayLabel = (iso: string) => {
+    const dow = new Date(iso + 'T12:00:00').getDay()
+    return isRTL ? HE_DAYS[dow] : EN_DAYS[dow]
+  }
+  const today = new Date().toISOString().split('T')[0]
+  const isToday = (iso: string) => iso === today
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── Today snapshot ── */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          {
+            icon: <Flame size={14} />,
+            label: isRTL ? 'הרגלים' : 'Habits',
+            value: `${completedCount}/${habits.length}`,
+            pct: habits.length > 0 ? completedCount / habits.length : 0,
+          },
+          {
+            icon: <ListChecks size={14} />,
+            label: isRTL ? 'פתוחות' : 'Open tasks',
+            value: openTasks.length,
+            pct: tasks.length > 0 ? 1 - openTasks.length / tasks.length : 0,
+          },
+          {
+            icon: <Target size={14} />,
+            label: isRTL ? 'מטרות' : 'Goals',
+            value: activeGoals.length,
+            pct: activeGoals.length > 0 ? 0.7 : 0,
+          },
+        ].map(({ icon, label, value, pct }) => (
+          <div
+            key={label}
+            className="rounded-xl p-3 flex flex-col gap-2"
+            style={{ background: `${domain.color}12`, border: `1px solid ${domain.color}28` }}
+          >
+            <div className="flex items-center gap-1.5" style={{ color: domain.color }}>
+              {icon}
+              <span className="text-[10px] font-semibold uppercase tracking-wider truncate">{label}</span>
+            </div>
+            <div className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>{value}</div>
+            <div className="h-1 rounded-full" style={{ background: `${domain.color}22` }}>
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.min(pct * 100, 100)}%`, background: domain.color }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Weekly habit grid ── */}
+      {habits.length > 0 && (
+        <div
+          className="rounded-2xl p-3 space-y-2"
+          style={{ background: 'var(--c-card)', border: '1px solid var(--c-border)' }}
+        >
+          <p className="text-xs font-semibold" style={{ color: domain.color }}>
+            {isRTL ? '📅 מעקב שבועי' : '📅 Weekly tracking'}
+          </p>
+
+          {/* Day headers */}
+          <div className="flex items-center gap-1 ps-2">
+            <div className="flex-1" />
+            {days7.map((d: string) => (
+              <div
+                key={d}
+                className="w-7 text-center text-[10px] font-bold flex-shrink-0"
+                style={{ color: isToday(d) ? domain.color : 'var(--muted-foreground)' }}
+              >
+                {dayLabel(d)}
+              </div>
+            ))}
+          </div>
+
+          {/* Habit rows */}
+          {habits.map((h) => {
+            const dates = historyMap[h.id] ?? new Set()
+            const streak = historyLoaded ? boardComputeStreak(dates) : 0
+            return (
+              <div key={h.id} className="flex items-center gap-1">
+                <p
+                  className="flex-1 text-xs truncate font-medium"
+                  style={{
+                    color: completedSet.has(h.id) ? domain.color : 'var(--foreground)',
+                    textDecoration: completedSet.has(h.id) ? 'none' : 'none',
+                  }}
+                >
+                  {h.name}
+                </p>
+                {days7.map((d: string) => (
+                  <div
+                    key={d}
+                    className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center transition-all"
+                    style={{
+                      background: dates.has(d)
+                        ? isToday(d) ? domain.color : `${domain.color}55`
+                        : isToday(d) ? `${domain.color}18` : 'var(--c-surface-2)',
+                      border: isToday(d) ? `1px solid ${domain.color}60` : '1px solid transparent',
+                    }}
+                  >
+                    {dates.has(d) && (
+                      <Check size={11} strokeWidth={2.5} color={isToday(d) ? '#fff' : domain.color} />
+                    )}
+                  </div>
+                ))}
+                {streak > 0 && (
+                  <div
+                    className="flex items-center gap-0.5 flex-shrink-0 ps-1 text-[10px] font-bold w-8"
+                    style={{ color: domain.color }}
+                  >
+                    🔥{streak}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Urgent tasks ── */}
+      {urgentTasks.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold" style={{ color: URGENCY_COLORS.critical }}>
+            ⚡ {isRTL ? 'דחוף — טיפול מיידי' : 'Urgent — action needed'}
+          </p>
+          {urgentTasks.map((t) => (
+            <TaskCard key={t.id} task={t} slug={domain.slug} categories={config.taskCategories} isRTL={isRTL} />
+          ))}
+        </div>
+      )}
+
+      {/* ── Normal open tasks (compact) ── */}
+      {normalTasks.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? `📋 ${normalTasks.length} משימות פתוחות` : `📋 ${normalTasks.length} open tasks`}
+          </p>
+          {normalTasks.slice(0, 5).map((t) => (
+            <TaskCard key={t.id} task={t} slug={domain.slug} categories={config.taskCategories} isRTL={isRTL} />
+          ))}
+          {normalTasks.length > 5 && (
+            <p className="text-xs text-center" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? `+${normalTasks.length - 5} נוספות בטאב משימות` : `+${normalTasks.length - 5} more in Tasks tab`}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Active goals ── */}
+      {activeGoals.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold" style={{ color: domain.color }}>
+            🎯 {isRTL ? 'מטרות פעילות' : 'Active goals'}
+          </p>
+          {activeGoals.map((g) => (
+            <GoalCard key={g.id} goal={g} slug={domain.slug} config={config.goals} accentColor={domain.color} isRTL={isRTL} />
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {habits.length === 0 && openTasks.length === 0 && activeGoals.length === 0 && (
+        <div className="flex flex-col items-center gap-3 py-12">
+          <LayoutDashboard size={36} style={{ color: domain.color, opacity: 0.5 }} />
+          <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? 'הלוח ריק — התחל להוסיף' : 'Board is empty — start adding'}
+          </p>
+          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'הוסף הרגלים ומשימות כדי לראות סיכום כאן' : 'Add habits and tasks to see a summary here'}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
