@@ -83,8 +83,8 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="he"
-      dir="rtl"
+      lang="en"
+      dir="ltr"
       className={`light ${geist.variable} ${spaceGrotesk.variable} ${heebo.variable}`}
     >
       <body className="font-sans antialiased min-h-screen bg-background">

@@ -38,7 +38,7 @@ export default async function DomainPage({ params }: Props) {
       .eq('user_id', user.id)
       .eq('slug', slug)
       .single()
-    if (!ud) notFound()
+    if (!ud) redirect('/domains')
     domain = {
       slug: ud.slug,
       nameHe: ud.name,

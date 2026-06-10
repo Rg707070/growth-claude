@@ -432,7 +432,7 @@ function HabitBlock({ habit, isCompleted, isToday, isActive, onToggle }: {
 }
 
 // ─── ScheduleTable ────────────────────────────────────────────────────────────
-function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, checked, onSelectDay, onEdit, onAdd, onToggle, onToggleHabit }: {
+function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, checked, onSelectDay, onEdit, onAdd, onToggle, onToggleHabit, confirmReset, onConfirmReset, onCancelReset, onResetDay, resetting }: {
   items: ScheduleItem[]
   habits: ScheduledHabit[]
   completedHabitIds: Set<string>
@@ -444,8 +444,14 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
   onAdd: (hour: number | null) => void
   onToggle: (time: string) => void
   onToggleHabit: (habitId: string) => Promise<void>
+  confirmReset: boolean
+  onConfirmReset: () => void
+  onCancelReset: () => void
+  onResetDay: () => void
+  resetting: boolean
 }) {
   const { isDark }  = useTheme()
+  const { isRTL }   = useLang()
   const scrollRef   = useRef<HTMLDivElement>(null)
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -616,16 +622,47 @@ function ScheduleTable({ items, habits, completedHabitIds, dayOfWeek, isToday, c
         })}
       </div>
 
-      {/* Add button */}
+      {/* Add button + Reset button */}
       <div className="px-3 py-2 border-t flex-shrink-0" style={{ borderColor: w(0.06, isDark) }} dir="rtl">
-        <button
-          onClick={() => onAdd(null)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95"
-          style={{ background: 'rgba(34,211,238,0.08)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.20)' }}
-        >
-          <Plus size={13} />
-          הוסף ל{DAY_NAMES_HE[dayOfWeek]}
-        </button>
+        <div className="flex items-center gap-2 justify-center">
+          <button
+            onClick={() => onAdd(null)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95"
+            style={{ background: 'rgba(34,211,238,0.08)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.20)' }}
+          >
+            <Plus size={13} />
+            הוסף ל{DAY_NAMES_HE[dayOfWeek]}
+          </button>
+          {items.length > 0 && (
+            !confirmReset ? (
+              <button
+                onClick={onConfirmReset}
+                className="text-sm flex items-center gap-1.5 px-4 py-2 rounded-2xl font-medium transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.85)', border: '1px solid rgba(239,68,68,0.25)' }}
+              >
+                ↺ {isRTL ? 'איפוס יום' : 'Reset day'}
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={onCancelReset}
+                  className="text-xs px-2.5 py-1.5 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
+                >
+                  {isRTL ? 'ביטול' : 'Cancel'}
+                </button>
+                <button
+                  onClick={onResetDay}
+                  disabled={resetting}
+                  className="text-xs px-2.5 py-1.5 rounded-xl font-semibold disabled:opacity-50"
+                  style={{ background: 'rgba(239,68,68,0.6)', color: '#fff' }}
+                >
+                  {resetting ? '...' : isRTL ? 'אפס' : 'Reset'}
+                </button>
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   )
@@ -1338,9 +1375,19 @@ function AllItemsOverview({
   }).filter(c => c.habits.length > 0 || c.tasks.length > 0 || c.goals.length > 0 || c.events.length > 0)
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col" style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
+    <div className="pt-3 mt-1" style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
+      {/* Section header */}
+      <div className="max-w-2xl mx-auto w-full px-4 flex items-baseline gap-2 flex-wrap" dir={isRTL ? 'rtl' : 'ltr'}>
+        <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>
+          {isRTL ? 'כל הפעילות שלי' : 'All my activity'}
+        </span>
+        <span className="text-[11px]" style={{ color: w(0.4, isDark) }}>
+          {isRTL ? 'משימות · אירועים · הרגלים · יעדים' : 'tasks · events · habits · goals'}
+        </span>
+      </div>
+
       {/* Period filter */}
-      <div className="flex-shrink-0 max-w-2xl mx-auto w-full px-4 py-2">
+      <div className="max-w-2xl mx-auto w-full px-4 py-2">
         <div className="flex gap-1 p-1 rounded-2xl" style={{ background: w(0.05, isDark) }}>
           {([
             { id: 'day'   as const, label: isRTL ? 'היום' : 'Today' },
@@ -1364,7 +1411,7 @@ function AllItemsOverview({
       </div>
 
       {/* Domain cards */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 max-w-2xl mx-auto w-full">
+      <div className="px-4 pb-4 max-w-2xl mx-auto w-full">
         {cards.length === 0 ? (
           <div className="flex items-center justify-center h-32">
             <p className="text-sm" style={{ color: w(0.3, isDark) }}>{t('noItemsForPeriod')}</p>
@@ -1506,6 +1553,8 @@ export function SchedulePageClient({
   const [checked,  setChecked]  = useState<Set<string>>(new Set(todayChecks.map(c => c.time)))
   const [completedHabitIds, setCompletedHabitIds] = useState<Set<string>>(new Set(todayCompletedHabitIds))
   const router = useRouter()
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [resetting, setResetting] = useState(false)
 
   const isToday = day === todayDay
   const items   = (userItems[day] ?? []).sort((a, b) => toMin(a.time) - toMin(b.time))
@@ -1655,6 +1704,19 @@ export function SchedulePageClient({
       })
       toast(t('saveFailed'), 'error')
     }
+  }
+
+
+  const handleResetDay = async () => {
+    setResetting(true)
+    const sb = createClient()
+    const ids = items.map(i => i.id)
+    if (ids.length > 0) {
+      await sb.from('user_schedule').delete().eq('user_id', userId).in('id', ids)
+    }
+    setResetting(false)
+    setConfirmReset(false)
+    router.refresh()
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -1818,16 +1880,34 @@ export function SchedulePageClient({
               onAdd={h => setAddHour(h ?? null)}
               onToggle={toggleCheck}
               onToggleHabit={toggleHabit}
+              confirmReset={confirmReset}
+              onConfirmReset={() => setConfirmReset(true)}
+              onCancelReset={() => setConfirmReset(false)}
+              onResetDay={handleResetDay}
+              resetting={resetting}
             />
           </div>
         </>
       )}
 
-      {/* Habit calendar view */}
+      {/* Habit calendar view + aggregated activity digest */}
       {view === 'habit-calendar' && (
-        <div className="flex-1 min-h-0 overflow-y-auto max-w-2xl mx-auto w-full px-4 pb-24"
+        <div className="flex-1 min-h-0 overflow-y-auto max-w-2xl mx-auto w-full pb-24"
           style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
-          <CalendarClient habits={allHabits} logs={calendarLogs} />
+          <div className="px-4">
+            <CalendarClient habits={allHabits} logs={calendarLogs} embedded />
+          </div>
+          <AllItemsOverview
+            userId={userId}
+            allHabits={allHabits}
+            completedHabitIds={completedHabitIds}
+            onToggleHabit={toggleHabit}
+            domainTasks={domainTasks}
+            domainGoals={domainGoals}
+            familyTasks={familyTasks}
+            familyEvents={familyEvents}
+            isDark={isDark}
+          />
         </div>
       )}
 

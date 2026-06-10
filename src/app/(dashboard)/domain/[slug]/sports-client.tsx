@@ -9,7 +9,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
-import { HabitRow } from '@/components/habit-row'
+import { DomainHabitsTab } from '@/components/domain-habits-tab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -114,7 +114,7 @@ export function SportsClient({
         </div>
 
         {tab === 'habits' && (
-          <HabitsTab
+          <DomainHabitsTab
             habits={habits}
             completedSet={completedSet}
             domain={domain}
@@ -184,86 +184,6 @@ function SchemaBanner({ isRTL }: { isRTL: boolean }) {
           : 'Run supabase-sports-schema.sql in Supabase SQL editor'}
       </p>
     </Card>
-  )
-}
-
-// ── Habits Tab ─────────────────────────────────────────────────
-
-function HabitsTab({ habits, completedSet, domain, userId, onAdded, isRTL }: {
-  habits: Habit[]
-  completedSet: Set<string>
-  domain: Domain
-  userId: string
-  onAdded: (h: Habit) => void
-  isRTL: boolean
-}) {
-  const router = useRouter()
-  const [adding, setAdding] = useState(false)
-  const [name, setName] = useState('')
-  const [time, setTime] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  const add = async () => {
-    if (!name.trim() || saving) return
-    setSaving(true)
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('habits')
-        .insert({ user_id: userId, domain_slug: domain.slug, name: name.trim(), frequency: 'daily', schedule_time: time || null })
-        .select().single()
-      if (!error && data) {
-        onAdded(data as Habit)
-        setName(''); setTime(''); setAdding(false)
-        router.refresh()
-      }
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      {habits.length === 0 && !adding && (
-        <p className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {isRTL ? 'אין הרגלים — הוסף ראשון' : 'No habits yet'}
-        </p>
-      )}
-      {habits.map((h) => (
-        <HabitRow key={h.id} habit={h} isCompleted={completedSet.has(h.id)} />
-      ))}
-      {adding ? (
-        <div className="flex gap-2">
-          <Input
-            autoFocus value={name} onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && add()}
-            placeholder={isRTL ? 'שם ההרגל' : 'Habit name'}
-            className="rounded-xl"
-            style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
-          />
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
-            className="rounded-xl px-2 text-sm w-28 flex-shrink-0"
-            style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
-          />
-          <Button onClick={add} disabled={saving || !name.trim()} className="rounded-xl flex-shrink-0"
-            style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-            {isRTL ? 'שמור' : 'Save'}
-          </Button>
-          <button onClick={() => { setAdding(false); setName(''); setTime('') }}
-            className="p-2 rounded-xl"
-            style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
-            <X size={18} />
-          </button>
-        </div>
-      ) : (
-        <button onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed"
-          style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
-          <Plus size={18} />
-          <span className="text-sm">{isRTL ? 'הוסף הרגל' : 'Add Habit'}</span>
-        </button>
-      )}
-    </div>
   )
 }
 
