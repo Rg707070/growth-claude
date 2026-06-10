@@ -39,7 +39,6 @@ interface Props {
   userId: string
   tasks: DomainTask[]
   goals: DomainGoal[]
-  schemaReady: boolean
 }
 
 export function DomainEcosystemClient({
@@ -49,7 +48,6 @@ export function DomainEcosystemClient({
   userId,
   tasks,
   goals,
-  schemaReady,
 }: Props) {
   const router = useRouter()
   const { t, isRTL } = useLang()
@@ -101,8 +99,6 @@ export function DomainEcosystemClient({
             </span>
           </ProgressRing>
         </div>
-
-        {!schemaReady && <MigrationBanner isRTL={isRTL} />}
 
         {/* Stats strip */}
         <div className="grid grid-cols-3 gap-2">
@@ -196,20 +192,6 @@ export function DomainEcosystemClient({
 
 // ── Shared primitives ──────────────────────────────────────────
 
-function MigrationBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL
-          ? 'הרץ את supabase-domain-ecosystem.sql ב-Supabase כדי להפעיל את התכונות.'
-          : 'Run supabase-domain-ecosystem.sql in your Supabase SQL editor to enable these features.'}
-      </p>
-    </Card>
-  )
-}
 
 function StatTile({
   color, icon, label, value,

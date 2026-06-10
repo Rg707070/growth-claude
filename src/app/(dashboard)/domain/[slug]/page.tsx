@@ -94,7 +94,6 @@ export default async function DomainPage({ params }: Props) {
     const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
     const transactions = (txRes.data as FinanceTransaction[]) ?? []
     const wishlist = (wishlistRes.data as FinanceWishlistItem[]) ?? []
-    const schemaReady = !txRes.error && !wishlistRes.error
     return (
       <FinanceClient
         domain={domain!}
@@ -103,7 +102,6 @@ export default async function DomainPage({ params }: Props) {
         userId={user.id}
         transactions={transactions}
         wishlist={wishlist}
-        schemaReady={schemaReady}
       />
     )
   }
@@ -122,7 +120,6 @@ export default async function DomainPage({ params }: Props) {
     const contacts = (contactsRes.data as FriendContact[]) ?? []
     const interactions = (interactionsRes.data as FriendInteraction[]) ?? []
     const reminders = (remindersRes.data as FriendReminder[]) ?? []
-    const schemaReady = !contactsRes.error && !interactionsRes.error && !remindersRes.error
     return (
       <FriendsClient
         domain={domain!}
@@ -132,7 +129,6 @@ export default async function DomainPage({ params }: Props) {
         contacts={contacts}
         interactions={interactions}
         reminders={reminders}
-        schemaReady={schemaReady}
       />
     )
   }
@@ -151,7 +147,6 @@ export default async function DomainPage({ params }: Props) {
     const workoutLogs = (workoutRes.data as SportWorkoutLog[]) ?? []
     const foodRestrictions = (foodRes.data as SportFoodRestriction[]) ?? []
     const challenges = (challengesRes.data as SportChallenge[]) ?? []
-    const schemaReady = !workoutRes.error && !foodRes.error && !challengesRes.error
     return (
       <SportsClient
         domain={domain!}
@@ -161,7 +156,6 @@ export default async function DomainPage({ params }: Props) {
         workoutLogs={workoutLogs}
         foodRestrictions={foodRestrictions}
         challenges={challenges}
-        schemaReady={schemaReady}
       />
     )
   }
@@ -178,7 +172,6 @@ export default async function DomainPage({ params }: Props) {
     const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
     const books = (booksRes.data as SecularBook[]) ?? []
     const projects = (projectsRes.data as SecularProject[]) ?? []
-    const schemaReady = !booksRes.error && !projectsRes.error
     return (
       <SecularClient
         domain={domain!}
@@ -187,7 +180,6 @@ export default async function DomainPage({ params }: Props) {
         userId={user.id}
         books={books}
         projects={projects}
-        schemaReady={schemaReady}
       />
     )
   }
@@ -204,7 +196,6 @@ export default async function DomainPage({ params }: Props) {
     const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
     const practiceLogs = (practiceRes.data as MusicPracticeLog[]) ?? []
     const songs = (songsRes.data as MusicSong[]) ?? []
-    const schemaReady = !practiceRes.error && !songsRes.error
     return (
       <MusicClient
         domain={domain!}
@@ -213,7 +204,6 @@ export default async function DomainPage({ params }: Props) {
         userId={user.id}
         practiceLogs={practiceLogs}
         songs={songs}
-        schemaReady={schemaReady}
       />
     )
   }
@@ -252,8 +242,6 @@ export default async function DomainPage({ params }: Props) {
   const completedIds = todayLogs.map((l) => l.habit_id)
   const tasks = (tasksRes.data as DomainTask[]) ?? []
   const goals = (goalsRes.data as DomainGoal[]) ?? []
-  const schemaReady = !tasksRes.error && !goalsRes.error
-
   return (
     <DomainEcosystemClient
       domain={domain!}
@@ -262,7 +250,6 @@ export default async function DomainPage({ params }: Props) {
       userId={user.id}
       tasks={tasks}
       goals={goals}
-      schemaReady={schemaReady}
     />
   )
 }

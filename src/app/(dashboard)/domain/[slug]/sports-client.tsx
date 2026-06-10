@@ -38,13 +38,12 @@ interface Props {
   workoutLogs: SportWorkoutLog[]
   foodRestrictions: SportFoodRestriction[]
   challenges: SportChallenge[]
-  schemaReady: boolean
 }
 
 export function SportsClient({
   domain, habits: initialHabits, completedIds, userId,
   workoutLogs: initialLogs, foodRestrictions: initialFood,
-  challenges: initialChallenges, schemaReady,
+  challenges: initialChallenges,
 }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
@@ -91,8 +90,6 @@ export function SportsClient({
             </p>
           </div>
         </div>
-
-        {!schemaReady && <SchemaBanner isRTL={isRTL} />}
 
         {/* Tab bar */}
         <div className="grid grid-cols-4 gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
@@ -172,20 +169,6 @@ export function SportsClient({
 
 // ── Shared ─────────────────────────────────────────────────────
 
-function SchemaBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL
-          ? 'הרץ את supabase-sports-schema.sql ב-Supabase'
-          : 'Run supabase-sports-schema.sql in Supabase SQL editor'}
-      </p>
-    </Card>
-  )
-}
 
 // ── Challenges Tab ─────────────────────────────────────────────
 
