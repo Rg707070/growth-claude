@@ -216,7 +216,7 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {DOMAINS.map((d) => {
-                  const active = domains.some((dom) => dom.slug === d.slug)
+                  const active = hasCustomDomains && domains.some((dom) => dom.slug === d.slug)
                   return (
                     <button
                       key={d.slug}
