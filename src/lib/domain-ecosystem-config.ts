@@ -150,6 +150,10 @@ const ECOSYSTEM_CONFIGS: Record<string, EcosystemConfig> = {
 const FALLBACK_CONFIG: EcosystemConfig = {
   taskCategories: [
     { value: 'task', he: 'משימה', en: 'Task', icon: '📌' },
+    { value: 'learning', he: 'למידה', en: 'Learning', icon: '📖' },
+    { value: 'practice', he: 'תרגול', en: 'Practice', icon: '💪' },
+    { value: 'planning', he: 'תכנון', en: 'Planning', icon: '📋' },
+    { value: 'shopping', he: 'קניות', en: 'Shopping', icon: '🛒' },
     { value: 'other', he: 'אחר', en: 'Other', icon: '✨' },
   ],
   goals: {
@@ -157,10 +161,13 @@ const FALLBACK_CONFIG: EcosystemConfig = {
     tabEn: 'Goals',
     addHe: 'הוסף יעד',
     addEn: 'Add Goal',
-    emptyHe: 'אין יעדים',
-    emptyEn: 'No goals yet',
+    emptyHe: 'אין יעדים — הגדר מטרה ראשונה',
+    emptyEn: 'No goals yet — set your first target',
     types: [
-      { value: 'goal', he: 'יעד', en: 'Goal', icon: '🎯' },
+      { value: 'milestone', he: 'אבן דרך', en: 'Milestone', icon: '🏆' },
+      { value: 'habit', he: 'בניית הרגל', en: 'Build Habit', icon: '🔄' },
+      { value: 'skill', he: 'מיומנות', en: 'Skill', icon: '🎯' },
+      { value: 'project', he: 'פרויקט', en: 'Project', icon: '💡' },
       { value: 'other', he: 'אחר', en: 'Other', icon: '✨' },
     ],
   },
