@@ -51,7 +51,7 @@ export function DomainsClient({ userId, domains, hasCustomDomains, customDomainS
     if (!newName.trim() || saving) return
     setSaving(true)
     await ensureMigrated()
-    const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `domain-${Date.now()}`
+    const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-֐-׿]/g, '') || `domain-${Date.now()}`
     const supabase = createClient()
     const { error } = await supabase.from('user_domains').insert({
       user_id: userId,
