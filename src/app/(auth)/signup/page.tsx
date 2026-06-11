@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { LangToggle } from '@/components/lang-toggle'
+import { GrowthLogo } from '@/components/growth-logo'
 
 export default function SignupPage() {
   const { t, isRTL } = useLang()
@@ -59,7 +60,8 @@ export default function SignupPage() {
       <div className="absolute top-5 end-5 z-10"><LangToggle /></div>
 
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-1">
+        <div className="flex flex-col items-center text-center gap-3">
+          <GrowthLogo variant="icon" size={52} />
           <h1 className="text-3xl font-black brand-hero-text">GROWTH</h1>
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             {isRTL ? 'יצירת חשבון חדש' : 'Create your account'}
