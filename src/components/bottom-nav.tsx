@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Grid3X3, CalendarDays, Settings, NotebookPen, BookOpen, ListChecks, Plus, X, type LucideIcon } from 'lucide-react'
+import { Home, Grid3X3, CalendarDays, Settings, NotebookPen, ListChecks, Plus, X, type LucideIcon } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -35,7 +35,6 @@ const DEFAULT_ITEMS: NavItem[] = [
   { id: 'dashboard', icon: Home,         href: '/dashboard', labelHe: 'בית',      labelEn: 'Home'     },
   { id: 'domains',   icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',   labelEn: 'Domains'  },
   { id: 'lists',     icon: ListChecks,   href: '/lists',     labelHe: 'רשימות',   labelEn: 'Lists'    },
-  { id: 'reading',   icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',    labelEn: 'Books'    },
   { id: 'journal',   icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',     labelEn: 'Journal'  },
   { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',     labelEn: 'Schedule' },
   { id: 'settings',  icon: Settings,     href: '/settings',  labelHe: 'הגדרות',   labelEn: 'Settings' },

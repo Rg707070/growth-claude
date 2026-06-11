@@ -6,20 +6,23 @@ import { useLang } from '@/lib/lang'
 import { WritingTab } from './writing-tab'
 import { InsightsTab } from './insights-tab'
 import { AlbumTab } from './album-tab'
-import type { DocMeta, DomainEntry, PhotoEntry } from './page'
+import { ListsClient } from '../lists/lists-client'
+import type { DocMeta, DomainEntry, PhotoEntry, NoteList, QuickNote } from './page'
 
-type Tab = 'writing' | 'insights' | 'album'
+type Tab = 'writing' | 'insights' | 'album' | 'lists'
 
-const TABS: Tab[] = ['writing', 'insights', 'album']
+const TABS: Tab[] = ['writing', 'insights', 'album', 'lists']
 
 interface JournalClientProps {
   userId: string
   documents: DocMeta[]
   domainEntries: DomainEntry[]
   photos: PhotoEntry[]
+  initialLists: NoteList[]
+  initialNotes: QuickNote[]
 }
 
-export function JournalClient({ userId, documents, domainEntries, photos }: JournalClientProps) {
+export function JournalClient({ userId, documents, domainEntries, photos, initialLists, initialNotes }: JournalClientProps) {
   const { isRTL } = useLang()
   const searchParams = useSearchParams()
   const paramTab = searchParams.get('tab') as Tab | null
@@ -30,6 +33,7 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
     { id: 'writing', labelHe: 'כתיבה', labelEn: 'Writing' },
     { id: 'insights', labelHe: 'הארות', labelEn: 'Insights' },
     { id: 'album', labelHe: 'אלבום', labelEn: 'Album' },
+    { id: 'lists', labelHe: 'רשימות', labelEn: 'Lists' },
   ]
 
   return (
@@ -67,6 +71,7 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
         {tab === 'writing' && <WritingTab userId={userId} initialDocs={documents} initialDocId={initialDocId} />}
         {tab === 'insights' && <InsightsTab entries={domainEntries} />}
         {tab === 'album' && <AlbumTab userId={userId} initialPhotos={photos} />}
+        {tab === 'lists' && <ListsClient initialLists={initialLists} initialNotes={initialNotes} />}
       </div>
     </div>
   )

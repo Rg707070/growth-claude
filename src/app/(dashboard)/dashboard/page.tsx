@@ -147,7 +147,6 @@ export default async function DashboardPage() {
       weeklyActivity={weeklyActivity}
       domainStats={domainStats}
       overallStreak={overallStreak}
-      hasCustomDomains={rawUserDomains.length > 0}
     />
   )
 }
