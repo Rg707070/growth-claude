@@ -8,7 +8,6 @@ import {
   Settings,
   Plus,
   X,
-  BookOpen,
   NotebookPen,
   LogOut,
   Sun,
@@ -24,12 +23,11 @@ import { GrowthLogo } from '@/components/growth-logo'
 import type { Profile } from '@/types'
 
 const navItems = [
-  { icon: Home,         href: '/dashboard', labelHe: 'בית',     labelEn: 'Home'     },
-  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',  labelEn: 'Domains'  },
-  { icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',   labelEn: 'Books'    },
-  { icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',    labelEn: 'Journal'  },
-  { icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',    labelEn: 'Schedule' },
-  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',  labelEn: 'Settings' },
+  { icon: Home,         href: '/dashboard', labelHe: 'בית',      labelEn: 'Home'     },
+  { icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',   labelEn: 'Domains'  },
+  { icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',     labelEn: 'Journal'  },
+  { icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',     labelEn: 'Schedule' },
+  { icon: Settings,     href: '/settings',  labelHe: 'הגדרות',   labelEn: 'Settings' },
 ]
 
 interface SidebarProps {

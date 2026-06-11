@@ -22,7 +22,6 @@ interface DashboardClientProps {
   weeklyActivity: { date: string; count: number }[]
   domainStats: DomainStats[]
   overallStreak: number
-  hasCustomDomains: boolean
 }
 
 function getGreeting(name: string | null, isRTL: boolean) {
@@ -47,11 +46,12 @@ export function DashboardClient({
   weeklyActivity,
   domainStats,
   overallStreak,
-  hasCustomDomains,
 }: DashboardClientProps) {
-  const { t, isRTL } = useLang()
+  const { isRTL } = useLang()
   const router = useRouter()
   useHabitReminders(habits)
+
+  const [showDone, setShowDone] = useState(false)
 
   const completedSet = new Set(completedIds)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')
@@ -207,86 +207,6 @@ export function DashboardClient({
               </div>
             )}
 
-            {/* DOMAIN GRID */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2
-                  className="text-xs font-semibold uppercase tracking-wider"
-                  style={{ color: 'var(--muted-foreground)' }}
-                >
-                  {t('allDomains')}
-                </h2>
-                {hasCustomDomains && (
-                  <button
-                    onClick={() => router.push('/domains')}
-                    className="text-xs font-semibold transition-colors"
-                    style={{ color: 'var(--primary)' }}
-                  >
-                    {isRTL ? '+ ערוך' : '+ Edit'}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {domainsToShow.map((dp) => {
-                  const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }
-                  const isFailing = stat.failingDays >= 3
-                  const doneToday = dp.completedToday === dp.totalHabits && dp.totalHabits > 0
-
-                  return (
-                    <button
-                      key={dp.domain.slug}
-                      onClick={() => router.push(`/domain/${dp.domain.slug}`)}
-                      className="relative flex flex-col p-3.5 rounded-2xl text-start transition-all hover:brightness-110 active:scale-[0.97] overflow-hidden"
-                      style={{
-                        background: 'var(--c-card)',
-                        border: isFailing
-                          ? '1px solid rgba(249,115,22,0.4)'
-                          : doneToday
-                          ? `1px solid ${dp.domain.color}44`
-                          : '1px solid var(--c-card-border)',
-                        boxShadow: doneToday ? `0 0 14px ${dp.domain.glowColor}` : undefined,
-                      }}
-                    >
-                      <div
-                        className="absolute top-0 start-0 end-0 h-0.5 rounded-t-2xl"
-                        style={{ background: isFailing ? '#F97316' : dp.domain.color }}
-                      />
-
-                      <div className="text-2xl mb-2 mt-0.5">{dp.domain.icon}</div>
-                      <p
-                        className="text-[11px] font-semibold leading-tight mb-3"
-                        style={{ color: 'var(--foreground)' }}
-                      >
-                        {isRTL ? dp.domain.nameHe : dp.domain.nameEn}
-                      </p>
-
-                      <div className="mt-auto flex items-center justify-between w-full">
-                        {isFailing ? (
-                          <span className="text-[10px] font-semibold" style={{ color: '#F97316' }}>
-                            ⚠️ {stat.failingDays}
-                          </span>
-                        ) : stat.streak > 0 ? (
-                          <span className="text-[10px] font-semibold" style={{ color: '#FB923C' }}>
-                            🔥 {stat.streak}
-                          </span>
-                        ) : (
-                          <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>—</span>
-                        )}
-
-                        {doneToday ? (
-                          <span className="text-[11px] font-bold" style={{ color: dp.domain.color }}>✓</span>
-                        ) : (
-                          <span className="text-[10px] tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-                            {dp.completedToday}/{dp.totalHabits}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
             {/* TODAY'S HABITS */}
             <div className="space-y-4">
               {pendingHabits.length > 0 && (
@@ -306,45 +226,28 @@ export function DashboardClient({
               )}
 
               {doneHabits.length > 0 && (
-                <div className="opacity-55">
-                  <h2
-                    className="text-xs font-semibold uppercase tracking-wider mb-3"
+                <div>
+                  <button
+                    onClick={() => setShowDone((v) => !v)}
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3 transition-opacity hover:opacity-80"
                     style={{ color: 'var(--muted-foreground)' }}
                   >
-                    {isRTL ? `הושלם ✓  (${doneHabits.length})` : `Done ✓  (${doneHabits.length})`}
-                  </h2>
-                  <div className="space-y-2">
-                    {doneHabits.map((habit) => (
-                      <HabitRow key={habit.id} habit={habit} isCompleted={true} />
-                    ))}
-                  </div>
+                    <span>{isRTL ? `הושלם ✓  (${doneHabits.length})` : `Done ✓  (${doneHabits.length})`}</span>
+                    <span style={{ fontSize: 10 }}>{showDone ? '▲' : '▼'}</span>
+                  </button>
+                  {showDone && (
+                    <div className="space-y-2 opacity-55">
+                      {doneHabits.map((habit) => (
+                        <HabitRow key={habit.id} habit={habit} isCompleted={true} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {todayHabits.length === 0 && <EmptyHabits />}
             </div>
 
-            {/* Mobile/tablet-only: schedule + journal + chart */}
-            <div className="space-y-6 lg:hidden">
-              <ScheduleToday />
-              <button
-                onClick={() => router.push('/journal')}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
-                style={{ background: 'var(--c-card)', border: '1px solid var(--c-card-border)' }}
-              >
-                <span className="text-2xl">✍️</span>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                    {isRTL ? 'יומן' : 'Journal'}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                    {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
-                  </p>
-                </div>
-                <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
-              </button>
-              <WeeklyChart days={weeklyActivity} />
-            </div>
           </div>
 
           {/* ── SECONDARY COLUMN (desktop only, lg+) ── */}
@@ -362,7 +265,7 @@ export function DashboardClient({
                   {isRTL ? 'יומן' : 'Journal'}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
+                  {isRTL ? 'כתיבה · הארות · אלבום · רשימות' : 'Writing · Insights · Album · Lists'}
                 </p>
               </div>
               <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
