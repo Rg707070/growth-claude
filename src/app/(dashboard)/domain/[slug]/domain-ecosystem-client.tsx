@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import {
-  createDomainTask, updateDomainTaskStatus, deleteDomainTask,
+  createDomainTask, updateDomainTaskStatus, deleteDomainTask, scheduleDomainTask,
   createDomainGoal, updateDomainGoalStatus, deleteDomainGoal,
 } from './ecosystem-actions'
 import {
@@ -27,7 +27,7 @@ import type { EcosystemCategory } from '@/lib/domain-ecosystem-config'
 import type { Domain, Habit } from '@/types'
 import type {
   DomainTask, DomainGoal,
-  DomainTaskUrgency, DomainGoalStatus,
+  DomainTaskUrgency, DomainTaskFrequency, DomainGoalStatus,
 } from '@/types/ecosystem'
 
 type Tab = 'habits' | 'tasks' | 'goals' | 'board'
@@ -249,6 +249,12 @@ function TabButton({
 
 // ── Tasks Tab ──────────────────────────────────────────────────
 
+const FREQ_LABELS = {
+  weekly:  { he: 'שבועי',  en: 'Weekly'  },
+  monthly: { he: 'חודשי',  en: 'Monthly' },
+  yearly:  { he: 'שנתי',   en: 'Yearly'  },
+} as const
+
 interface TasksTabProps {
   tasks: DomainTask[]
   slug: string
@@ -258,16 +264,18 @@ interface TasksTabProps {
 }
 
 function TasksTab({ tasks, slug, categories, accentColor, isRTL }: TasksTabProps) {
+  const [freqFilter, setFreqFilter] = useState<DomainTaskFrequency>('weekly')
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState(categories[0]?.value ?? 'other')
   const [urgency, setUrgency] = useState<DomainTaskUrgency>('normal')
+  const [frequency, setFrequency] = useState<DomainTaskFrequency>('weekly')
   const [pending, startTransition] = useTransition()
 
   const submit = () => {
     if (!title.trim()) return
     startTransition(async () => {
-      await createDomainTask(slug, { title: title.trim(), category, urgency })
+      await createDomainTask(slug, { title: title.trim(), category, urgency, frequency })
       setTitle('')
       setCategory(categories[0]?.value ?? 'other')
       setUrgency('normal')
@@ -275,11 +283,43 @@ function TasksTab({ tasks, slug, categories, accentColor, isRTL }: TasksTabProps
     })
   }
 
-  const open = tasks.filter((tk) => tk.status !== 'done')
-  const done = tasks.filter((tk) => tk.status === 'done')
+  const filtered = tasks.filter((tk) => (tk.frequency ?? 'weekly') === freqFilter)
+  const open = filtered.filter((tk) => tk.status !== 'done')
+  const done = filtered.filter((tk) => tk.status === 'done')
+
+  const counts: Record<DomainTaskFrequency, number> = {
+    weekly:  tasks.filter((t) => (t.frequency ?? 'weekly') === 'weekly'  && t.status !== 'done').length,
+    monthly: tasks.filter((t) => (t.frequency ?? 'weekly') === 'monthly' && t.status !== 'done').length,
+    yearly:  tasks.filter((t) => (t.frequency ?? 'weekly') === 'yearly'  && t.status !== 'done').length,
+  }
 
   return (
     <div className="space-y-3">
+      {/* Frequency sub-tabs */}
+      <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+        {(['weekly', 'monthly', 'yearly'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFreqFilter(f)}
+            className="flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+            style={{
+              background: freqFilter === f ? accentColor : 'transparent',
+              color: freqFilter === f ? 'white' : 'var(--muted-foreground)',
+            }}
+          >
+            {isRTL ? FREQ_LABELS[f].he : FREQ_LABELS[f].en}
+            {counts[f] > 0 && (
+              <span
+                className="rounded-full px-1.5 py-0 text-[9px] font-bold"
+                style={{ background: freqFilter === f ? 'rgba(255,255,255,0.25)' : `${accentColor}33`, color: freqFilter === f ? 'white' : accentColor }}
+              >
+                {counts[f]}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {open.length === 0 && !adding && (
         <p className="text-center py-8 text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {isRTL ? 'אין משימות פתוחות' : 'No open tasks'}
@@ -335,6 +375,23 @@ function TasksTab({ tasks, slug, categories, accentColor, isRTL }: TasksTabProps
               <option value="critical">{isRTL ? 'קריטי' : 'Critical'}</option>
             </select>
           </div>
+          {/* Frequency selector */}
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+            {(['weekly', 'monthly', 'yearly'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFrequency(f)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{
+                  background: frequency === f ? accentColor : 'transparent',
+                  color: frequency === f ? 'white' : 'var(--muted-foreground)',
+                }}
+              >
+                {isRTL ? FREQ_LABELS[f].he : FREQ_LABELS[f].en}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-2">
             <Button
               onClick={submit}
@@ -355,7 +412,7 @@ function TasksTab({ tasks, slug, categories, accentColor, isRTL }: TasksTabProps
         </Card>
       ) : (
         <button
-          onClick={() => setAdding(true)}
+          onClick={() => { setFrequency(freqFilter); setAdding(true) }}
           className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all"
           style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
         >
@@ -371,62 +428,117 @@ function TaskCard({
   task, slug, categories, isRTL,
 }: { task: DomainTask; slug: string; categories: EcosystemCategory[]; isRTL: boolean }) {
   const [pending, startTransition] = useTransition()
+  const [scheduling, setScheduling] = useState(false)
+  const [dateInput, setDateInput] = useState(task.due_date ?? '')
   const done = task.status === 'done'
   const urgencyColor = URGENCY_COLORS[task.urgency] ?? '#6b7280'
   const cat = categories.find((c) => c.value === task.category)
 
-  return (
-    <Card className="p-3 flex items-center gap-3" style={{ opacity: done ? 0.55 : 1 }}>
-      <button
-        onClick={() => startTransition(async () => {
-          await updateDomainTaskStatus(task.id, slug, done ? 'pending' : 'done')
-        })}
-        disabled={pending}
-        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-        style={{ background: done ? urgencyColor : 'transparent', border: `2px solid ${urgencyColor}` }}
-      >
-        {done && <Check size={13} color="white" />}
-      </button>
+  const saveDate = (val: string) => {
+    startTransition(async () => {
+      await scheduleDomainTask(task.id, slug, val || null)
+      setScheduling(false)
+    })
+  }
 
-      <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium truncate"
-          style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}
+  return (
+    <Card className="p-3 space-y-2" style={{ opacity: done ? 0.55 : 1 }}>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => startTransition(async () => {
+            await updateDomainTaskStatus(task.id, slug, done ? 'pending' : 'done')
+          })}
+          disabled={pending}
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+          style={{ background: done ? urgencyColor : 'transparent', border: `2px solid ${urgencyColor}` }}
         >
-          {task.title}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-          {cat && (
-            <span className="flex items-center gap-1">
-              <Tag size={10} />
-              {cat.icon} {isRTL ? cat.he : cat.en}
-            </span>
-          )}
-          {task.due_date && (
-            <span className="flex items-center gap-1">
-              <Calendar size={10} />
-              {task.due_date}
-            </span>
-          )}
-          <span
-            className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase"
-            style={{ background: `${urgencyColor}22`, color: urgencyColor }}
+          {done && <Check size={13} color="white" />}
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-sm font-medium truncate"
+            style={{ color: 'var(--foreground)', textDecoration: done ? 'line-through' : 'none' }}
           >
-            {isRTL
-              ? { low: 'נמוכה', normal: 'רגילה', high: 'גבוהה', critical: 'קריטי' }[task.urgency]
-              : task.urgency}
-          </span>
+            {task.title}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            {cat && (
+              <span className="flex items-center gap-1">
+                <Tag size={10} />
+                {cat.icon} {isRTL ? cat.he : cat.en}
+              </span>
+            )}
+            <span
+              className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase"
+              style={{ background: `${urgencyColor}22`, color: urgencyColor }}
+            >
+              {isRTL
+                ? { low: 'נמוכה', normal: 'רגילה', high: 'גבוהה', critical: 'קריטי' }[task.urgency]
+                : task.urgency}
+            </span>
+            {task.due_date && (
+              <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--foreground)' }}>
+                <Calendar size={10} />
+                {task.due_date}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => { setDateInput(task.due_date ?? ''); setScheduling((s) => !s) }}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{
+              color: task.due_date ? '#22d3ee' : 'var(--muted-foreground)',
+              background: task.due_date ? 'rgba(34,211,238,0.12)' : 'transparent',
+            }}
+            title={isRTL ? 'שבץ בלוח שנה' : 'Schedule in calendar'}
+          >
+            <Calendar size={14} />
+          </button>
+          <button
+            onClick={() => startTransition(async () => { await deleteDomainTask(task.id, slug) })}
+            disabled={pending}
+            className="p-1.5 rounded-lg flex-shrink-0"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
 
-      <button
-        onClick={() => startTransition(async () => { await deleteDomainTask(task.id, slug) })}
-        disabled={pending}
-        className="p-1.5 rounded-lg flex-shrink-0"
-        style={{ color: 'var(--muted-foreground)' }}
-      >
-        <Trash2 size={14} />
-      </button>
+      {scheduling && (
+        <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+          <Calendar size={14} style={{ color: '#22d3ee', flexShrink: 0 }} />
+          <input
+            type="date"
+            value={dateInput}
+            onChange={(e) => setDateInput(e.target.value)}
+            className="flex-1 rounded-lg px-2 py-1 text-xs"
+            style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+          />
+          <button
+            onClick={() => saveDate(dateInput)}
+            disabled={pending}
+            className="px-3 py-1 rounded-lg text-xs font-semibold"
+            style={{ background: '#22d3ee22', color: '#22d3ee', border: '1px solid #22d3ee44' }}
+          >
+            {isRTL ? 'שמור' : 'Save'}
+          </button>
+          {task.due_date && (
+            <button
+              onClick={() => saveDate('')}
+              disabled={pending}
+              className="px-2 py-1 rounded-lg text-xs"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   )
 }
