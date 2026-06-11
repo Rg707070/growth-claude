@@ -360,8 +360,9 @@ export function BottomNav() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={horizontalListSortingStrategy}>
           <nav
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 md:hidden"
+            className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden"
             style={{
+              bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
               background: 'var(--c-nav)',
               border: `1px solid ${isEditMode ? 'var(--primary)' : 'var(--c-nav-border)'}`,
               backdropFilter: 'blur(24px)',
