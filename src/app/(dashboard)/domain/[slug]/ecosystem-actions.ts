@@ -6,6 +6,7 @@ import type {
   DomainTask,
   DomainTaskStatus,
   DomainTaskUrgency,
+  DomainTaskFrequency,
   DomainGoal,
   DomainGoalStatus,
 } from '@/types/ecosystem'
@@ -24,7 +25,7 @@ async function getUser() {
 
 export async function createDomainTask(
   slug: string,
-  input: { title: string; category?: string; urgency?: DomainTaskUrgency }
+  input: { title: string; category?: string; urgency?: DomainTaskUrgency; frequency?: DomainTaskFrequency }
 ): Promise<DomainTask> {
   const { supabase, user } = await getUser()
   const { data, error } = await supabase
@@ -35,6 +36,7 @@ export async function createDomainTask(
       title: input.title,
       category: input.category ?? 'other',
       urgency: input.urgency ?? 'normal',
+      frequency: input.frequency ?? 'weekly',
     })
     .select()
     .single()
@@ -56,6 +58,23 @@ export async function updateDomainTaskStatus(
     .eq('user_id', user.id)
   if (error) throw error
   revalidatePath(`/domain/${slug}`)
+}
+
+export async function scheduleDomainTask(
+  taskId: string,
+  slug: string,
+  dueDate: string | null
+): Promise<void> {
+  const { supabase, user } = await getUser()
+  const { error } = await supabase
+    .from('domain_tasks')
+    .update({ due_date: dueDate })
+    .eq('id', taskId)
+    .eq('user_id', user.id)
+  if (error) throw error
+  revalidatePath(`/domain/${slug}`)
+  revalidatePath('/calendar')
+  revalidatePath('/schedule')
 }
 
 export async function deleteDomainTask(taskId: string, slug: string): Promise<void> {

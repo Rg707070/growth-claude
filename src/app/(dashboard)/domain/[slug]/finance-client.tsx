@@ -51,12 +51,11 @@ interface Props {
   userId: string
   transactions: FinanceTransaction[]
   wishlist: FinanceWishlistItem[]
-  schemaReady: boolean
 }
 
 export function FinanceClient({
   domain, habits: initialHabits, completedIds, userId,
-  transactions, wishlist, schemaReady,
+  transactions, wishlist,
 }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
@@ -105,8 +104,6 @@ export function FinanceClient({
             </p>
           </div>
         </div>
-
-        {!schemaReady && <SchemaBanner isRTL={isRTL} />}
 
         {/* Monthly summary */}
         <div className="grid grid-cols-3 gap-2">
@@ -167,20 +164,6 @@ export function FinanceClient({
 
 // ── Shared primitives ──────────────────────────────────────────
 
-function SchemaBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL
-          ? 'הרץ את supabase-finance-schema.sql ב-Supabase'
-          : 'Run supabase-finance-schema.sql in Supabase SQL editor'}
-      </p>
-    </Card>
-  )
-}
 
 function StatTile({ color, icon, label, value }: {
   color: string; icon: React.ReactNode; label: string; value: string

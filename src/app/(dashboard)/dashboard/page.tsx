@@ -80,16 +80,18 @@ export default async function DashboardPage() {
   const completedIds = new Set(todayLogs.map((l) => l.habit_id))
 
   const rawUserDomains = (userDomainsRes.data as UserDomain[]) ?? []
+  const customSlugs = new Set(rawUserDomains.map((ud) => ud.slug))
+  const userMapped: Domain[] = rawUserDomains.map((ud) => ({
+    slug: ud.slug,
+    nameHe: ud.name,
+    nameEn: ud.name,
+    icon: ud.icon,
+    color: ud.color,
+    gradient: '',
+    glowColor: `${ud.color}33`,
+  }))
   const activeDomains: Domain[] = rawUserDomains.length > 0
-    ? rawUserDomains.map((ud) => ({
-        slug: ud.slug,
-        nameHe: ud.name,
-        nameEn: ud.name,
-        icon: ud.icon,
-        color: ud.color,
-        gradient: '',
-        glowColor: `${ud.color}33`,
-      }))
+    ? [...userMapped, ...DOMAINS.filter((d) => !customSlugs.has(d.slug))]
     : DOMAINS
 
   // Use ALL habits (including inactive) so historical logs still map to their domain
@@ -145,7 +147,6 @@ export default async function DashboardPage() {
       weeklyActivity={weeklyActivity}
       domainStats={domainStats}
       overallStreak={overallStreak}
-      hasCustomDomains={rawUserDomains.length > 0}
     />
   )
 }

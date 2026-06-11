@@ -43,13 +43,12 @@ interface Props {
   contacts: FriendContact[]
   interactions: FriendInteraction[]
   reminders: FriendReminder[]
-  schemaReady: boolean
 }
 
 export function FriendsClient({
   domain, habits: initialHabits, completedIds, userId,
   contacts: initialContacts, interactions: initialInteractions,
-  reminders: initialReminders, schemaReady,
+  reminders: initialReminders,
 }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
@@ -140,8 +139,6 @@ export function FriendsClient({
           </div>
         </div>
 
-        {!schemaReady && <SchemaBanner isRTL={isRTL} />}
-
         {/* Tab bar — hidden inside contact detail */}
         {!selectedContact && (
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
@@ -212,20 +209,6 @@ export function FriendsClient({
 
 // ── Shared primitives ──────────────────────────────────────────
 
-function SchemaBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL
-          ? 'הרץ את supabase-friends-schema.sql ב-Supabase'
-          : 'Run supabase-friends-schema.sql in Supabase SQL editor'}
-      </p>
-    </Card>
-  )
-}
 
 function TabButton({ active, onClick, color, children }: {
   active: boolean; onClick: () => void; color: string; children: React.ReactNode

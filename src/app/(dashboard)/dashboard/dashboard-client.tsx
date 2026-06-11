@@ -22,7 +22,6 @@ interface DashboardClientProps {
   weeklyActivity: { date: string; count: number }[]
   domainStats: DomainStats[]
   overallStreak: number
-  hasCustomDomains: boolean
 }
 
 function getGreeting(name: string | null, isRTL: boolean) {
@@ -47,11 +46,12 @@ export function DashboardClient({
   weeklyActivity,
   domainStats,
   overallStreak,
-  hasCustomDomains,
 }: DashboardClientProps) {
-  const { t, isRTL } = useLang()
+  const { isRTL } = useLang()
   const router = useRouter()
   useHabitReminders(habits)
+
+  const [showDone, setShowDone] = useState(false)
 
   const completedSet = new Set(completedIds)
   const todayHabits = habits.filter((h) => h.frequency === 'daily')
@@ -161,6 +161,70 @@ export function DashboardClient({
               </div>
             </div>
 
+            {/* DOMAIN STRIP */}
+            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {domainProgress.map((dp) => {
+                const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }
+                const isFailing = stat.failingDays >= 3
+                const doneToday = dp.completedToday === dp.totalHabits && dp.totalHabits > 0
+                return (
+                  <button
+                    key={dp.domain.slug}
+                    onClick={() => router.push(`/domain/${dp.domain.slug}`)}
+                    className="flex-shrink-0 flex flex-col items-center gap-1 rounded-2xl py-2.5 transition-all active:scale-90"
+                    style={{
+                      width: 44,
+                      background: doneToday
+                        ? `${dp.domain.color}18`
+                        : isFailing
+                        ? 'rgba(249,115,22,0.08)'
+                        : 'var(--c-card)',
+                      border: doneToday
+                        ? `1px solid ${dp.domain.color}44`
+                        : isFailing
+                        ? '1px solid rgba(249,115,22,0.3)'
+                        : '1px solid var(--c-card-border)',
+                      boxShadow: doneToday ? `0 0 10px ${dp.domain.glowColor}` : undefined,
+                    }}
+                    aria-label={isRTL ? dp.domain.nameHe : dp.domain.nameEn}
+                  >
+                    <span className="text-[17px] leading-none">{dp.domain.icon}</span>
+                    <span
+                      className="text-[9px] font-bold leading-none tabular-nums"
+                      style={{
+                        color: doneToday
+                          ? dp.domain.color
+                          : isFailing
+                          ? '#F97316'
+                          : stat.streak > 0
+                          ? '#FB923C'
+                          : 'var(--muted-foreground)',
+                      }}
+                    >
+                      {doneToday ? '✓' : isFailing ? '⚠' : stat.streak > 0 ? `${stat.streak}🔥` : '·'}
+                    </span>
+                  </button>
+                )
+              })}
+
+              {/* Books shortcut */}
+              <button
+                onClick={() => router.push('/reading')}
+                className="flex-shrink-0 flex flex-col items-center gap-1 rounded-2xl py-2.5 transition-all active:scale-90"
+                style={{
+                  width: 44,
+                  background: 'var(--c-card)',
+                  border: '1px dashed var(--c-card-border)',
+                }}
+                aria-label={isRTL ? 'ספרים' : 'Books'}
+              >
+                <span className="text-[17px] leading-none">📚</span>
+                <span className="text-[9px] font-semibold leading-none" style={{ color: 'var(--muted-foreground)' }}>
+                  {isRTL ? 'ספרים' : 'Books'}
+                </span>
+              </button>
+            </div>
+
             {/* NEEDS ATTENTION */}
             {failingDomains.length > 0 && (
               <div>
@@ -207,86 +271,6 @@ export function DashboardClient({
               </div>
             )}
 
-            {/* DOMAIN GRID */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2
-                  className="text-xs font-semibold uppercase tracking-wider"
-                  style={{ color: 'var(--muted-foreground)' }}
-                >
-                  {t('allDomains')}
-                </h2>
-                {hasCustomDomains && (
-                  <button
-                    onClick={() => router.push('/domains')}
-                    className="text-xs font-semibold transition-colors"
-                    style={{ color: 'var(--primary)' }}
-                  >
-                    {isRTL ? '+ ערוך' : '+ Edit'}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {domainsToShow.map((dp) => {
-                  const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }
-                  const isFailing = stat.failingDays >= 3
-                  const doneToday = dp.completedToday === dp.totalHabits && dp.totalHabits > 0
-
-                  return (
-                    <button
-                      key={dp.domain.slug}
-                      onClick={() => router.push(`/domain/${dp.domain.slug}`)}
-                      className="relative flex flex-col p-3.5 rounded-2xl text-start transition-all hover:brightness-110 active:scale-[0.97] overflow-hidden"
-                      style={{
-                        background: 'var(--c-card)',
-                        border: isFailing
-                          ? '1px solid rgba(249,115,22,0.4)'
-                          : doneToday
-                          ? `1px solid ${dp.domain.color}44`
-                          : '1px solid var(--c-card-border)',
-                        boxShadow: doneToday ? `0 0 14px ${dp.domain.glowColor}` : undefined,
-                      }}
-                    >
-                      <div
-                        className="absolute top-0 start-0 end-0 h-0.5 rounded-t-2xl"
-                        style={{ background: isFailing ? '#F97316' : dp.domain.color }}
-                      />
-
-                      <div className="text-2xl mb-2 mt-0.5">{dp.domain.icon}</div>
-                      <p
-                        className="text-[11px] font-semibold leading-tight mb-3"
-                        style={{ color: 'var(--foreground)' }}
-                      >
-                        {isRTL ? dp.domain.nameHe : dp.domain.nameEn}
-                      </p>
-
-                      <div className="mt-auto flex items-center justify-between w-full">
-                        {isFailing ? (
-                          <span className="text-[10px] font-semibold" style={{ color: '#F97316' }}>
-                            ⚠️ {stat.failingDays}
-                          </span>
-                        ) : stat.streak > 0 ? (
-                          <span className="text-[10px] font-semibold" style={{ color: '#FB923C' }}>
-                            🔥 {stat.streak}
-                          </span>
-                        ) : (
-                          <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>—</span>
-                        )}
-
-                        {doneToday ? (
-                          <span className="text-[11px] font-bold" style={{ color: dp.domain.color }}>✓</span>
-                        ) : (
-                          <span className="text-[10px] tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-                            {dp.completedToday}/{dp.totalHabits}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
             {/* TODAY'S HABITS */}
             <div className="space-y-4">
               {pendingHabits.length > 0 && (
@@ -306,18 +290,22 @@ export function DashboardClient({
               )}
 
               {doneHabits.length > 0 && (
-                <div className="opacity-55">
-                  <h2
-                    className="text-xs font-semibold uppercase tracking-wider mb-3"
+                <div>
+                  <button
+                    onClick={() => setShowDone((v) => !v)}
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3 transition-opacity hover:opacity-80"
                     style={{ color: 'var(--muted-foreground)' }}
                   >
-                    {isRTL ? `הושלם ✓  (${doneHabits.length})` : `Done ✓  (${doneHabits.length})`}
-                  </h2>
-                  <div className="space-y-2">
-                    {doneHabits.map((habit) => (
-                      <HabitRow key={habit.id} habit={habit} isCompleted={true} />
-                    ))}
-                  </div>
+                    <span>{isRTL ? `הושלם ✓  (${doneHabits.length})` : `Done ✓  (${doneHabits.length})`}</span>
+                    <span style={{ fontSize: 10 }}>{showDone ? '▲' : '▼'}</span>
+                  </button>
+                  {showDone && (
+                    <div className="space-y-2 opacity-55">
+                      {doneHabits.map((habit) => (
+                        <HabitRow key={habit.id} habit={habit} isCompleted={true} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -338,7 +326,7 @@ export function DashboardClient({
                     {isRTL ? 'יומן' : 'Journal'}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                    {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
+                    {isRTL ? 'כתיבה · משימות' : 'Writing · Tasks'}
                   </p>
                 </div>
                 <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
@@ -362,7 +350,7 @@ export function DashboardClient({
                   {isRTL ? 'יומן' : 'Journal'}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  {isRTL ? 'כתיבה · הארות · אלבום' : 'Writing · Insights · Album'}
+                  {isRTL ? 'כתיבה · משימות' : 'Writing · Tasks'}
                 </p>
               </div>
               <span className="ms-auto" style={{ color: 'var(--muted-foreground)' }}>›</span>
