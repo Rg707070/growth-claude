@@ -39,7 +39,6 @@ interface Props {
   userId: string
   tasks: DomainTask[]
   goals: DomainGoal[]
-  schemaReady: boolean
 }
 
 export function DomainEcosystemClient({
@@ -49,7 +48,6 @@ export function DomainEcosystemClient({
   userId,
   tasks,
   goals,
-  schemaReady,
 }: Props) {
   const router = useRouter()
   const { t, isRTL } = useLang()
@@ -101,8 +99,6 @@ export function DomainEcosystemClient({
             </span>
           </ProgressRing>
         </div>
-
-        {!schemaReady && <MigrationBanner isRTL={isRTL} />}
 
         {/* Stats strip */}
         <div className="grid grid-cols-3 gap-2">
@@ -196,20 +192,6 @@ export function DomainEcosystemClient({
 
 // ── Shared primitives ──────────────────────────────────────────
 
-function MigrationBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL
-          ? 'הרץ את supabase-domain-ecosystem.sql ב-Supabase כדי להפעיל את התכונות.'
-          : 'Run supabase-domain-ecosystem.sql in your Supabase SQL editor to enable these features.'}
-      </p>
-    </Card>
-  )
-}
 
 function StatTile({
   color, icon, label, value,
@@ -977,15 +959,64 @@ function BoardTab({
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — welcoming calendar + quick-start guide */}
       {habits.length === 0 && openTasks.length === 0 && activeGoals.length === 0 && (
-        <div className="flex flex-col items-center gap-3 py-12">
-          <LayoutDashboard size={36} style={{ color: domain.color, opacity: 0.5 }} />
-          <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
-            {isRTL ? 'הלוח ריק — התחל להוסיף' : 'Board is empty — start adding'}
-          </p>
-          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            {isRTL ? 'הוסף הרגלים ומשימות כדי לראות סיכום כאן' : 'Add habits and tasks to see a summary here'}
+        <div className="space-y-4">
+          <div
+            className="rounded-2xl p-4 space-y-3"
+            style={{ background: `${domain.color}08`, border: `1px solid ${domain.color}20` }}
+          >
+            <p className="text-xs font-semibold" style={{ color: domain.color }}>
+              📅 {isRTL ? 'מעקב שבועי' : 'Weekly tracking'}
+            </p>
+            <div className="flex items-center gap-1 justify-center">
+              {days7.map((d: string) => (
+                <div key={d} className="flex flex-col items-center gap-1">
+                  <span
+                    className="text-[10px] font-bold"
+                    style={{ color: isToday(d) ? domain.color : 'var(--muted-foreground)' }}
+                  >
+                    {dayLabel(d)}
+                  </span>
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: isToday(d) ? `${domain.color}20` : 'var(--c-surface-2)',
+                      border: isToday(d) ? `1.5px solid ${domain.color}50` : '1px solid transparent',
+                    }}
+                  >
+                    {isToday(d) && (
+                      <div className="w-2 h-2 rounded-full" style={{ background: domain.color }} />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-center" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'הוסף הרגלים כדי לראות מעקב יומי כאן' : 'Add habits to see daily tracking here'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: <Flame size={18} />, label: isRTL ? 'הרגלים' : 'Habits', desc: isRTL ? 'בנה שגרה יומית' : 'Build daily routines' },
+              { icon: <ListChecks size={18} />, label: isRTL ? 'משימות' : 'Tasks', desc: isRTL ? 'נהל רשימת מטלות' : 'Manage your to-dos' },
+              { icon: <Target size={18} />, label: isRTL ? 'יעדים' : 'Goals', desc: isRTL ? 'הגדר מטרות' : 'Set your targets' },
+            ].map(({ icon, label, desc }) => (
+              <div
+                key={label}
+                className="rounded-xl p-3 flex flex-col items-center gap-1.5 text-center"
+                style={{ background: `${domain.color}0A`, border: `1px solid ${domain.color}18` }}
+              >
+                <div style={{ color: domain.color, opacity: 0.7 }}>{icon}</div>
+                <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{label}</p>
+                <p className="text-[10px] leading-tight" style={{ color: 'var(--muted-foreground)' }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs text-center" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? '👆 עבור בין הטאבים למעלה כדי להתחיל' : '👆 Switch between tabs above to get started'}
           </p>
         </div>
       )}

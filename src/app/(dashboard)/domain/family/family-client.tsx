@@ -74,10 +74,9 @@ interface Props {
   habits: FamilyHabit[]
   events: FamilyEvent[]
   folders: FamilyTaskFolder[]
-  schemaReady: boolean
 }
 
-export function FamilyClient({ domain, tasks, habits, events, folders, schemaReady }: Props) {
+export function FamilyClient({ domain, tasks, habits, events, folders }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
   const [tab, setTab] = useState<Tab>('tasks')
@@ -90,9 +89,8 @@ export function FamilyClient({ domain, tasks, habits, events, folders, schemaRea
   const today = useMemo(() => todayDateString(), [])
 
   useEffect(() => {
-    if (!schemaReady) return
     return subscribeFamilyRealtime(['family_tasks', 'family_habits', 'family_events', 'family_task_folders'], () => router.refresh())
-  }, [router, schemaReady])
+  }, [router])
 
   const openTasks = tasks.filter((t) => t.status !== 'done').length
   const bestStreak = habits.reduce((m, h) => Math.max(m, h.current_streak), 0)
@@ -127,8 +125,6 @@ export function FamilyClient({ domain, tasks, habits, events, folders, schemaRea
           </p>
         </div>
       </div>
-
-      {!schemaReady && <SchemaNotReadyBanner isRTL={isRTL} />}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
@@ -194,20 +190,6 @@ export function FamilyClient({ domain, tasks, habits, events, folders, schemaRea
 
 // ─── Shared bits ──────────────────────────────────────────────
 
-function SchemaNotReadyBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL
-          ? 'הרץ את supabase-schema.sql בסופרבייס כדי להפעיל את התכונה.'
-          : 'Run supabase-schema.sql in your Supabase SQL editor to enable this feature.'}
-      </p>
-    </Card>
-  )
-}
 
 function StatTile({ color, icon, label, value }: { color: string; icon: React.ReactNode; label: string; value: number }) {
   return (

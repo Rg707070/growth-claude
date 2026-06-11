@@ -36,12 +36,11 @@ interface Props {
   userId: string
   books: SecularBook[]
   projects: SecularProject[]
-  schemaReady: boolean
 }
 
 export function SecularClient({
   domain, habits: initialHabits, completedIds, userId,
-  books: initialBooks, projects: initialProjects, schemaReady,
+  books: initialBooks, projects: initialProjects,
 }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
@@ -87,8 +86,6 @@ export function SecularClient({
             </p>
           </div>
         </div>
-
-        {!schemaReady && <SchemaBanner isRTL={isRTL} />}
 
         {/* Stats strip */}
         <div className="grid grid-cols-3 gap-2">
@@ -147,18 +144,6 @@ export function SecularClient({
 
 // ── Shared ─────────────────────────────────────────────────────
 
-function SchemaBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL ? 'הרץ את supabase-secular-schema.sql ב-Supabase' : 'Run supabase-secular-schema.sql in Supabase SQL editor'}
-      </p>
-    </Card>
-  )
-}
 
 // ── Books Tab ──────────────────────────────────────────────────
 

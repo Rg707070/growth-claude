@@ -41,8 +41,6 @@ export default async function FamilyPage() {
   const habits = (habitsRes.data as FamilyHabit[]) ?? []
   const events = (eventsRes.data as FamilyEvent[]) ?? []
   const folders = (foldersRes.data as FamilyTaskFolder[]) ?? []
-  const schemaReady = !tasksRes.error && !habitsRes.error && !eventsRes.error
-
   return (
     <FamilyClient
       domain={domain}
@@ -51,7 +49,6 @@ export default async function FamilyPage() {
       habits={habits}
       events={events}
       folders={folders}
-      schemaReady={schemaReady}
     />
   )
 }

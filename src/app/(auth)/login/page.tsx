@@ -111,6 +111,16 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-xs transition-colors"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
+                {t('forgotPassword')}
+              </Link>
+            </div>
+
             {error && (
               <div
                 className="rounded-xl px-4 py-3 text-sm text-center animate-fade-in"

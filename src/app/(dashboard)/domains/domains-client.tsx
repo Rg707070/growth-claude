@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { DOMAINS } from '@/lib/domains'
@@ -20,13 +20,17 @@ const PRESET_EMOJIS = [
   '👥', '📖', '⚡', '🎓', '🏋️', '🍎', '😴', '💻',
 ]
 
+const BUILTIN_SLUGS = new Set(DOMAINS.map((d) => d.slug))
+
 interface DomainsClientProps {
   userId: string
   domains: Domain[]
   hasCustomDomains: boolean
+  customDomainSlugs: string[]
 }
 
-export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClientProps) {
+export function DomainsClient({ userId, domains, hasCustomDomains, customDomainSlugs }: DomainsClientProps) {
+  const userSlugs = useMemo(() => new Set(customDomainSlugs), [customDomainSlugs])
   const { isRTL } = useLang()
   const router = useRouter()
   const [showAdd, setShowAdd] = useState(false)
@@ -47,7 +51,7 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
     if (!newName.trim() || saving) return
     setSaving(true)
     await ensureMigrated()
-    const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `domain-${Date.now()}`
+    const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-֐-׿]/g, '') || `domain-${Date.now()}`
     const supabase = createClient()
     const { error } = await supabase.from('user_domains').insert({
       user_id: userId,
@@ -390,8 +394,8 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
                 />
               </button>
 
-              {/* Delete button — only for custom domains */}
-              {hasCustomDomains && (
+              {/* Delete button — only for user-added domains, not built-in */}
+              {userSlugs.has(domain.slug) && !BUILTIN_SLUGS.has(domain.slug) && (
                 <button
                   onClick={() => deleteDomain(domain.slug)}
                   disabled={deletingSlug === domain.slug}

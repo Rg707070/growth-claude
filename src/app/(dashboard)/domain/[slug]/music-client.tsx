@@ -36,12 +36,11 @@ interface Props {
   userId: string
   practiceLogs: MusicPracticeLog[]
   songs: MusicSong[]
-  schemaReady: boolean
 }
 
 export function MusicClient({
   domain, habits: initialHabits, completedIds, userId,
-  practiceLogs: initialLogs, songs: initialSongs, schemaReady,
+  practiceLogs: initialLogs, songs: initialSongs,
 }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
@@ -84,8 +83,6 @@ export function MusicClient({
             </p>
           </div>
         </div>
-
-        {!schemaReady && <SchemaBanner isRTL={isRTL} />}
 
         {/* Tab bar */}
         <div className="grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
@@ -133,18 +130,6 @@ export function MusicClient({
 
 // ── Shared ─────────────────────────────────────────────────────
 
-function SchemaBanner({ isRTL }: { isRTL: boolean }) {
-  return (
-    <Card className="p-4" style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}>
-      <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-        {isRTL ? 'נדרשת הרצה של מיגרציית SQL' : 'SQL migration required'}
-      </p>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-        {isRTL ? 'הרץ את supabase-music-schema.sql ב-Supabase' : 'Run supabase-music-schema.sql in Supabase SQL editor'}
-      </p>
-    </Card>
-  )
-}
 
 // ── Practice Tab (Calendar Journal) ───────────────────────────
 
