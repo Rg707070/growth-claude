@@ -326,7 +326,7 @@ export function DashboardClient({
 
             {/* Mobile/tablet-only: schedule + journal + chart */}
             <div className="space-y-6 lg:hidden">
-              <ScheduleToday />
+              <ScheduleToday userId={profile.id} />
               <button
                 onClick={() => router.push('/journal')}
                 className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
@@ -350,7 +350,7 @@ export function DashboardClient({
           {/* ── SECONDARY COLUMN (desktop only, lg+) ── */}
           <div className="hidden lg:flex flex-col gap-6 sticky top-8">
             <WeeklyChart days={weeklyActivity} />
-            <ScheduleToday />
+            <ScheduleToday userId={profile.id} />
             <button
               onClick={() => router.push('/journal')}
               className="w-full flex items-center gap-3 p-4 rounded-2xl text-start transition-colors hover:brightness-110 active:scale-[0.98]"
