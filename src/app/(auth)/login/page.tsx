@@ -6,10 +6,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { LangToggle } from '@/components/lang-toggle'
-import { GrowthLogo } from '@/components/growth-logo'
 
 export default function LoginPage() {
-  const { t } = useLang()
+  const { t, isRTL } = useLang()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,51 +27,31 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden"
+      className="min-h-screen flex flex-col items-center justify-center px-5"
       style={{ background: 'var(--background)' }}
     >
-      {/* Ambient gradient blobs */}
-      <div
-        aria-hidden
-        className="absolute -top-32 -end-32 w-96 h-96 rounded-full blur-3xl opacity-40 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #0E9F6E55 0%, transparent 70%)' }}
-      />
-      <div
-        aria-hidden
-        className="absolute -bottom-40 -start-32 w-[480px] h-[480px] rounded-full blur-3xl opacity-30 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #0B244766 0%, transparent 70%)' }}
-      />
+      <div className="absolute top-5 end-5 z-10"><LangToggle /></div>
 
-      <div className="absolute top-5 start-5 z-10"><LangToggle /></div>
-
-      <div className="relative z-10 w-full max-w-sm space-y-7 animate-fade-up">
-        {/* Brand */}
-        <div className="flex flex-col items-center text-center gap-3">
-          <GrowthLogo variant="icon" size={72} />
-          <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight brand-gradient-text">GROWTH</h1>
-            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-              {t('tagline')}
-            </p>
-          </div>
+      <div className="w-full max-w-sm space-y-8">
+        <div className="text-center space-y-1">
+          <h1 className="text-3xl font-black tracking-tight brand-gradient-text">GROWTH</h1>
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'כניסה לחשבון' : 'Sign in to your account'}
+          </p>
         </div>
 
-        {/* Card */}
         <div
           className="rounded-3xl p-6 space-y-4"
           style={{
             background: 'var(--card)',
             border: '1px solid var(--c-border)',
-            boxShadow: '0 1px 3px var(--c-shadow), 0 10px 30px var(--c-shadow)',
           }}
         >
-          <h2 className="font-bold text-base text-center mb-1" style={{ color: 'var(--foreground)' }}>
-            {t('loginTitle')}
-          </h2>
-
           <form onSubmit={handleLogin} className="space-y-3.5">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>{t('email')}</label>
+              <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>
+                {t('email')}
+              </label>
               <input
                 type="email"
                 autoComplete="email"
@@ -92,7 +71,9 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>{t('password')}</label>
+              <label className="text-xs font-medium block" style={{ color: 'var(--muted-foreground)' }}>
+                {t('password')}
+              </label>
               <input
                 type="password"
                 autoComplete="current-password"
@@ -113,7 +94,7 @@ export default function LoginPage() {
 
             {error && (
               <div
-                className="rounded-xl px-4 py-3 text-sm text-center animate-fade-in"
+                className="rounded-xl px-4 py-3 text-sm text-center"
                 style={{
                   background: 'oklch(0.65 0.22 25 / 12%)',
                   border: '1px solid oklch(0.65 0.22 25 / 25%)',
@@ -127,11 +108,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-60 active:scale-[0.98] hover:shadow-lg"
-              style={{
-                background: 'var(--brand-gradient)',
-                boxShadow: '0 6px 18px var(--c-hero-shadow)',
-              }}
+              className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-60 active:scale-[0.98]"
+              style={{ background: 'var(--brand-gradient)' }}
             >
               {loading ? '...' : t('login')}
             </button>
@@ -140,7 +118,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {t('noAccount')}{' '}
-          <Link href="/signup" className="font-semibold transition-colors brand-gradient-text">
+          <Link href="/signup" className="font-semibold brand-gradient-text">
             {t('signup')}
           </Link>
         </p>
