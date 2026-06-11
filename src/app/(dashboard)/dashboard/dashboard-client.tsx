@@ -161,6 +161,70 @@ export function DashboardClient({
               </div>
             </div>
 
+            {/* DOMAIN STRIP */}
+            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {domainProgress.map((dp) => {
+                const stat = domainStatMap[dp.domain.slug] ?? { streak: 0, failingDays: 0 }
+                const isFailing = stat.failingDays >= 3
+                const doneToday = dp.completedToday === dp.totalHabits && dp.totalHabits > 0
+                return (
+                  <button
+                    key={dp.domain.slug}
+                    onClick={() => router.push(`/domain/${dp.domain.slug}`)}
+                    className="flex-shrink-0 flex flex-col items-center gap-1 rounded-2xl py-2.5 transition-all active:scale-90"
+                    style={{
+                      width: 44,
+                      background: doneToday
+                        ? `${dp.domain.color}18`
+                        : isFailing
+                        ? 'rgba(249,115,22,0.08)'
+                        : 'var(--c-card)',
+                      border: doneToday
+                        ? `1px solid ${dp.domain.color}44`
+                        : isFailing
+                        ? '1px solid rgba(249,115,22,0.3)'
+                        : '1px solid var(--c-card-border)',
+                      boxShadow: doneToday ? `0 0 10px ${dp.domain.glowColor}` : undefined,
+                    }}
+                    aria-label={isRTL ? dp.domain.nameHe : dp.domain.nameEn}
+                  >
+                    <span className="text-[17px] leading-none">{dp.domain.icon}</span>
+                    <span
+                      className="text-[9px] font-bold leading-none tabular-nums"
+                      style={{
+                        color: doneToday
+                          ? dp.domain.color
+                          : isFailing
+                          ? '#F97316'
+                          : stat.streak > 0
+                          ? '#FB923C'
+                          : 'var(--muted-foreground)',
+                      }}
+                    >
+                      {doneToday ? '✓' : isFailing ? '⚠' : stat.streak > 0 ? `${stat.streak}🔥` : '·'}
+                    </span>
+                  </button>
+                )
+              })}
+
+              {/* Books shortcut */}
+              <button
+                onClick={() => router.push('/reading')}
+                className="flex-shrink-0 flex flex-col items-center gap-1 rounded-2xl py-2.5 transition-all active:scale-90"
+                style={{
+                  width: 44,
+                  background: 'var(--c-card)',
+                  border: '1px dashed var(--c-card-border)',
+                }}
+                aria-label={isRTL ? 'ספרים' : 'Books'}
+              >
+                <span className="text-[17px] leading-none">📚</span>
+                <span className="text-[9px] font-semibold leading-none" style={{ color: 'var(--muted-foreground)' }}>
+                  {isRTL ? 'ספרים' : 'Books'}
+                </span>
+              </button>
+            </div>
+
             {/* NEEDS ATTENTION */}
             {failingDomains.length > 0 && (
               <div>

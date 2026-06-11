@@ -406,6 +406,50 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
           ))}
         </div>
 
+        {/* Books shortcut */}
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'קריאה' : 'Reading'}
+            </span>
+            <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => router.push('/reading')}
+              className="w-full flex items-center gap-4 text-start active:scale-[0.98] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md overflow-hidden md:flex-col md:items-start md:gap-3"
+              style={{
+                background: 'var(--c-surface-2)',
+                border: '1.5px dashed var(--c-border)',
+                borderRadius: '1.1rem',
+                padding: '0.95rem 1.1rem',
+              }}
+            >
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ms-1 md:ms-0 md:w-14 md:h-14 md:text-2xl md:mt-2"
+                style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.2)' }}
+              >
+                📚
+              </div>
+              <div className="flex-1 min-w-0 md:w-full">
+                <p className="font-semibold text-base leading-tight" style={{ color: 'var(--foreground)' }}>
+                  {isRTL ? 'ספרים' : 'Books'}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                  {isRTL ? 'מעקב קריאה' : 'Track your reading'}
+                </p>
+              </div>
+              <ChevronRight
+                size={18}
+                strokeWidth={2}
+                style={{ color: 'var(--muted-foreground)', transform: isRTL ? 'scaleX(-1)' : 'none' }}
+                className="flex-shrink-0 md:hidden"
+              />
+            </button>
+          </div>
+        </div>
+
         {/* Add more button when custom domains exist */}
         {hasCustomDomains && !showAdd && (
           <button
