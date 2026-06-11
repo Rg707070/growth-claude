@@ -27,7 +27,7 @@ export function LandingClient() {
         <GrowthLogo variant="icon" size={72} />
 
         <div className="space-y-3">
-          <h1 className="text-5xl font-black tracking-tight brand-gradient-text">GROWTH</h1>
+          <h1 className="text-5xl font-black brand-hero-text">GROWTH</h1>
           <p className="text-base max-w-xs" style={{ color: 'var(--muted-foreground)' }}>
             {isRTL
               ? 'עקוב אחרי הצמיחה האישית שלך בכל תחומי החיים'

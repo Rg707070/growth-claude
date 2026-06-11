@@ -60,7 +60,7 @@ export default function SignupPage() {
 
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-3xl font-black tracking-tight brand-gradient-text">GROWTH</h1>
+          <h1 className="text-3xl font-black brand-hero-text">GROWTH</h1>
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             {isRTL ? 'יצירת חשבון חדש' : 'Create your account'}
           </p>

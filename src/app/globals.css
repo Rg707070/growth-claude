@@ -362,6 +362,21 @@ html.light .hover\:bg-white\/20:hover        { background-color: oklch(0.18 0.04
 html.light .bg-background     { background: var(--background) !important; }
 
 /* ─── Brand utility classes ─── */
+.brand-hero-text {
+  background: linear-gradient(120deg, #38bdf8 0%, #10b981 50%, #a3e635 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  letter-spacing: 0.12em;
+  filter: drop-shadow(0 0 18px oklch(0.75 0.18 195 / 35%));
+}
+html.light .brand-hero-text {
+  background: linear-gradient(120deg, #0369a1 0%, #059669 50%, #65a30d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 10px oklch(0.55 0.16 195 / 20%));
+}
 .brand-gradient-text {
   background: var(--brand-gradient);
   -webkit-background-clip: text;
