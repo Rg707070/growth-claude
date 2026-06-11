@@ -47,7 +47,7 @@ const MONTH_NAMES_HE = ['ינואר','פברואר','מרץ','אפריל','מא�
 const DAY_SHORT_HE = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שב']
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type CalendarView = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all' | 'habit-calendar'
+type CalendarView = 'today' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all' | 'habit-calendar'
 
 interface ScheduleItem {
   id: string
@@ -1533,6 +1533,353 @@ function AllItemsOverview({
   )
 }
 
+// ─── TodayFocusView ───────────────────────────────────────────────────────────
+type TodayTask = {
+  id: string
+  title: string
+  urgency: string
+  due_date: string | null
+  domainSlug: string
+}
+
+function TodayFocusView({
+  items, habits, completedHabitIds, checked, domainTasks, familyTasks, familyEvents,
+  onToggle, onToggleHabit, onAdd, isDark, userId,
+}: {
+  items: ScheduleItem[]
+  habits: HabitFull[]
+  completedHabitIds: Set<string>
+  checked: Set<string>
+  domainTasks: DomainTask[]
+  familyTasks: FamilyTask[]
+  familyEvents: FamilyEvent[]
+  onToggle: (time: string) => void
+  onToggleHabit: (habitId: string) => Promise<void>
+  onAdd: (hour: number | null) => void
+  isDark: boolean
+  userId: string
+}) {
+  const { isRTL } = useLang()
+  const { toast } = useToast()
+  const [now, setNow] = useState<Date>(() => new Date())
+  const [doneTaskIds, setDoneTaskIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const nowMin     = now.getHours() * 60 + now.getMinutes()
+  const todayStr   = now.toISOString().split('T')[0]
+
+  const sortedItems  = useMemo(() => [...items].sort((a, b) => toMin(a.time) - toMin(b.time)), [items])
+  const currentItem  = sortedItems.filter(i => toMin(i.time) <= nowMin).at(-1) ?? null
+  const upcomingItems = sortedItems.filter(i => toMin(i.time) > nowMin)
+
+  const dailyHabits = useMemo(() => habits.filter(h => h.frequency === 'daily'), [habits])
+  const habitsDone  = dailyHabits.filter(h => completedHabitIds.has(h.id)).length
+  const actsTotal   = items.length
+  const actsDone    = checked.size
+
+  const urgentTasks = useMemo<TodayTask[]>(() => {
+    const domainOnes: TodayTask[] = domainTasks
+      .filter(t => (t.urgency === 'critical' || t.urgency === 'high') && !doneTaskIds.has(t.id))
+      .map(t => ({ id: t.id, title: t.title, urgency: t.urgency, due_date: t.due_date, domainSlug: t.domain_slug }))
+    const familyOnes: TodayTask[] = familyTasks
+      .filter(t => (t.urgency === 'critical' || t.urgency === 'high') && !doneTaskIds.has(t.id))
+      .map(t => ({ id: t.id, title: t.title, urgency: t.urgency, due_date: t.due_date, domainSlug: 'family' }))
+    return [...domainOnes, ...familyOnes]
+      .sort((a, b) => urgOrder(a.urgency) - urgOrder(b.urgency))
+      .slice(0, 4)
+  }, [domainTasks, familyTasks, doneTaskIds])
+
+  const nextWeekStr  = useMemo(() => {
+    const d = new Date(now); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]
+  }, [now])
+  const upcomingEvts = familyEvents.filter(e => e.event_date >= todayStr && e.event_date <= nextWeekStr).slice(0, 3)
+
+  async function completeTask(taskId: string, domainSlug: string) {
+    setDoneTaskIds(prev => new Set([...prev, taskId]))
+    const table = domainSlug === 'family' ? 'family_tasks' : 'domain_tasks'
+    const { error } = await createClient().from(table).update({ status: 'done' }).eq('id', taskId).eq('user_id', userId)
+    if (error) {
+      setDoneTaskIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
+      toast('שגיאה בשמירה', 'error')
+    }
+  }
+
+  function fmtDate(dateStr: string): string {
+    const d = new Date(dateStr + 'T12:00:00')
+    return `${d.getDate()}/${d.getMonth() + 1}`
+  }
+
+  const dayLabel = now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
+
+  return (
+    <div className="flex-1 overflow-y-auto pb-24" dir="rtl">
+      <div className="max-w-2xl mx-auto w-full px-4 pt-3 space-y-3">
+
+        {/* ─── Progress Header ─── */}
+        <div className="rounded-2xl px-4 py-3"
+          style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-semibold mb-3" style={{ color: w(0.5, isDark) }}>{dayLabel}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[11px] font-semibold" style={{ color: w(0.45, isDark) }}>{isRTL ? 'הרגלים' : 'Habits'}</span>
+                <span className="text-[11px] font-bold" style={{ color: habitsDone >= dailyHabits.length && dailyHabits.length > 0 ? 'rgb(52,211,153)' : w(0.65, isDark) }}>
+                  {habitsDone}/{dailyHabits.length}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: w(0.07, isDark) }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${dailyHabits.length > 0 ? (habitsDone / dailyHabits.length) * 100 : 0}%`, background: 'rgb(52,211,153)' }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[11px] font-semibold" style={{ color: w(0.45, isDark) }}>{isRTL ? 'פעילויות' : 'Activities'}</span>
+                <span className="text-[11px] font-bold" style={{ color: actsDone >= actsTotal && actsTotal > 0 ? 'rgb(103,232,249)' : w(0.65, isDark) }}>
+                  {actsDone}/{actsTotal}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: w(0.07, isDark) }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${actsTotal > 0 ? (actsDone / actsTotal) * 100 : 0}%`, background: 'rgb(103,232,249)' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── NOW block ─── */}
+        {currentItem && (() => {
+          const clr = activityColor(currentItem)
+          const isDone = checked.has(currentItem.time)
+          return (
+            <div className="rounded-2xl p-4"
+              style={{
+                background: hexBg(clr),
+                border: `1px solid ${hexBorder(clr)}`,
+                borderRightWidth: 4,
+                borderRightColor: clr,
+              }}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full animate-pulse flex-shrink-0" style={{ background: clr }} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: clr }}>
+                    {isRTL ? 'עכשיו' : 'NOW'}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono" style={{ color: w(0.35, isDark) }}>
+                  {now.toTimeString().slice(0, 5)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-base font-bold leading-tight" style={{ color: isDone ? w(0.4, isDark) : w(0.9, isDark), textDecoration: isDone ? 'line-through' : 'none' }}>
+                    {currentItem.label}
+                  </p>
+                  <p className="text-[11px] font-mono mt-0.5" style={{ color: w(0.4, isDark) }}>{currentItem.time}</p>
+                </div>
+                <button
+                  onClick={() => onToggle(currentItem.time)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+                  style={{
+                    background: isDone ? 'rgba(52,211,153,0.20)' : w(0.06, isDark),
+                    border: `1px solid ${isDone ? 'rgba(52,211,153,0.40)' : w(0.12, isDark)}`,
+                  }}
+                >
+                  {isDone && <Check size={15} className="text-emerald-400" />}
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ─── Upcoming schedule ─── */}
+        {upcomingItems.length > 0 && (
+          <div className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <div className="px-4 pt-3 pb-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: w(0.4, isDark) }}>
+                {isRTL ? 'בהמשך היום' : 'Later today'}
+              </span>
+            </div>
+            {upcomingItems.map((item, i) => {
+              const clr = activityColor(item)
+              const isDone = checked.has(item.time)
+              return (
+                <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 border-t"
+                  style={{ borderColor: w(0.04, isDark), opacity: 1 - i * 0.10 }}>
+                  <div className="w-0.5 h-4 rounded-full flex-shrink-0" style={{ background: clr, opacity: 0.7 }} />
+                  <span className="text-[10px] font-mono w-9 flex-shrink-0 text-center" style={{ color: w(0.35, isDark) }}>
+                    {item.time.slice(0, 5)}
+                  </span>
+                  <span className="flex-1 text-sm truncate" style={{ color: isDone ? w(0.3, isDark) : w(0.75, isDark), textDecoration: isDone ? 'line-through' : 'none' }}>
+                    {item.label}
+                  </span>
+                  <button
+                    onClick={() => onToggle(item.time)}
+                    className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                    style={{ background: isDone ? 'rgba(52,211,153,0.15)' : w(0.05, isDark), border: `1px solid ${isDone ? 'rgba(52,211,153,0.35)' : w(0.09, isDark)}` }}
+                  >
+                    {isDone && <Check size={10} className="text-emerald-400" />}
+                  </button>
+                </div>
+              )
+            })}
+            <div className="px-4 py-2 border-t" style={{ borderColor: w(0.04, isDark) }}>
+              <button onClick={() => onAdd(null)} className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'rgb(103,232,249)' }}>
+                <Plus size={12} />
+                {isRTL ? 'הוסף פעילות' : 'Add activity'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Habits ─── */}
+        {dailyHabits.length > 0 && (
+          <div className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <div className="flex items-center justify-between px-4 pt-3 pb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: w(0.4, isDark) }}>
+                {isRTL ? 'הרגלים להיום' : "Today's habits"}
+              </span>
+              <span className="text-[11px] font-bold" style={{ color: habitsDone >= dailyHabits.length ? 'rgb(52,211,153)' : w(0.4, isDark) }}>
+                {habitsDone}/{dailyHabits.length}
+              </span>
+            </div>
+            <div className="px-4 pb-3 space-y-1">
+              {dailyHabits.map(habit => {
+                const domain = DOMAINS.find(d => d.slug === habit.domain_slug)
+                const clr = domain?.color ?? '#6366F1'
+                const done = completedHabitIds.has(habit.id)
+                return (
+                  <button key={habit.id} onClick={() => onToggleHabit(habit.id)}
+                    className="w-full flex items-center gap-3 py-1.5">
+                    <span
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all"
+                      style={{ background: done ? `${clr}30` : w(0.06, isDark), color: done ? clr : w(0.28, isDark), border: `1px solid ${done ? `${clr}50` : w(0.09, isDark)}` }}
+                    >
+                      {done ? '✓' : ''}
+                    </span>
+                    <span className="text-[11px] flex-shrink-0">{domain?.icon ?? '✦'}</span>
+                    <span className="flex-1 text-sm text-right"
+                      style={{ color: done ? w(0.3, isDark) : w(0.78, isDark), textDecoration: done ? 'line-through' : 'none' }}>
+                      {habit.name}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Urgent tasks ─── */}
+        {urgentTasks.length > 0 && (
+          <div className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <div className="px-4 pt-3 pb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: w(0.4, isDark) }}>
+                {isRTL ? 'משימות דחופות' : 'Urgent tasks'}
+              </span>
+            </div>
+            <div className="px-4 pb-3 space-y-2">
+              {urgentTasks.map(task => {
+                const urg = URGENCY_LABELS[task.urgency]
+                const urgClr = URGENCY_COLORS[task.urgency] ?? '#6b7280'
+                const overdue = task.due_date !== null && task.due_date < todayStr
+                return (
+                  <div key={task.id} className="flex items-center gap-2">
+                    <button
+                      onClick={() => completeTask(task.id, task.domainSlug)}
+                      className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center transition-all"
+                      style={{ background: w(0.06, isDark), border: `1px solid ${w(0.14, isDark)}` }}
+                      aria-label="סמן כבוצע"
+                    >
+                      <span className="text-[8px]" style={{ color: w(0.28, isDark) }}>○</span>
+                    </button>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0"
+                      style={{ background: `${urgClr}20`, color: urgClr }}>
+                      {isRTL ? urg?.he : urg?.en}
+                    </span>
+                    <span className="flex-1 text-xs truncate" style={{ color: w(0.75, isDark) }}>{task.title}</span>
+                    {task.due_date && (
+                      <span className="text-[10px] flex-shrink-0" style={{ color: overdue ? '#ef4444' : w(0.35, isDark) }}>
+                        {fmtDate(task.due_date)}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Upcoming events ─── */}
+        {upcomingEvts.length > 0 && (
+          <div className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)' }}>
+            <div className="px-4 pt-3 pb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: w(0.4, isDark) }}>
+                {isRTL ? 'אירועים קרובים' : 'Upcoming events'}
+              </span>
+            </div>
+            <div className="px-4 pb-3 space-y-2">
+              {upcomingEvts.map(evt => (
+                <div key={evt.id} className="flex items-center gap-2.5">
+                  <span className="text-sm flex-shrink-0">📅</span>
+                  <span className="flex-1 text-xs" style={{ color: w(0.75, isDark) }}>{evt.title}</span>
+                  <span className="text-[10px] font-semibold flex-shrink-0"
+                    style={{ color: evt.event_date === todayStr ? 'rgb(103,232,249)' : w(0.35, isDark) }}>
+                    {evt.event_date === todayStr ? (isRTL ? 'היום' : 'Today') : fmtDate(evt.event_date)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Empty state ─── */}
+        {items.length === 0 && dailyHabits.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="text-5xl mb-4">📋</span>
+            <p className="text-sm font-semibold mb-1" style={{ color: w(0.5, isDark) }}>
+              {isRTL ? 'אין פעילויות מתוכננות להיום' : 'Nothing scheduled for today'}
+            </p>
+            <p className="text-xs mb-5" style={{ color: w(0.3, isDark) }}>
+              {isRTL ? 'הוסף פעילות כדי להתחיל' : 'Add an activity to get started'}
+            </p>
+            <button
+              onClick={() => onAdd(null)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: 'rgba(34,211,238,0.10)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.20)' }}
+            >
+              <Plus size={14} />
+              {isRTL ? 'הוסף פעילות ראשונה' : 'Add first activity'}
+            </button>
+          </div>
+        )}
+
+        {/* ─── Add button (when has content) ─── */}
+        {(items.length > 0 || dailyHabits.length > 0) && (
+          <div className="flex justify-center pb-2">
+            <button
+              onClick={() => onAdd(null)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: 'rgba(34,211,238,0.08)', color: 'rgb(103,232,249)', border: '1px solid rgba(34,211,238,0.18)' }}
+            >
+              <Plus size={12} />
+              {isRTL ? 'הוסף פעילות להיום' : 'Add activity'}
+            </button>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function SchedulePageClient({
   userId, userItems, allItems, todayChecks, scheduledHabits, todayCompletedHabitIds,
@@ -1545,7 +1892,7 @@ export function SchedulePageClient({
   const todayDay   = new Date().getDay()
   const todayDate  = new Date().toISOString().split('T')[0]
 
-  const [view,        setView]        = useState<CalendarView>('daily')
+  const [view,        setView]        = useState<CalendarView>('today')
   const [day,         setDay]         = useState(todayDay < 6 ? todayDay : 0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [editItem, setEditItem] = useState<ScheduleItem | null>(null)
@@ -1782,7 +2129,8 @@ export function SchedulePageClient({
       <div className="flex-shrink-0 max-w-2xl mx-auto w-full px-4 pb-2">
         <div className="flex gap-1 p-1 rounded-2xl" style={{ background: w(0.05, isDark) }}>
           {([
-            { id: 'daily'          as const, label: isRTL ? 'לו"ז'      : 'Schedule' },
+            { id: 'today'          as const, label: isRTL ? 'היום'       : 'Today'    },
+            { id: 'daily'          as const, label: isRTL ? 'שבועי'      : 'Weekly'   },
             { id: 'habit-calendar' as const, label: isRTL ? 'לוח שנה'   : 'Calendar' },
           ]).map(tab => (
             <button
@@ -1800,6 +2148,27 @@ export function SchedulePageClient({
           ))}
         </div>
       </div>
+
+      {/* Today view */}
+      {view === 'today' && (
+        <div className="flex-1 min-h-0 max-w-2xl mx-auto w-full flex flex-col"
+          style={{ borderTop: `1px solid ${w(0.06, isDark)}` }}>
+          <TodayFocusView
+            items={userItems[todayDay] ?? []}
+            habits={allHabits}
+            completedHabitIds={completedHabitIds}
+            checked={checked}
+            domainTasks={domainTasks}
+            familyTasks={familyTasks}
+            familyEvents={familyEvents}
+            onToggle={toggleCheck}
+            onToggleHabit={toggleHabit}
+            onAdd={h => setAddHour(h ?? null)}
+            isDark={isDark}
+            userId={userId}
+          />
+        </div>
+      )}
 
       {/* Daily view */}
       {view === 'daily' && (
