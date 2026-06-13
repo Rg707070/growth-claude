@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Domain, Habit } from '@/types'
 
+const DAY_LABELS_HE = ['ר׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
+const DAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
 function getLast7Days(): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -30,6 +33,11 @@ function computeStreak(completedDates: Set<string>): number {
     }
   }
   return streak
+}
+
+function isScheduledToday(habit: Habit): boolean {
+  if (!habit.scheduled_days || habit.scheduled_days.length === 0) return true
+  return habit.scheduled_days.includes(new Date().getDay())
 }
 
 function HabitHistoryBar({
@@ -83,13 +91,18 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
   const [name, setName] = useState('')
   const [time, setTime] = useState('')
   const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily')
+  const [allDays, setAllDays] = useState(true)
+  const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [historyMap, setHistoryMap] = useState<Record<string, Set<string>>>({})
   const [historyLoaded, setHistoryLoaded] = useState(false)
 
   const days7 = useMemo(getLast7Days, [])
-  const completedCount = habits.filter((h) => completedSet.has(h.id)).length
-  const progress = habits.length > 0 ? completedCount / habits.length : 0
+  const dayLabels = isRTL ? DAY_LABELS_HE : DAY_LABELS_EN
+
+  const todayHabits = useMemo(() => habits.filter(isScheduledToday), [habits])
+  const completedCount = todayHabits.filter((h) => completedSet.has(h.id)).length
+  const progress = todayHabits.length > 0 ? completedCount / todayHabits.length : 0
 
   useEffect(() => {
     if (habits.length === 0) { setHistoryLoaded(true); return }
@@ -115,19 +128,33 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
     return result
   }, [historyMap])
 
+  const toggleDay = (day: number) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    )
+  }
+
   const add = async () => {
     if (!name.trim() || saving) return
+    if (!allDays && selectedDays.length === 0) return
     setSaving(true)
     try {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('habits')
-        .insert({ user_id: userId, domain_slug: domain.slug, name: name.trim(), frequency, schedule_time: time || null })
+        .insert({
+          user_id: userId,
+          domain_slug: domain.slug,
+          name: name.trim(),
+          frequency,
+          schedule_time: time || null,
+          scheduled_days: allDays ? null : selectedDays.sort((a, b) => a - b),
+        })
         .select()
         .single()
       if (!error && data) {
         onAdded(data as Habit)
-        setName(''); setTime(''); setFrequency('daily'); setAdding(false)
+        setName(''); setTime(''); setFrequency('daily'); setAllDays(true); setSelectedDays([]); setAdding(false)
         router.refresh()
       }
     } finally {
@@ -135,13 +162,15 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
     }
   }
 
-  const cancelAdd = () => { setAdding(false); setName(''); setTime(''); setFrequency('daily') }
+  const cancelAdd = () => {
+    setAdding(false); setName(''); setTime(''); setFrequency('daily'); setAllDays(true); setSelectedDays([])
+  }
 
   return (
     <div className="space-y-2">
 
       {/* Progress header */}
-      {habits.length > 0 && (
+      {todayHabits.length > 0 && (
         <div
           className="rounded-xl p-3 mb-3"
           style={{ background: `${domain.color}0d`, border: `1px solid ${domain.color}28` }}
@@ -151,7 +180,7 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
               {isRTL ? 'הרגלים היום' : "Today's habits"}
             </span>
             <span className="text-xs font-bold tabular-nums" style={{ color: domain.color }}>
-              {completedCount}/{habits.length}
+              {completedCount}/{todayHabits.length}
             </span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${domain.color}22` }}>
@@ -160,7 +189,7 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
               style={{ width: `${progress * 100}%`, background: domain.color }}
             />
           </div>
-          {completedCount === habits.length && habits.length > 0 && (
+          {completedCount === todayHabits.length && todayHabits.length > 0 && (
             <p className="text-[11px] mt-1.5 text-center font-semibold" style={{ color: domain.color }}>
               🔥 {isRTL ? 'כל ההרגלים הושלמו!' : 'All habits done!'}
             </p>
@@ -183,9 +212,26 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
         </div>
       )}
 
-      {/* Habit rows with 7-day history bar */}
+      {/* Habit rows — show all habits with day badge for non-daily ones */}
       {habits.map((h) => (
         <div key={h.id}>
+          {h.scheduled_days && h.scheduled_days.length > 0 && (
+            <div className="flex gap-1 px-3.5 pt-1 pb-0.5 flex-wrap">
+              {DAY_LABELS_HE.map((_, idx) => {
+                const active = h.scheduled_days!.includes(idx)
+                if (!active) return null
+                return (
+                  <span
+                    key={idx}
+                    className="text-[9px] px-1 rounded font-bold"
+                    style={{ background: `${domain.color}22`, color: domain.color }}
+                  >
+                    {dayLabels[idx]}
+                  </span>
+                )
+              })}
+            </div>
+          )}
           <HabitRow habit={h} isCompleted={completedSet.has(h.id)} />
           <HabitHistoryBar
             habitId={h.id}
@@ -238,6 +284,56 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
             />
           </div>
 
+          {/* Day schedule toggle (only for daily) */}
+          {frequency === 'daily' && (
+            <>
+              <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${domain.color}30` }}>
+                <button
+                  onClick={() => setAllDays(true)}
+                  className="flex-1 text-xs py-1.5 font-medium transition-all"
+                  style={{
+                    background: allDays ? domain.color : 'transparent',
+                    color: allDays ? '#fff' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {isRTL ? 'כל יום' : 'Every day'}
+                </button>
+                <button
+                  onClick={() => setAllDays(false)}
+                  className="flex-1 text-xs py-1.5 font-medium transition-all"
+                  style={{
+                    background: !allDays ? domain.color : 'transparent',
+                    color: !allDays ? '#fff' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {isRTL ? 'ימים ספציפים' : 'Specific days'}
+                </button>
+              </div>
+
+              {!allDays && (
+                <div className="flex gap-1 justify-between">
+                  {dayLabels.map((label, idx) => {
+                    const active = selectedDays.includes(idx)
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => toggleDay(idx)}
+                        className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95"
+                        style={{
+                          background: active ? domain.color : 'transparent',
+                          color: active ? '#fff' : 'var(--muted-foreground)',
+                          border: `1px solid ${active ? domain.color : `${domain.color}30`}`,
+                        }}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2 justify-end">
             <button
@@ -248,9 +344,9 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
               <X size={16} />
             </button>
             <Button
-              onClick={add} disabled={saving || !name.trim()}
+              onClick={add} disabled={saving || !name.trim() || (!allDays && selectedDays.length === 0)}
               className="rounded-xl px-4"
-              style={{ background: domain.color, color: '#fff', border: 'none', opacity: saving || !name.trim() ? 0.5 : 1 }}
+              style={{ background: domain.color, color: '#fff', border: 'none', opacity: saving || !name.trim() || (!allDays && selectedDays.length === 0) ? 0.5 : 1 }}
             >
               {isRTL ? 'הוסף' : 'Add'}
             </Button>

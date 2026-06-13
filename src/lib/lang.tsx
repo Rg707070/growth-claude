@@ -135,6 +135,16 @@ const translations = {
     chooseDomain: 'בחר תחום',
     habitTimeOptional: 'שעה (אופציונלי)',
     adding: 'מוסיף...',
+    // Habit scheduling
+    everyDay: 'כל יום',
+    specificDays: 'ימים ספציפים',
+    dayShortSun: 'ר׳',
+    dayShortMon: 'ב׳',
+    dayShortTue: 'ג׳',
+    dayShortWed: 'ד׳',
+    dayShortThu: 'ה׳',
+    dayShortFri: 'ו׳',
+    dayShortSat: 'ש׳',
     // Onboarding
     onbWelcomeTitle: 'ברוך הבא ל‑GROWTH',
     onbWelcomeBody: 'בוא נבנה יחד את הצמיחה האישית שלך בכמה צעדים קצרים.',
@@ -314,6 +324,16 @@ const translations = {
     chooseDomain: 'Choose a domain',
     habitTimeOptional: 'Time (optional)',
     adding: 'Adding...',
+    // Habit scheduling
+    everyDay: 'Every day',
+    specificDays: 'Specific days',
+    dayShortSun: 'Sun',
+    dayShortMon: 'Mon',
+    dayShortTue: 'Tue',
+    dayShortWed: 'Wed',
+    dayShortThu: 'Thu',
+    dayShortFri: 'Fri',
+    dayShortSat: 'Sat',
     // Onboarding
     onbWelcomeTitle: 'Welcome to GROWTH',
     onbWelcomeBody: "Let's build your personal growth in a few short steps.",

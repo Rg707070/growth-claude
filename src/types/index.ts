@@ -29,6 +29,7 @@ export interface Habit {
   description?: string
   frequency: 'daily' | 'weekly'
   schedule_time?: string | null
+  scheduled_days?: number[] | null
   is_active: boolean
   created_at: string
 }

@@ -37,9 +37,14 @@ create table if not exists public.habits (
   name text not null,
   description text,
   frequency text default 'daily' not null check (frequency in ('daily', 'weekly')),
+  schedule_time text,
+  scheduled_days integer[],
   is_active boolean default true not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migration: ALTER TABLE habits ADD COLUMN IF NOT EXISTS schedule_time text;
+-- Migration: ALTER TABLE habits ADD COLUMN IF NOT EXISTS scheduled_days integer[];
 
 -- ============================================================
 -- HABIT LOGS

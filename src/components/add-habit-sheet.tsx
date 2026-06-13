@@ -8,6 +8,8 @@ import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
 import { useToast } from '@/components/ui/toast'
 
+const DAY_KEYS = ['dayShortSun', 'dayShortMon', 'dayShortTue', 'dayShortWed', 'dayShortThu', 'dayShortFri', 'dayShortSat'] as const
+
 interface AddHabitSheetProps {
   open: boolean
   onClose: () => void
@@ -21,6 +23,8 @@ export function AddHabitSheet({ open, onClose, defaultDomain }: AddHabitSheetPro
   const [domainSlug, setDomainSlug] = useState(defaultDomain ?? DOMAINS[0].slug)
   const [name, setName] = useState('')
   const [time, setTime] = useState('')
+  const [allDays, setAllDays] = useState(true)
+  const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
 
   if (!open) return null
@@ -28,7 +32,15 @@ export function AddHabitSheet({ open, onClose, defaultDomain }: AddHabitSheetPro
   const reset = () => {
     setName('')
     setTime('')
+    setAllDays(true)
+    setSelectedDays([])
     setSaving(false)
+  }
+
+  const toggleDay = (day: number) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    )
   }
 
   const submit = async () => {
@@ -44,6 +56,7 @@ export function AddHabitSheet({ open, onClose, defaultDomain }: AddHabitSheetPro
         name: name.trim(),
         frequency: 'daily',
         schedule_time: time || null,
+        scheduled_days: allDays ? null : selectedDays.sort((a, b) => a - b),
       })
       if (error) throw error
       reset()
@@ -54,6 +67,8 @@ export function AddHabitSheet({ open, onClose, defaultDomain }: AddHabitSheetPro
       toast(t('saveFailed'), 'error')
     }
   }
+
+  const accentColor = 'var(--c-primary)'
 
   return (
     <div
@@ -118,18 +133,66 @@ export function AddHabitSheet({ open, onClose, defaultDomain }: AddHabitSheetPro
           style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
         />
 
+        {/* Time input */}
         <input
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
           aria-label={t('habitTimeOptional')}
-          className="w-full h-11 rounded-xl px-4 text-sm outline-none mb-4 transition-colors"
+          className="w-full h-11 rounded-xl px-4 text-sm outline-none mb-3 transition-colors"
           style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
         />
 
+        {/* Day schedule toggle */}
+        <div className="flex rounded-xl overflow-hidden mb-3" style={{ border: '1px solid var(--c-border)' }}>
+          <button
+            onClick={() => setAllDays(true)}
+            className="flex-1 text-xs py-2 font-medium transition-all"
+            style={{
+              background: allDays ? accentColor : 'transparent',
+              color: allDays ? '#fff' : 'var(--muted-foreground)',
+            }}
+          >
+            {t('everyDay')}
+          </button>
+          <button
+            onClick={() => setAllDays(false)}
+            className="flex-1 text-xs py-2 font-medium transition-all"
+            style={{
+              background: !allDays ? accentColor : 'transparent',
+              color: !allDays ? '#fff' : 'var(--muted-foreground)',
+            }}
+          >
+            {t('specificDays')}
+          </button>
+        </div>
+
+        {/* Day picker */}
+        {!allDays && (
+          <div className="flex gap-1 mb-3 justify-between">
+            {DAY_KEYS.map((key, idx) => {
+              const active = selectedDays.includes(idx)
+              return (
+                <button
+                  key={idx}
+                  onClick={() => toggleDay(idx)}
+                  className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95"
+                  style={{
+                    background: active ? accentColor : 'var(--c-surface-2)',
+                    color: active ? '#fff' : 'var(--muted-foreground)',
+                    border: `1px solid ${active ? accentColor : 'var(--c-border)'}`,
+                  }}
+                >
+                  {t(key)}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         <button
           onClick={submit}
-          disabled={saving || !name.trim()}
+          disabled={saving || !name.trim() || (!allDays && selectedDays.length === 0)}
           className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all active:scale-[0.98] hover:shadow-lg disabled:opacity-50"
           style={{ background: 'var(--brand-gradient)', boxShadow: '0 6px 18px var(--c-hero-shadow)' }}
         >

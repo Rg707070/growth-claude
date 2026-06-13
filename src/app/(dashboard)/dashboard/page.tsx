@@ -73,7 +73,12 @@ export default async function DashboardPage() {
     Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86_400_000),
   )
 
-  const habits = (habitsRes.data as Habit[]) ?? []
+  const todayDayOfWeek = new Date().getDay()
+  const allActiveHabits = (habitsRes.data as Habit[]) ?? []
+  const habits = allActiveHabits.filter((h) => {
+    if (!h.scheduled_days || h.scheduled_days.length === 0) return true
+    return h.scheduled_days.includes(todayDayOfWeek)
+  })
   const allHabits = (allHabitsRes.data as Pick<Habit, 'id' | 'domain_slug'>[]) ?? []
   const todayLogs = (logsRes.data as HabitLog[]) ?? []
   const allLogs = (allLogsRes.data as { completed_at: string; habit_id: string }[]) ?? []
