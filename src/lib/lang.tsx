@@ -146,8 +146,11 @@ const translations = {
     close: 'סגור',
     // Quick add habit
     quickAddHabit: 'הוספת הרגל',
+    newHabit: 'הרגל חדש',
     chooseDomain: 'בחר תחום',
     habitTimeOptional: 'שעה (אופציונלי)',
+    quickPicks: 'בחירה מהירה',
+    habitFrequency: 'תדירות',
     adding: 'מוסיף...',
     // Habit scheduling
     everyDay: 'כל יום',
@@ -349,8 +352,11 @@ const translations = {
     close: 'Close',
     // Quick add habit
     quickAddHabit: 'Add habit',
+    newHabit: 'New Habit',
     chooseDomain: 'Choose a domain',
     habitTimeOptional: 'Time (optional)',
+    quickPicks: 'Quick picks',
+    habitFrequency: 'Frequency',
     adding: 'Adding...',
     // Habit scheduling
     everyDay: 'Every day',

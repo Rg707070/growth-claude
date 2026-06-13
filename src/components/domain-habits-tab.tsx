@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X, Flame } from 'lucide-react'
+import { Plus, X, Flame, Sparkles, AlignLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { HabitRow } from '@/components/habit-row'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { HABIT_TEMPLATES } from '@/lib/habit-templates'
 import type { Domain, Habit } from '@/types'
 
 const DAY_LABELS_HE = ['ר׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
@@ -89,11 +90,14 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
   const router = useRouter()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [time, setTime] = useState('')
   const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily')
   const [allDays, setAllDays] = useState(true)
   const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
+  const [showNote, setShowNote] = useState(false)
+  const templates = HABIT_TEMPLATES[domain.slug] ?? []
   const [historyMap, setHistoryMap] = useState<Record<string, Set<string>>>({})
   const [historyLoaded, setHistoryLoaded] = useState(false)
 
@@ -146,15 +150,16 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
           user_id: userId,
           domain_slug: domain.slug,
           name: name.trim(),
+          description: description.trim() || null,
           frequency,
           schedule_time: time || null,
-          scheduled_days: allDays ? null : selectedDays.sort((a, b) => a - b),
+          scheduled_days: frequency === 'daily' && !allDays ? selectedDays.sort((a, b) => a - b) : null,
         })
         .select()
         .single()
       if (!error && data) {
         onAdded(data as Habit)
-        setName(''); setTime(''); setFrequency('daily'); setAllDays(true); setSelectedDays([]); setAdding(false)
+        setName(''); setDescription(''); setTime(''); setFrequency('daily'); setAllDays(true); setSelectedDays([]); setAdding(false); setShowNote(false)
         router.refresh()
       }
     } finally {
@@ -163,7 +168,7 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
   }
 
   const cancelAdd = () => {
-    setAdding(false); setName(''); setTime(''); setFrequency('daily'); setAllDays(true); setSelectedDays([])
+    setAdding(false); setName(''); setDescription(''); setTime(''); setFrequency('daily'); setAllDays(true); setSelectedDays([]); setShowNote(false)
   }
 
   return (
@@ -247,16 +252,16 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
       {/* Add form */}
       {adding ? (
         <div
-          className="rounded-xl p-3 space-y-2.5 mt-1"
-          style={{ background: `${domain.color}09`, border: `1px solid ${domain.color}30` }}
+          className="rounded-2xl p-4 space-y-3 mt-1"
+          style={{ background: `${domain.color}08`, border: `1.5px solid ${domain.color}28` }}
         >
           {/* Frequency toggle */}
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${domain.color}30` }}>
+          <div className="flex rounded-xl overflow-hidden" style={{ border: `1.5px solid ${domain.color}25`, background: `${domain.color}08` }}>
             {(['daily', 'weekly'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFrequency(f)}
-                className="flex-1 text-xs py-1.5 font-medium transition-all"
+                className="flex-1 text-xs py-2 font-semibold transition-all"
                 style={{
                   background: frequency === f ? domain.color : 'transparent',
                   color: frequency === f ? '#fff' : 'var(--muted-foreground)',
@@ -267,6 +272,39 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
             ))}
           </div>
 
+          {/* Template quick picks */}
+          {templates.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1 mb-1.5">
+                <Sparkles size={10} style={{ color: domain.color }} />
+                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: domain.color }}>
+                  {isRTL ? 'בחירה מהירה' : 'Quick picks'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {templates.map((tmpl, i) => {
+                  const label = isRTL ? tmpl.he : tmpl.en
+                  const active = name === label
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setName(active ? '' : label)}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95"
+                      style={{
+                        background: active ? `${domain.color}30` : `${domain.color}14`,
+                        border: `1.5px solid ${active ? domain.color : `${domain.color}28`}`,
+                        color: active ? domain.color : 'var(--foreground)',
+                        fontWeight: active ? 700 : 500,
+                      }}
+                    >
+                      {active ? '✓ ' : ''}{label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Name + time row */}
           <div className="flex gap-2">
             <Input
@@ -275,35 +313,79 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
               onKeyDown={(e) => e.key === 'Enter' && add()}
               placeholder={isRTL ? 'שם ההרגל' : 'Habit name'}
               className="rounded-xl flex-1"
-              style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
+              style={{
+                background: 'var(--c-input)',
+                border: `1.5px solid ${name.trim() ? `${domain.color}55` : 'var(--c-input-border)'}`,
+                color: 'var(--foreground)',
+              }}
             />
             <input
               type="time" value={time} onChange={(e) => setTime(e.target.value)}
               className="rounded-xl px-2 text-sm w-24 flex-shrink-0"
-              style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
+              style={{
+                background: 'var(--c-input)',
+                border: `1.5px solid ${time ? `${domain.color}55` : 'var(--c-input-border)'}`,
+                color: 'var(--foreground)',
+              }}
             />
           </div>
+
+          {/* Optional note */}
+          {showNote ? (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <AlignLeft size={10} style={{ color: 'var(--muted-foreground)' }} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted-foreground)' }}>
+                    {isRTL ? 'הערה' : 'Note'}
+                  </span>
+                </div>
+                <button onClick={() => { setShowNote(false); setDescription('') }} style={{ color: 'var(--muted-foreground)' }}>
+                  <X size={11} />
+                </button>
+              </div>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={isRTL ? 'מה המטרה של ההרגל הזה?' : "What's the goal?"}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                rows={2}
+                autoFocus
+                className="w-full rounded-xl px-3 py-2.5 text-xs outline-none resize-none"
+                style={{ background: 'var(--c-input)', border: '1.5px solid var(--c-input-border)', color: 'var(--foreground)' }}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNote(true)}
+              className="flex items-center gap-1.5 text-[11px] transition-opacity hover:opacity-80"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              <AlignLeft size={11} />
+              {isRTL ? '+ הוסף הערה' : '+ Add a note'}
+            </button>
+          )}
 
           {/* Day schedule toggle (only for daily) */}
           {frequency === 'daily' && (
             <>
-              <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${domain.color}30` }}>
+              <div className="flex rounded-xl overflow-hidden" style={{ border: `1.5px solid ${domain.color}25`, background: `${domain.color}08` }}>
                 <button
                   onClick={() => setAllDays(true)}
-                  className="flex-1 text-xs py-1.5 font-medium transition-all"
+                  className="flex-1 text-xs py-2 font-semibold transition-all"
                   style={{
-                    background: allDays ? domain.color : 'transparent',
-                    color: allDays ? '#fff' : 'var(--muted-foreground)',
+                    background: allDays ? `${domain.color}22` : 'transparent',
+                    color: allDays ? domain.color : 'var(--muted-foreground)',
                   }}
                 >
                   {isRTL ? 'כל יום' : 'Every day'}
                 </button>
                 <button
                   onClick={() => setAllDays(false)}
-                  className="flex-1 text-xs py-1.5 font-medium transition-all"
+                  className="flex-1 text-xs py-2 font-semibold transition-all"
                   style={{
-                    background: !allDays ? domain.color : 'transparent',
-                    color: !allDays ? '#fff' : 'var(--muted-foreground)',
+                    background: !allDays ? `${domain.color}22` : 'transparent',
+                    color: !allDays ? domain.color : 'var(--muted-foreground)',
                   }}
                 >
                   {isRTL ? 'ימים ספציפים' : 'Specific days'}
@@ -318,11 +400,11 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
                       <button
                         key={idx}
                         onClick={() => toggleDay(idx)}
-                        className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95"
+                        className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95"
                         style={{
-                          background: active ? domain.color : 'transparent',
+                          background: active ? domain.color : 'var(--c-surface-2)',
                           color: active ? '#fff' : 'var(--muted-foreground)',
-                          border: `1px solid ${active ? domain.color : `${domain.color}30`}`,
+                          border: `1.5px solid ${active ? domain.color : 'transparent'}`,
                         }}
                       >
                         {label}
@@ -335,18 +417,25 @@ export function DomainHabitsTab({ habits, completedSet, domain, userId, onAdded,
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end pt-1">
             <button
               onClick={cancelAdd}
               className="p-2 rounded-xl"
               style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
             >
-              <X size={16} />
+              <X size={15} />
             </button>
             <Button
-              onClick={add} disabled={saving || !name.trim() || (!allDays && selectedDays.length === 0)}
-              className="rounded-xl px-4"
-              style={{ background: domain.color, color: '#fff', border: 'none', opacity: saving || !name.trim() || (!allDays && selectedDays.length === 0) ? 0.5 : 1 }}
+              onClick={add}
+              disabled={saving || !name.trim() || (frequency === 'daily' && !allDays && selectedDays.length === 0)}
+              className="rounded-xl px-5 font-semibold"
+              style={{
+                background: domain.color,
+                color: '#fff',
+                border: 'none',
+                boxShadow: `0 4px 14px ${domain.color}40`,
+                opacity: saving || !name.trim() || (frequency === 'daily' && !allDays && selectedDays.length === 0) ? 0.5 : 1,
+              }}
             >
               {isRTL ? 'הוסף' : 'Add'}
             </Button>
