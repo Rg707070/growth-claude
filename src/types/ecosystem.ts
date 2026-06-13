@@ -1,5 +1,6 @@
 export type DomainTaskUrgency = 'low' | 'normal' | 'high' | 'critical'
 export type DomainTaskStatus = 'pending' | 'done'
+export type DomainTaskFrequency = 'weekly' | 'monthly' | 'yearly'
 
 export interface DomainTask {
   id: string
@@ -9,6 +10,7 @@ export interface DomainTask {
   category: string
   urgency: DomainTaskUrgency
   status: DomainTaskStatus
+  frequency: DomainTaskFrequency
   due_date: string | null
   created_at: string
 }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Grid3X3, CalendarDays, Settings, NotebookPen, BookOpen, Plus, X, type LucideIcon } from 'lucide-react'
+import { Home, Grid3X3, CalendarDays, Settings, NotebookPen, ListChecks, Plus, X, type LucideIcon } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -32,12 +32,12 @@ type NavItem = {
 }
 
 const DEFAULT_ITEMS: NavItem[] = [
-  { id: 'dashboard', icon: Home,         href: '/dashboard', labelHe: 'בית',       labelEn: 'Home'     },
-  { id: 'domains',   icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',    labelEn: 'Domains'  },
-  { id: 'reading',   icon: BookOpen,     href: '/reading',   labelHe: 'ספרים',     labelEn: 'Books'    },
-  { id: 'journal',   icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',      labelEn: 'Journal'  },
-  { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',      labelEn: 'Schedule' },
-  { id: 'settings',  icon: Settings,     href: '/settings',  labelHe: 'הגדרות',    labelEn: 'Settings' },
+  { id: 'dashboard', icon: Home,         href: '/dashboard', labelHe: 'בית',      labelEn: 'Home'     },
+  { id: 'domains',   icon: Grid3X3,      href: '/domains',   labelHe: 'תחומים',   labelEn: 'Domains'  },
+  { id: 'lists',     icon: ListChecks,   href: '/lists',     labelHe: 'רשימות',   labelEn: 'Lists'    },
+  { id: 'journal',   icon: NotebookPen,  href: '/journal',   labelHe: 'יומן',     labelEn: 'Journal'  },
+  { id: 'schedule',  icon: CalendarDays, href: '/schedule',  labelHe: 'לו"ז',     labelEn: 'Schedule' },
+  { id: 'settings',  icon: Settings,     href: '/settings',  labelHe: 'הגדרות',   labelEn: 'Settings' },
 ]
 
 const STORAGE_KEY = 'nav-order'
@@ -360,8 +360,9 @@ export function BottomNav() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={horizontalListSortingStrategy}>
           <nav
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 md:hidden"
+            className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden"
             style={{
+              bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
               background: 'var(--c-nav)',
               border: `1px solid ${isEditMode ? 'var(--primary)' : 'var(--c-nav-border)'}`,
               backdropFilter: 'blur(24px)',

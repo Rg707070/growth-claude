@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { DOMAINS } from '@/lib/domains'
@@ -20,13 +20,17 @@ const PRESET_EMOJIS = [
   '👥', '📖', '⚡', '🎓', '🏋️', '🍎', '😴', '💻',
 ]
 
+const BUILTIN_SLUGS = new Set(DOMAINS.map((d) => d.slug))
+
 interface DomainsClientProps {
   userId: string
   domains: Domain[]
   hasCustomDomains: boolean
+  customDomainSlugs: string[]
 }
 
-export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClientProps) {
+export function DomainsClient({ userId, domains, hasCustomDomains, customDomainSlugs }: DomainsClientProps) {
+  const userSlugs = useMemo(() => new Set(customDomainSlugs), [customDomainSlugs])
   const { isRTL } = useLang()
   const router = useRouter()
   const [showAdd, setShowAdd] = useState(false)
@@ -47,7 +51,7 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
     if (!newName.trim() || saving) return
     setSaving(true)
     await ensureMigrated()
-    const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `domain-${Date.now()}`
+    const slug = newName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-֐-׿]/g, '') || `domain-${Date.now()}`
     const supabase = createClient()
     const { error } = await supabase.from('user_domains').insert({
       user_id: userId,
@@ -390,8 +394,8 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
                 />
               </button>
 
-              {/* Delete button — only for custom domains */}
-              {hasCustomDomains && (
+              {/* Delete button — only for user-added domains, not built-in */}
+              {userSlugs.has(domain.slug) && !BUILTIN_SLUGS.has(domain.slug) && (
                 <button
                   onClick={() => deleteDomain(domain.slug)}
                   disabled={deletingSlug === domain.slug}
@@ -404,6 +408,50 @@ export function DomainsClient({ userId, domains, hasCustomDomains }: DomainsClie
               )}
             </div>
           ))}
+        </div>
+
+        {/* Books shortcut */}
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'קריאה' : 'Reading'}
+            </span>
+            <div className="flex-1 h-px" style={{ background: 'var(--c-border)' }} />
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => router.push('/reading')}
+              className="w-full flex items-center gap-4 text-start active:scale-[0.98] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md overflow-hidden md:flex-col md:items-start md:gap-3"
+              style={{
+                background: 'var(--c-surface-2)',
+                border: '1.5px dashed var(--c-border)',
+                borderRadius: '1.1rem',
+                padding: '0.95rem 1.1rem',
+              }}
+            >
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ms-1 md:ms-0 md:w-14 md:h-14 md:text-2xl md:mt-2"
+                style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.2)' }}
+              >
+                📚
+              </div>
+              <div className="flex-1 min-w-0 md:w-full">
+                <p className="font-semibold text-base leading-tight" style={{ color: 'var(--foreground)' }}>
+                  {isRTL ? 'ספרים' : 'Books'}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                  {isRTL ? 'מעקב קריאה' : 'Track your reading'}
+                </p>
+              </div>
+              <ChevronRight
+                size={18}
+                strokeWidth={2}
+                style={{ color: 'var(--muted-foreground)', transform: isRTL ? 'scaleX(-1)' : 'none' }}
+                className="flex-shrink-0 md:hidden"
+              />
+            </button>
+          </div>
         </div>
 
         {/* Add more button when custom domains exist */}

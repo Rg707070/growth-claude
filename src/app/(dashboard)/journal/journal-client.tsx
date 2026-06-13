@@ -4,22 +4,25 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { WritingTab } from './writing-tab'
-import { InsightsTab } from './insights-tab'
-import { AlbumTab } from './album-tab'
-import type { DocMeta, DomainEntry, PhotoEntry } from './page'
+import { TasksTab } from './tasks-tab'
+import type { DocMeta } from './page'
+import type { DomainTask, DomainGoal } from '@/types/ecosystem'
+import type { FamilyTask, FamilyEvent } from '@/types/family'
 
-type Tab = 'writing' | 'insights' | 'album'
+type Tab = 'writing' | 'tasks'
 
-const TABS: Tab[] = ['writing', 'insights', 'album']
+const TABS: Tab[] = ['writing', 'tasks']
 
 interface JournalClientProps {
   userId: string
   documents: DocMeta[]
-  domainEntries: DomainEntry[]
-  photos: PhotoEntry[]
+  domainTasks: DomainTask[]
+  domainGoals: DomainGoal[]
+  familyTasks: FamilyTask[]
+  familyEvents: FamilyEvent[]
 }
 
-export function JournalClient({ userId, documents, domainEntries, photos }: JournalClientProps) {
+export function JournalClient({ userId, documents, domainTasks, domainGoals, familyTasks, familyEvents }: JournalClientProps) {
   const { isRTL } = useLang()
   const searchParams = useSearchParams()
   const paramTab = searchParams.get('tab') as Tab | null
@@ -27,9 +30,8 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
   const initialDocId = searchParams.get('doc')
 
   const tabs: { id: Tab; labelHe: string; labelEn: string }[] = [
-    { id: 'writing', labelHe: 'כתיבה', labelEn: 'Writing' },
-    { id: 'insights', labelHe: 'הארות', labelEn: 'Insights' },
-    { id: 'album', labelHe: 'אלבום', labelEn: 'Album' },
+    { id: 'writing', labelHe: 'כתיבה',   labelEn: 'Writing' },
+    { id: 'tasks',   labelHe: 'משימות',  labelEn: 'Tasks'   },
   ]
 
   return (
@@ -38,7 +40,7 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
         {/* Header (mobile-only; desktop has topbar) */}
         <div className="mb-6 md:hidden">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-            {isRTL ? 'יומן' : 'Journal'}
+            {isRTL ? 'יומן ומשימות' : 'Journal & Tasks'}
           </h1>
         </div>
 
@@ -65,8 +67,15 @@ export function JournalClient({ userId, documents, domainEntries, photos }: Jour
 
         {/* Tab content */}
         {tab === 'writing' && <WritingTab userId={userId} initialDocs={documents} initialDocId={initialDocId} />}
-        {tab === 'insights' && <InsightsTab entries={domainEntries} />}
-        {tab === 'album' && <AlbumTab userId={userId} initialPhotos={photos} />}
+        {tab === 'tasks' && (
+          <TasksTab
+            userId={userId}
+            domainTasks={domainTasks}
+            domainGoals={domainGoals}
+            familyTasks={familyTasks}
+            familyEvents={familyEvents}
+          />
+        )}
       </div>
     </div>
   )

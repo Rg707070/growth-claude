@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')
   const isGoogleRoute = pathname.startsWith('/api/google/')
 
   if (!user && !isAuthPage && !isGoogleRoute && pathname !== '/') {

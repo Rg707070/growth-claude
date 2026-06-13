@@ -16,17 +16,18 @@ export default async function DomainsPage() {
     .order('sort_order', { ascending: true })
 
   const userDomains = (data as UserDomain[]) ?? []
-
+  const customSlugs = new Set(userDomains.map((ud) => ud.slug))
+  const userMapped: Domain[] = userDomains.map((ud) => ({
+    slug: ud.slug,
+    nameHe: ud.name,
+    nameEn: ud.name,
+    icon: ud.icon,
+    color: ud.color,
+    gradient: '',
+    glowColor: `${ud.color}33`,
+  }))
   const activeDomains: Domain[] = userDomains.length > 0
-    ? userDomains.map((ud) => ({
-        slug: ud.slug,
-        nameHe: ud.name,
-        nameEn: ud.name,
-        icon: ud.icon,
-        color: ud.color,
-        gradient: '',
-        glowColor: `${ud.color}33`,
-      }))
+    ? [...userMapped, ...DOMAINS.filter((d) => !customSlugs.has(d.slug))]
     : DOMAINS
 
   return (
@@ -34,6 +35,7 @@ export default async function DomainsPage() {
       userId={user.id}
       domains={activeDomains}
       hasCustomDomains={userDomains.length > 0}
+      customDomainSlugs={[...customSlugs]}
     />
   )
 }
