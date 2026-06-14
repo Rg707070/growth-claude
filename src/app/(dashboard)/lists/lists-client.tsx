@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, CheckCircle2, Circle, ChevronRight, ChevronLeft, FolderOpen, Folder, X, CalendarDays } from 'lucide-react'
+import { Plus, Trash2, CheckCircle2, Circle, ChevronRight, ChevronLeft, FolderOpen, Folder, X, CalendarDays, Search, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import type { NoteList, QuickNote } from './page'
@@ -66,6 +66,8 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   const [lists, setLists] = useState<NoteList[]>(initialLists)
   const [notes, setNotes] = useState<QuickNote[]>(initialNotes)
   const [activeListId, setActiveListId] = useState<string | null>(null)
+  const [folderSearch, setFolderSearch] = useState('')
+  const [noteSearch, setNoteSearch] = useState('')
 
   // Create folder state
   const [creatingFolder, setCreatingFolder] = useState(false)
@@ -166,6 +168,14 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
     await supabase.from('quick_notes').delete().eq('id', id)
   }
 
+  const updateNote = async (id: string, content: string) => {
+    setNotes((prev: QuickNote[]) =>
+      prev.map((n: QuickNote) => n.id === id ? { ...n, content } : n)
+    )
+    const supabase = createClient()
+    await supabase.from('quick_notes').update({ content }).eq('id', id)
+  }
+
   const activeList = lists.find((l: NoteList) => l.id === activeListId)
   const activeNotes = notes.filter((n: QuickNote) => n.list_id === activeListId)
   const pending = activeNotes.filter((n: QuickNote) => !n.is_done)
@@ -196,6 +206,17 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
     return bLast.localeCompare(aLast)
   })
 
+  // ── Folder search filter ────────────────────────────────────────────────
+  const filteredLists = folderSearch.trim()
+    ? sortedLists.filter(l => l.name.toLowerCase().includes(folderSearch.toLowerCase()))
+    : sortedLists
+
+  // ── Note search filter ──────────────────────────────────────────────────
+  const isSearching = noteSearch.trim().length > 0
+  const searchResults = isSearching
+    ? activeNotes.filter((n: QuickNote) => n.content.toLowerCase().includes(noteSearch.toLowerCase()))
+    : []
+
   // ── Folder list view ───────────────────────────────────────────────────
   if (!activeListId) {
     return (
@@ -203,7 +224,7 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
         <div className="max-w-lg mx-auto px-4 pt-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
                 {isRTL ? 'רשימות' : 'Lists'}
@@ -228,6 +249,29 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
               {isRTL ? 'תיקייה' : 'Folder'}
             </button>
           </div>
+
+          {/* Search bar */}
+          {lists.length > 0 && (
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-4"
+              style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
+            >
+              <Search size={15} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+              <input
+                value={folderSearch}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFolderSearch(e.target.value)}
+                placeholder={isRTL ? 'חיפוש תיקיות...' : 'Search folders...'}
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+                style={{ color: 'var(--foreground)' }}
+                dir={isRTL ? 'rtl' : 'ltr'}
+              />
+              {folderSearch && (
+                <button onClick={() => setFolderSearch('')} style={{ color: 'var(--muted-foreground)' }}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Create folder inline input */}
           {creatingFolder && (
@@ -280,14 +324,24 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
             </div>
           )}
 
+          {/* No search results */}
+          {folderSearch && filteredLists.length === 0 && (
+            <div className="text-center py-10">
+              <div className="text-3xl mb-2">🔍</div>
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'לא נמצאו תיקיות' : 'No folders found'}
+              </p>
+            </div>
+          )}
+
           {/* Folder cards — sorted by last activity */}
           <div className="space-y-2">
-            {sortedLists.map((list: NoteList, idx: number) => {
+            {filteredLists.map((list: NoteList) => {
               const listNotes = notes.filter((n: QuickNote) => n.list_id === list.id)
               const doneCount = listNotes.filter((n: QuickNote) => n.is_done).length
               const overdueCount = listNotes.filter((n: QuickNote) => !n.is_done && n.due_date && n.due_date < t).length
               const lastActivity = folderLastActivity(list.id, notes, list.created_at)
-              const color = folderColor(idx)
+              const color = folderColor(sortedLists.findIndex(l => l.id === list.id))
               return (
                 <FolderCard
                   key={list.id}
@@ -312,15 +366,22 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   // ── Notes inside folder ────────────────────────────────────────────────
   const activeIdx = sortedLists.findIndex((l: NoteList) => l.id === activeListId)
   const color = folderColor(activeIdx >= 0 ? activeIdx : 0)
+  const allDone = activeNotes.length > 0 && pending.length === 0
 
   return (
     <div className="min-h-screen pb-28 md:pb-8" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-lg mx-auto px-4 pt-6">
 
         {/* Back + folder title */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-4">
           <button
-            onClick={() => { setActiveListId(null); setNoteInput(''); setNoteDueDate(''); setShowDatePicker(false) }}
+            onClick={() => {
+              setActiveListId(null)
+              setNoteInput('')
+              setNoteDueDate('')
+              setShowDatePicker(false)
+              setNoteSearch('')
+            }}
             className="flex items-center justify-center w-9 h-9 rounded-xl transition-all active:scale-90"
             style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)', color: 'var(--muted-foreground)' }}
             aria-label={isRTL ? 'חזור' : 'Back'}
@@ -337,6 +398,17 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
             {activeNotes.length}
           </span>
         </div>
+
+        {/* All done celebration */}
+        {allDone && (
+          <div
+            className="flex items-center gap-2 rounded-2xl px-4 py-3 mb-4 text-sm font-medium"
+            style={{ background: `${color}15`, border: `1px solid ${color}40`, color }}
+          >
+            <CheckCircle2 size={18} />
+            {isRTL ? '🎉 כל הפריטים הושלמו!' : '🎉 All items complete!'}
+          </div>
+        )}
 
         {/* Add note input */}
         <div className="mb-4">
@@ -408,6 +480,29 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
           )}
         </div>
 
+        {/* Search bar (show when 3+ items) */}
+        {activeNotes.length > 2 && (
+          <div
+            className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-4"
+            style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
+          >
+            <Search size={15} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+            <input
+              value={noteSearch}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNoteSearch(e.target.value)}
+              placeholder={isRTL ? 'חיפוש בפריטים...' : 'Search items...'}
+              className="flex-1 bg-transparent text-sm focus:outline-none"
+              style={{ color: 'var(--foreground)' }}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
+            {noteSearch && (
+              <button onClick={() => setNoteSearch('')} style={{ color: 'var(--muted-foreground)' }}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Empty state */}
         {activeNotes.length === 0 && (
           <div className="text-center py-16">
@@ -418,34 +513,70 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
           </div>
         )}
 
-        {/* ── Pending notes by date groups ── */}
-        {pending.length > 0 && (
-          <div className="mb-6 space-y-1">
-            <NotesSection label={isRTL ? '⚠ פג תוקף' : '⚠ Overdue'} labelColor="#ef4444" notes={overdue}    isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'היום'       : 'Today'}     labelColor="#f59e0b" notes={dueToday}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'מחר'        : 'Tomorrow'}  labelColor="#3b82f6" notes={dueTomorrow} isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'השבוע'      : 'This week'} labelColor="#8b5cf6" notes={dueWeek}   isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'מאוחר יותר' : 'Later'}     labelColor="#10b981" notes={dueLater}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'נוסף היום'  : 'Added today'}    labelColor="var(--muted-foreground)" notes={noDueToday}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'השבוע'      : 'This week'}  labelColor="var(--muted-foreground)" notes={noDueWeek}   isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
-            <NotesSection label={isRTL ? 'ישן יותר'   : 'Older'}      labelColor="var(--muted-foreground)" notes={noDueOlder}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+        {/* Search results — flat list, no date groupings */}
+        {isSearching ? (
+          <div className="mb-6 space-y-2">
+            {searchResults.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-2xl mb-2">🔍</div>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  {isRTL ? 'לא נמצאו פריטים' : 'No items found'}
+                </p>
+              </div>
+            ) : (
+              searchResults.map((note: QuickNote) => (
+                <NoteRow
+                  key={note.id}
+                  note={note}
+                  onToggle={toggleNote}
+                  onDelete={deleteNote}
+                  onEdit={updateNote}
+                  isRTL={isRTL}
+                  accentColor={color}
+                />
+              ))
+            )}
           </div>
-        )}
+        ) : (
+          <>
+            {/* Pending notes by date groups */}
+            {pending.length > 0 && (
+              <div className="mb-6 space-y-1">
+                <NotesSection label={isRTL ? '⚠ פג תוקף' : '⚠ Overdue'} labelColor="#ef4444"                    notes={overdue}     isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'היום'       : 'Today'}     labelColor="#f59e0b"                    notes={dueToday}    isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'מחר'        : 'Tomorrow'}  labelColor="#3b82f6"                    notes={dueTomorrow} isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'השבוע'      : 'This week'} labelColor="#8b5cf6"                    notes={dueWeek}     isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'מאוחר יותר' : 'Later'}     labelColor="#10b981"                    notes={dueLater}    isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'נוסף היום'  : 'Added today'}    labelColor="var(--muted-foreground)" notes={noDueToday}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'השבוע'      : 'This week'}  labelColor="var(--muted-foreground)" notes={noDueWeek}   isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+                <NotesSection label={isRTL ? 'ישן יותר'   : 'Older'}      labelColor="var(--muted-foreground)" notes={noDueOlder}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} onEdit={updateNote} />
+              </div>
+            )}
 
-        {/* Done notes */}
-        {done.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2 px-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-                {isRTL ? 'הושלמו' : 'Done'} ({done.length})
-              </span>
-            </div>
-            <div className="space-y-2 opacity-60">
-              {done.map((note: QuickNote) => (
-                <NoteRow key={note.id} note={note} onToggle={toggleNote} onDelete={deleteNote} isRTL={isRTL} accentColor={color} />
-              ))}
-            </div>
-          </div>
+            {/* Done notes */}
+            {done.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                    {isRTL ? 'הושלמו' : 'Done'} ({done.length})
+                  </span>
+                </div>
+                <div className="space-y-2 opacity-60">
+                  {done.map((note: QuickNote) => (
+                    <NoteRow
+                      key={note.id}
+                      note={note}
+                      onToggle={toggleNote}
+                      onDelete={deleteNote}
+                      onEdit={updateNote}
+                      isRTL={isRTL}
+                      accentColor={color}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -461,6 +592,7 @@ function NotesSection({
   accentColor,
   onToggle,
   onDelete,
+  onEdit,
 }: {
   label: string
   labelColor: string
@@ -469,6 +601,7 @@ function NotesSection({
   accentColor: string
   onToggle: (note: QuickNote) => void | Promise<void>
   onDelete: (id: string) => void | Promise<void>
+  onEdit: (id: string, content: string) => void | Promise<void>
 }) {
   if (notes.length === 0) return null
   return (
@@ -487,7 +620,15 @@ function NotesSection({
       </div>
       <div className="space-y-2">
         {notes.map(note => (
-          <NoteRow key={note.id} note={note} onToggle={onToggle} onDelete={onDelete} isRTL={isRTL} accentColor={accentColor} />
+          <NoteRow
+            key={note.id}
+            note={note}
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            isRTL={isRTL}
+            accentColor={accentColor}
+          />
         ))}
       </div>
     </div>
@@ -516,15 +657,13 @@ function FolderCard({
   onClick: () => void
   onDelete: () => void | Promise<void>
 }) {
-  const [showDelete, setShowDelete] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
 
   return (
     <div
       className="group flex items-center gap-4 rounded-2xl px-4 py-4 cursor-pointer transition-all active:scale-[0.99] hover:scale-[1.005]"
       style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
       onClick={onClick}
-      onMouseEnter={() => setShowDelete(true)}
-      onMouseLeave={() => setShowDelete(false)}
     >
       {/* Folder icon */}
       <div
@@ -567,7 +706,7 @@ function FolderCard({
         </div>
       </div>
 
-      {/* Progress bar (if has items) */}
+      {/* Progress bar */}
       {total > 0 && (
         <div className="w-12 flex flex-col items-end gap-1">
           <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: `${color}22` }}>
@@ -582,20 +721,43 @@ function FolderCard({
         </div>
       )}
 
-      {/* Chevron / delete */}
-      <div className="flex-shrink-0 flex items-center gap-1">
-        <button
-          onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete() }}
-          className={`transition-all active:scale-90 md:opacity-0 md:group-hover:opacity-100 ${showDelete ? 'opacity-60' : 'opacity-0'}`}
-          aria-label={isRTL ? 'מחק תיקייה' : 'Delete folder'}
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          <Trash2 size={14} strokeWidth={1.75} />
-        </button>
-        {isRTL
-          ? <ChevronLeft size={16} style={{ color: 'var(--muted-foreground)' }} />
-          : <ChevronRight size={16} style={{ color: 'var(--muted-foreground)' }} />
-        }
+      {/* Delete with confirmation */}
+      <div className="flex-shrink-0 flex items-center gap-1" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+        {deleteConfirm ? (
+          <>
+            <button
+              onClick={() => setDeleteConfirm(false)}
+              className="w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-90"
+              style={{ color: 'var(--muted-foreground)', background: 'var(--c-surface-2)' }}
+              aria-label={isRTL ? 'ביטול' : 'Cancel'}
+            >
+              <X size={13} />
+            </button>
+            <button
+              onClick={() => { onDelete(); setDeleteConfirm(false) }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-90"
+              style={{ color: 'white', background: '#ef4444' }}
+              aria-label={isRTL ? 'אשר מחיקה' : 'Confirm delete'}
+            >
+              <Check size={13} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="transition-all active:scale-90 opacity-30 md:opacity-0 md:group-hover:opacity-60"
+              style={{ color: 'var(--muted-foreground)' }}
+              aria-label={isRTL ? 'מחק תיקייה' : 'Delete folder'}
+            >
+              <Trash2 size={14} strokeWidth={1.75} />
+            </button>
+            {isRTL
+              ? <ChevronLeft size={16} style={{ color: 'var(--muted-foreground)' }} />
+              : <ChevronRight size={16} style={{ color: 'var(--muted-foreground)' }} />
+            }
+          </>
+        )}
       </div>
     </div>
   )
@@ -606,27 +768,63 @@ function NoteRow({
   note,
   onToggle,
   onDelete,
+  onEdit,
   isRTL,
   accentColor,
 }: {
   note: QuickNote
   onToggle: (note: QuickNote) => void | Promise<void>
   onDelete: (id: string) => void | Promise<void>
+  onEdit: (id: string, content: string) => void | Promise<void>
   isRTL: boolean
   accentColor: string
 }) {
-  const [showDelete, setShowDelete] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState(note.content)
+  const [justCompleted, setJustCompleted] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const editRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing) editRef.current?.focus()
+  }, [editing])
+
+  useEffect(() => {
+    if (!editing) setEditText(note.content)
+  }, [note.content, editing])
+
+  const handleToggle = async () => {
+    if (!note.is_done) {
+      setJustCompleted(true)
+      setTimeout(() => setJustCompleted(false), 500)
+    }
+    await onToggle(note)
+  }
+
+  const saveEdit = async () => {
+    const trimmed = editText.trim()
+    if (trimmed && trimmed !== note.content) {
+      await onEdit(note.id, trimmed)
+    } else {
+      setEditText(note.content)
+    }
+    setEditing(false)
+  }
+
   const dColor = dueDateColor(note.due_date)
 
   return (
     <div
-      className="group flex items-start gap-3 rounded-2xl px-4 py-3 transition-all"
-      style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
-      onMouseEnter={() => setShowDelete(true)}
-      onMouseLeave={() => setShowDelete(false)}
+      className="group flex items-start gap-3 rounded-2xl px-4 py-3"
+      style={{
+        background: justCompleted ? `${accentColor}15` : 'var(--c-surface-2)',
+        border: justCompleted ? `1px solid ${accentColor}60` : '1px solid var(--c-border)',
+        transform: justCompleted ? 'scale(1.01)' : 'scale(1)',
+        transition: 'all 0.3s ease',
+      }}
     >
       <button
-        onClick={() => onToggle(note)}
+        onClick={handleToggle}
         className="flex-shrink-0 mt-0.5 transition-transform active:scale-90"
         aria-label={note.is_done ? (isRTL ? 'בטל סימון' : 'Mark undone') : (isRTL ? 'סמן כבוצע' : 'Mark done')}
       >
@@ -637,16 +835,37 @@ function NoteRow({
       </button>
 
       <div className="flex-1 min-w-0">
-        <span
-          className="text-sm leading-snug block"
-          style={{
-            color: note.is_done ? 'var(--muted-foreground)' : 'var(--foreground)',
-            textDecoration: note.is_done ? 'line-through' : 'none',
-          }}
-          dir={isRTL ? 'rtl' : 'ltr'}
-        >
-          {note.content}
-        </span>
+        {editing ? (
+          <input
+            ref={editRef}
+            value={editText}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
+            onBlur={saveEdit}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === 'Enter') saveEdit()
+              if (e.key === 'Escape') { setEditText(note.content); setEditing(false) }
+            }}
+            className="w-full bg-transparent text-sm focus:outline-none pb-0.5"
+            style={{
+              color: 'var(--foreground)',
+              borderBottom: `1.5px solid ${accentColor}`,
+            }}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          />
+        ) : (
+          <span
+            className="text-sm leading-snug block"
+            style={{
+              color: note.is_done ? 'var(--muted-foreground)' : 'var(--foreground)',
+              textDecoration: note.is_done ? 'line-through' : 'none',
+              cursor: note.is_done ? 'default' : 'text',
+            }}
+            dir={isRTL ? 'rtl' : 'ltr'}
+            onClick={() => { if (!note.is_done) setEditing(true) }}
+          >
+            {note.content}
+          </span>
+        )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {note.due_date && (
             <span
@@ -663,14 +882,38 @@ function NoteRow({
         </div>
       </div>
 
-      <button
-        onClick={() => onDelete(note.id)}
-        className={`flex-shrink-0 mt-0.5 transition-all active:scale-90 md:opacity-0 md:group-hover:opacity-100 ${showDelete ? 'opacity-100' : 'opacity-0'}`}
-        aria-label={isRTL ? 'מחק' : 'Delete'}
-        style={{ color: 'var(--muted-foreground)' }}
-      >
-        <Trash2 size={15} strokeWidth={1.75} />
-      </button>
+      {/* Delete — visible on mobile (opacity-40), hover on desktop */}
+      <div className="flex-shrink-0 mt-0.5">
+        {deleteConfirm ? (
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => setDeleteConfirm(false)}
+              className="p-1 transition-all active:scale-90"
+              style={{ color: 'var(--muted-foreground)' }}
+              aria-label={isRTL ? 'ביטול' : 'Cancel'}
+            >
+              <X size={13} />
+            </button>
+            <button
+              onClick={() => onDelete(note.id)}
+              className="p-1 transition-all active:scale-90"
+              style={{ color: '#ef4444' }}
+              aria-label={isRTL ? 'אשר מחיקה' : 'Confirm delete'}
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setDeleteConfirm(true)}
+            className="transition-all active:scale-90 opacity-40 md:opacity-0 md:group-hover:opacity-60"
+            aria-label={isRTL ? 'מחק' : 'Delete'}
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            <Trash2 size={15} strokeWidth={1.75} />
+          </button>
+        )}
+      </div>
     </div>
   )
 }
