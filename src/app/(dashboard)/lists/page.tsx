@@ -13,6 +13,7 @@ export interface QuickNote {
   is_done: boolean
   created_at: string
   list_id: string | null
+  due_date: string | null
 }
 
 export default async function ListsPage() {
@@ -30,7 +31,7 @@ export default async function ListsPage() {
       .order('created_at', { ascending: true }),
     supabase
       .from('quick_notes')
-      .select('id, content, is_done, created_at, list_id')
+      .select('id, content, is_done, created_at, list_id, due_date')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false }),
   ])
