@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, CalendarDays, X, Check, Clock, Star, Dumbbell, Music, Wallet, Users, BookOpen } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarDays, X, Check, Clock, Star, Dumbbell, Music, Wallet, Users, BookOpen, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
@@ -10,10 +10,19 @@ import type { Habit, HabitLog } from '@/types'
 type HabitRow = Pick<Habit, 'id' | 'name' | 'domain_slug' | 'is_active'>
 type LogRow = Pick<HabitLog, 'habit_id' | 'completed_at'>
 
+interface CalendarEventRow {
+  id: string
+  title: string
+  notes: string | null
+  event_time: string | null
+  color: string | null
+}
+
 interface DayData {
   schedule: { id: string; time: string; label: string; type: string }[]
   checkedTimes: string[]
   events: { id: string; title: string; description: string | null }[]
+  calendarEvents: CalendarEventRow[]
   familyTasks: { id: string; title: string; status: string }[]
   domainTasks: { id: string; title: string; domain_slug: string; status: string }[]
   workouts: { id: string; workout_type: string; duration_minutes: number | null; notes: string | null }[]
@@ -30,6 +39,97 @@ interface CalendarClientProps {
   embedded?: boolean
 }
 
+const EVENT_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#6366f1', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316']
+
+export function AddCalendarEventSheet({ defaultDate, onClose, onSaved }: {
+  defaultDate: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { isRTL } = useLang()
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState(defaultDate)
+  const [time, setTime] = useState('')
+  const [notes, setNotes] = useState('')
+  const [color, setColor] = useState('#f59e0b')
+  const [busy, setBusy] = useState(false)
+
+  async function handleSave() {
+    if (!title.trim() || !date) return
+    setBusy(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setBusy(false); return }
+    await supabase.from('calendar_events').insert({
+      user_id: user.id,
+      title: title.trim(),
+      event_date: date,
+      event_time: time || null,
+      notes: notes.trim() || null,
+      color,
+    })
+    setBusy(false)
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full rounded-t-3xl animate-fade-in flex flex-col"
+        style={{ background: 'var(--c-fab-sheet)', border: '1px solid var(--c-border)', maxHeight: '80dvh' }}>
+        <div className="w-8 h-1 rounded-full bg-white/20 mx-auto mt-4 flex-shrink-0" />
+        <div className="flex gap-2 items-center px-5 pt-4 pb-3 border-b flex-shrink-0"
+          style={{ borderColor: 'var(--c-border)' }}>
+          <button onClick={handleSave} disabled={busy || !title.trim() || !date}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30"
+            style={{ background: `${color}22`, color, border: `1px solid ${color}55` }}>
+            {busy ? '...' : isRTL ? 'שמור אירוע' : 'Save event'}
+          </button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm"
+            style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'ביטול' : 'Cancel'}
+          </button>
+        </div>
+        <div className="p-5 flex flex-col gap-4 overflow-y-auto"
+          style={{ paddingBottom: 'max(80px, env(safe-area-inset-bottom, 80px))' }}>
+          <input value={title} onChange={e => setTitle(e.target.value)}
+            placeholder={isRTL ? 'שם האירוע' : 'Event name'}
+            autoFocus
+            className="rounded-xl text-sm px-3 py-2.5 focus:outline-none"
+            style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)', color: 'var(--foreground)' }} />
+          <div className="flex gap-2">
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              className="flex-1 rounded-xl text-sm px-3 py-2.5 focus:outline-none"
+              style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)', color: 'var(--foreground)', colorScheme: 'dark' }} />
+            <input type="time" value={time} onChange={e => setTime(e.target.value)}
+              className="w-28 rounded-xl text-sm px-3 py-2.5 focus:outline-none"
+              style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)', color: 'var(--foreground)' }} />
+          </div>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder={isRTL ? 'הערות (אופציונלי)' : 'Notes (optional)'}
+            rows={2}
+            className="rounded-xl text-sm px-3 py-2.5 focus:outline-none resize-none"
+            style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)', color: 'var(--foreground)' }} />
+          <div>
+            <p className="text-[11px] mb-2" style={{ color: 'var(--muted-foreground)' }}>
+              {isRTL ? 'צבע' : 'Color'}
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {EVENT_COLORS.map(c => (
+                <button key={c} onClick={() => setColor(c)}
+                  className="w-7 h-7 rounded-full border-2 transition-all"
+                  style={{ background: c, borderColor: color === c ? 'white' : 'transparent',
+                    boxShadow: color === c ? `0 0 8px ${c}88` : 'none' }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function CalendarClient({ habits, logs, embedded = false }: CalendarClientProps) {
   const { isRTL } = useLang()
   const [viewDate, setViewDate] = useState(() => {
@@ -39,8 +139,31 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [dayData, setDayData] = useState<DayData | null>(null)
   const [loadingDay, setLoadingDay] = useState(false)
+  const [showAddEvent, setShowAddEvent] = useState(false)
+  const [addEventDate, setAddEventDate] = useState(new Date().toISOString().split('T')[0])
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [monthEventDates, setMonthEventDates] = useState<Set<string>>(new Set())
 
   const { year, month } = viewDate
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchMonthEvents = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const mm = String(month + 1).padStart(2, '0')
+      const dim = new Date(year, month + 1, 0).getDate()
+      const { data } = await supabase.from('calendar_events')
+        .select('event_date')
+        .eq('user_id', user.id)
+        .gte('event_date', `${year}-${mm}-01`)
+        .lte('event_date', `${year}-${mm}-${String(dim).padStart(2, '0')}`)
+      if (!cancelled) setMonthEventDates(new Set((data ?? []).map((e: { event_date: string }) => e.event_date)))
+    }
+    fetchMonthEvents()
+    return () => { cancelled = true }
+  }, [year, month, refreshKey])
 
   const logMap: Record<string, Set<string>> = {}
   for (const log of logs) {
@@ -95,7 +218,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
       const dow = new Date(selectedDay + 'T12:00:00').getDay()
 
       const [
-        schedRes, checkRes, eventsRes, famTasksRes, domTasksRes,
+        schedRes, checkRes, eventsRes, calEventsRes, famTasksRes, domTasksRes,
         workRes, musicRes, txRes, friendRes, journalRes, nightRes,
       ] = await Promise.all([
         supabase.from('user_schedule')
@@ -111,6 +234,11 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
           .select('id, title, description')
           .eq('user_id', user.id)
           .eq('event_date', selectedDay),
+        supabase.from('calendar_events')
+          .select('id, title, notes, event_time, color')
+          .eq('user_id', user.id)
+          .eq('event_date', selectedDay)
+          .order('event_time'),
         supabase.from('family_tasks')
           .select('id, title, status')
           .eq('user_id', user.id)
@@ -153,6 +281,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
         schedule: (schedRes.data ?? []) as DayData['schedule'],
         checkedTimes: ((checkRes.data ?? []) as { time: string }[]).map((r) => r.time),
         events: (eventsRes.data ?? []) as DayData['events'],
+        calendarEvents: (calEventsRes.data ?? []) as CalendarEventRow[],
         familyTasks: (famTasksRes.data ?? []) as DayData['familyTasks'],
         domainTasks: (domTasksRes.data ?? []) as DayData['domainTasks'],
         workouts: (workRes.data ?? []) as DayData['workouts'],
@@ -167,7 +296,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
 
     fetchDayData()
     return () => { cancelled = true }
-  }, [selectedDay])
+  }, [selectedDay, refreshKey])
 
   const monthNames = isRTL
     ? ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
@@ -186,6 +315,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
 
   const hasAnything = dayData && (
     dayData.schedule.length > 0 || dayData.events.length > 0 ||
+    dayData.calendarEvents.length > 0 ||
     dayData.domainTasks.length > 0 || dayData.familyTasks.length > 0 ||
     dayData.workouts.length > 0 || dayData.musicLogs.length > 0 ||
     dayData.transactions.length > 0 || dayData.friendInteractions.length > 0 ||
@@ -222,9 +352,19 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
               style={{ background: 'var(--c-surface-2)', color: 'var(--muted-foreground)' }}>
               {isRTL ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
-            <span className="font-bold text-base" style={{ color: 'var(--foreground)' }}>
-              {monthNames[month]} {year}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base" style={{ color: 'var(--foreground)' }}>
+                {monthNames[month]} {year}
+              </span>
+              <button
+                onClick={() => { setAddEventDate(today); setShowAddEvent(true) }}
+                className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                title={isRTL ? 'הוסף אירוע' : 'Add event'}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
             <button onClick={nextMonth}
               className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
               style={{ background: 'var(--c-surface-2)', color: 'var(--muted-foreground)' }}>
@@ -252,10 +392,18 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
               const pct = total > 0 ? completed / total : 0
               const isSelected = selectedDay === ds
               const isFuture = ds > today
+              const hasEvent = monthEventDates.has(ds)
 
               return (
                 <button key={ds}
-                  onClick={() => setSelectedDay(isSelected ? null : ds)}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedDay(null)
+                    } else {
+                      setSelectedDay(ds)
+                      setAddEventDate(ds)
+                    }
+                  }}
                   className="flex flex-col items-center justify-center rounded-xl py-1.5 gap-0.5 transition-all active:scale-90"
                   style={{
                     background: isSelected ? 'var(--c-primary-glow)' : isToday ? 'var(--c-surface-2)' : undefined,
@@ -279,6 +427,9 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
                       style={{ color: pct >= 1 ? 'var(--primary)' : 'var(--muted-foreground)' }}>
                       {completed}/{total}
                     </span>
+                  )}
+                  {hasEvent && (
+                    <span className="w-1 h-1 rounded-full" style={{ background: '#f59e0b' }} />
                   )}
                 </button>
               )
@@ -317,8 +468,19 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
         </div>
       </div>
 
+      {/* ── Add event sheet ─────────────────────────────────────── */}
+      {showAddEvent && (
+        <AddCalendarEventSheet
+          defaultDate={addEventDate}
+          onClose={() => setShowAddEvent(false)}
+          onSaved={() => {
+            setRefreshKey((k: number) => k + 1)
+          }}
+        />
+      )}
+
       {/* ── Day detail bottom sheet ─────────────────────────────── */}
-      {selectedDay && (
+      {selectedDay && !showAddEvent && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeSheet} />
           <div
@@ -349,11 +511,21 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
                   </p>
                 )}
               </div>
-              <button onClick={closeSheet}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--c-surface-2)', color: 'var(--muted-foreground)' }}>
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAddEvent(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-90"
+                  style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                >
+                  <Plus size={12} />
+                  {isRTL ? 'אירוע' : 'Event'}
+                </button>
+                <button onClick={closeSheet}
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--c-surface-2)', color: 'var(--muted-foreground)' }}>
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable content */}
@@ -392,12 +564,27 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
                     </DaySection>
                   )}
 
-                  {/* Events */}
-                  {dayData && dayData.events.length > 0 && (
+                  {/* Personal calendar events */}
+                  {dayData && dayData.calendarEvents.length > 0 && (
                     <DaySection title={isRTL ? 'אירועים' : 'Events'} color="#f59e0b">
+                      {dayData.calendarEvents.map((ev: CalendarEventRow) => (
+                        <DayRow key={ev.id}
+                          icon={<Star size={13} />}
+                          text={ev.title}
+                          sub={[ev.event_time ? ev.event_time.slice(0, 5) : null, ev.notes].filter(Boolean).join(' · ') || undefined}
+                          accent={ev.color ?? '#f59e0b'}
+                          done
+                        />
+                      ))}
+                    </DaySection>
+                  )}
+
+                  {/* Family events */}
+                  {dayData && dayData.events.length > 0 && (
+                    <DaySection title={isRTL ? 'אירועי משפחה' : 'Family Events'} color="#ec4899">
                       {dayData.events.map((ev: DayData['events'][number]) => (
                         <DayRow key={ev.id} icon={<Star size={13} />} text={ev.title}
-                          sub={ev.description ?? undefined} accent="#f59e0b" done />
+                          sub={ev.description ?? undefined} accent="#ec4899" done />
                       ))}
                     </DaySection>
                   )}
