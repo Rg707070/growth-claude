@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { DAY_NAMES_HE } from '@/lib/schedule'
 import { DOMAINS } from '@/lib/domains'
 import { Trash2, X, Plus, ChevronRight, ChevronLeft, Check, CalendarDays } from 'lucide-react'
-import { CalendarClient } from '@/app/(dashboard)/calendar/calendar-client'
+import { CalendarClient, AddCalendarEventSheet } from '@/app/(dashboard)/calendar/calendar-client'
 import { useTheme } from '@/lib/theme'
 import { useLang } from '@/lib/lang'
 import { useToast } from '@/components/ui/toast'
@@ -1899,6 +1899,8 @@ export function SchedulePageClient({
   const [addHour,  setAddHour]  = useState<number | null | false>(false)
   const [checked,  setChecked]  = useState<Set<string>>(new Set(todayChecks.map(c => c.time)))
   const [completedHabitIds, setCompletedHabitIds] = useState<Set<string>>(new Set(todayCompletedHabitIds))
+  const [showAddEvent, setShowAddEvent] = useState(false)
+  const [addEventDate, setAddEventDate] = useState(todayDate)
   const router = useRouter()
   const [confirmReset, setConfirmReset] = useState(false)
   const [resetting, setResetting] = useState(false)
@@ -2078,7 +2080,7 @@ export function SchedulePageClient({
         >
           <CalendarDays size={20} />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="font-bold text-lg" style={{ color: 'var(--foreground)' }}>
             {isRTL ? 'לוח שנה' : 'Calendar'}
           </h1>
@@ -2086,6 +2088,14 @@ export function SchedulePageClient({
             {isRTL ? 'תכנן את השבוע שלך' : 'Plan your week'}
           </p>
         </div>
+        <button
+          onClick={() => { setAddEventDate(todayDate); setShowAddEvent(true) }}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95"
+          style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
+        >
+          <Plus size={13} />
+          {isRTL ? 'הוסף אירוע' : 'Add event'}
+        </button>
       </div>
 
       {/* Weekly stats strip — always visible */}
@@ -2334,6 +2344,13 @@ export function SchedulePageClient({
           defaultHour={addHour}
           onAdd={addItem}
           onClose={() => setAddHour(false)}
+        />
+      )}
+      {showAddEvent && (
+        <AddCalendarEventSheet
+          defaultDate={addEventDate}
+          onClose={() => setShowAddEvent(false)}
+          onSaved={() => router.refresh()}
         />
       )}
     </div>
