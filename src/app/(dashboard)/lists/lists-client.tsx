@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, CheckCircle2, Circle, ChevronRight, ChevronLeft, FolderOpen, Folder, X } from 'lucide-react'
+import { Plus, Trash2, CheckCircle2, Circle, ChevronRight, ChevronLeft, FolderOpen, Folder, X, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import type { NoteList, QuickNote } from './page'
@@ -20,6 +20,46 @@ function folderColor(index: number) {
   return FOLDER_COLORS[index % FOLDER_COLORS.length]
 }
 
+// ─── Date utilities ───────────────────────────────────────────────────────
+function todayStr() {
+  return new Date().toISOString().split('T')[0]
+}
+function offsetDay(days: number) {
+  return new Date(Date.now() + days * 86400000).toISOString().split('T')[0]
+}
+function weekAgoStr() {
+  return offsetDay(-6)
+}
+
+function dueDateColor(due: string | null): string {
+  if (!due) return 'var(--muted-foreground)'
+  const t = todayStr()
+  if (due < t) return '#ef4444'
+  if (due === t) return '#f59e0b'
+  if (due === offsetDay(1)) return '#3b82f6'
+  return '#10b981'
+}
+
+function formatShortDate(dateStr: string, isRTL: boolean): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString(isRTL ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short' })
+}
+
+function relativeTime(isoStr: string, isRTL: boolean): string {
+  const diff = Date.now() - new Date(isoStr).getTime()
+  if (diff < 60000) return isRTL ? 'עכשיו' : 'now'
+  if (diff < 3600000) return isRTL ? `לפני ${Math.floor(diff / 60000)} ד'` : `${Math.floor(diff / 60000)}m ago`
+  if (diff < 86400000) return isRTL ? `לפני ${Math.floor(diff / 3600000)} ש'` : `${Math.floor(diff / 3600000)}h ago`
+  if (diff < 604800000) return isRTL ? `לפני ${Math.floor(diff / 86400000)} ימים` : `${Math.floor(diff / 86400000)}d ago`
+  return new Date(isoStr).toLocaleDateString(isRTL ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short' })
+}
+
+function folderLastActivity(listId: string, notes: QuickNote[], listCreatedAt: string): string {
+  const listNotes = notes.filter(n => n.list_id === listId)
+  if (listNotes.length === 0) return listCreatedAt
+  return listNotes.reduce((max, n) => (n.created_at > max ? n.created_at : max), listCreatedAt)
+}
+
 // ─── Main component ───────────────────────────────────────────────────────
 export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   const { isRTL } = useLang()
@@ -35,8 +75,11 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
 
   // Note input state
   const [noteInput, setNoteInput] = useState('')
+  const [noteDueDate, setNoteDueDate] = useState('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
   const noteInputRef = useRef<HTMLInputElement>(null)
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (creatingFolder) folderInputRef.current?.focus()
@@ -45,6 +88,10 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   useEffect(() => {
     if (activeListId) noteInputRef.current?.focus()
   }, [activeListId])
+
+  useEffect(() => {
+    if (showDatePicker) dateInputRef.current?.focus()
+  }, [showDatePicker])
 
   // ── Create folder ───────────────────────────────────────────────────────
   const createFolder = async () => {
@@ -87,8 +134,13 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
 
     const { data, error } = await supabase
       .from('quick_notes')
-      .insert({ user_id: user.id, content: text, list_id: activeListId })
-      .select('id, content, is_done, created_at, list_id')
+      .insert({
+        user_id: user.id,
+        content: text,
+        list_id: activeListId,
+        due_date: noteDueDate || null,
+      })
+      .select('id, content, is_done, created_at, list_id, due_date')
       .single()
 
     if (!error && data) {
@@ -118,6 +170,31 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   const activeNotes = notes.filter((n: QuickNote) => n.list_id === activeListId)
   const pending = activeNotes.filter((n: QuickNote) => !n.is_done)
   const done = activeNotes.filter((n: QuickNote) => n.is_done)
+
+  // ── Date grouping for pending notes ──────────────────────────────────────
+  const t = todayStr()
+  const tomorrow = offsetDay(1)
+  const weekEnd = offsetDay(7)
+  const weekAgo = weekAgoStr()
+
+  const withDue = pending.filter((n: QuickNote) => n.due_date)
+  const overdue    = withDue.filter((n: QuickNote) => n.due_date! < t).sort((a: QuickNote, b: QuickNote) => a.due_date!.localeCompare(b.due_date!))
+  const dueToday   = withDue.filter((n: QuickNote) => n.due_date === t)
+  const dueTomorrow = withDue.filter((n: QuickNote) => n.due_date === tomorrow)
+  const dueWeek    = withDue.filter((n: QuickNote) => n.due_date! > tomorrow && n.due_date! <= weekEnd)
+  const dueLater   = withDue.filter((n: QuickNote) => n.due_date! > weekEnd).sort((a: QuickNote, b: QuickNote) => a.due_date!.localeCompare(b.due_date!))
+
+  const noDue = pending.filter((n: QuickNote) => !n.due_date)
+  const noDueToday   = noDue.filter((n: QuickNote) => n.created_at.startsWith(t))
+  const noDueWeek    = noDue.filter((n: QuickNote) => !n.created_at.startsWith(t) && n.created_at >= weekAgo + 'T')
+  const noDueOlder   = noDue.filter((n: QuickNote) => n.created_at < weekAgo + 'T')
+
+  // ── Sort folders by last activity ─────────────────────────────────────
+  const sortedLists = [...lists].sort((a: NoteList, b: NoteList) => {
+    const aLast = folderLastActivity(a.id, notes, a.created_at)
+    const bLast = folderLastActivity(b.id, notes, b.created_at)
+    return bLast.localeCompare(aLast)
+  })
 
   // ── Folder list view ───────────────────────────────────────────────────
   if (!activeListId) {
@@ -203,11 +280,13 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
             </div>
           )}
 
-          {/* Folder cards */}
+          {/* Folder cards — sorted by last activity */}
           <div className="space-y-2">
-            {lists.map((list: NoteList, idx: number) => {
+            {sortedLists.map((list: NoteList, idx: number) => {
               const listNotes = notes.filter((n: QuickNote) => n.list_id === list.id)
               const doneCount = listNotes.filter((n: QuickNote) => n.is_done).length
+              const overdueCount = listNotes.filter((n: QuickNote) => !n.is_done && n.due_date && n.due_date < t).length
+              const lastActivity = folderLastActivity(list.id, notes, list.created_at)
               const color = folderColor(idx)
               return (
                 <FolderCard
@@ -215,6 +294,8 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
                   list={list}
                   total={listNotes.length}
                   done={doneCount}
+                  overdueCount={overdueCount}
+                  lastActivity={lastActivity}
                   color={color}
                   isRTL={isRTL}
                   onClick={() => setActiveListId(list.id)}
@@ -229,8 +310,8 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   }
 
   // ── Notes inside folder ────────────────────────────────────────────────
-  const activeIdx = lists.findIndex((l: NoteList) => l.id === activeListId)
-  const color = folderColor(activeIdx)
+  const activeIdx = sortedLists.findIndex((l: NoteList) => l.id === activeListId)
+  const color = folderColor(activeIdx >= 0 ? activeIdx : 0)
 
   return (
     <div className="min-h-screen pb-28 md:pb-8" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -239,7 +320,7 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
         {/* Back + folder title */}
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => { setActiveListId(null); setNoteInput('') }}
+            onClick={() => { setActiveListId(null); setNoteInput(''); setNoteDueDate(''); setShowDatePicker(false) }}
             className="flex items-center justify-center w-9 h-9 rounded-xl transition-all active:scale-90"
             style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)', color: 'var(--muted-foreground)' }}
             aria-label={isRTL ? 'חזור' : 'Back'}
@@ -258,29 +339,73 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
         </div>
 
         {/* Add note input */}
-        <div
-          className="flex items-center gap-2 rounded-2xl px-4 py-3 mb-6"
-          style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
-        >
-          <input
-            ref={noteInputRef}
-            value={noteInput}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNoteInput(e.target.value)}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addNote()}
-            placeholder={isRTL ? 'הוסף פריט...' : 'Add an item...'}
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-            style={{ color: 'var(--foreground)' }}
-            dir={isRTL ? 'rtl' : 'ltr'}
-          />
-          <button
-            onClick={addNote}
-            disabled={!noteInput.trim() || savingNote}
-            className="flex items-center justify-center w-8 h-8 rounded-xl transition-all active:scale-90 disabled:opacity-30"
-            style={{ background: 'var(--brand-gradient)' }}
-            aria-label={isRTL ? 'הוסף' : 'Add'}
+        <div className="mb-4">
+          <div
+            className="flex items-center gap-2 rounded-2xl px-4 py-3"
+            style={{
+              background: 'var(--c-surface-2)',
+              border: showDatePicker ? '1px solid var(--primary)' : '1px solid var(--c-border)',
+            }}
           >
-            <Plus size={16} strokeWidth={2.6} color="white" />
-          </button>
+            <input
+              ref={noteInputRef}
+              value={noteInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNoteInput(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addNote()}
+              placeholder={isRTL ? 'הוסף פריט...' : 'Add an item...'}
+              className="flex-1 bg-transparent text-sm focus:outline-none"
+              style={{ color: 'var(--foreground)' }}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
+            <button
+              onClick={() => setShowDatePicker((v: boolean) => !v)}
+              className="flex-shrink-0 transition-all active:scale-90"
+              aria-label={isRTL ? 'הוסף תאריך יעד' : 'Set due date'}
+              title={isRTL ? 'תאריך יעד' : 'Due date'}
+            >
+              <CalendarDays size={17} style={{ color: noteDueDate ? 'var(--primary)' : 'var(--muted-foreground)' }} />
+            </button>
+            <button
+              onClick={addNote}
+              disabled={!noteInput.trim() || savingNote}
+              className="flex items-center justify-center w-8 h-8 rounded-xl transition-all active:scale-90 disabled:opacity-30"
+              style={{ background: 'var(--brand-gradient)' }}
+              aria-label={isRTL ? 'הוסף' : 'Add'}
+            >
+              <Plus size={16} strokeWidth={2.6} color="white" />
+            </button>
+          </div>
+
+          {/* Date picker row */}
+          {showDatePicker && (
+            <div
+              className="flex items-center gap-2 mt-2 px-4 py-2.5 rounded-xl"
+              style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
+            >
+              <CalendarDays size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+              <span className="text-xs" style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                {isRTL ? 'תאריך יעד:' : 'Due date:'}
+              </span>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={noteDueDate}
+                min={t}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNoteDueDate(e.target.value)}
+                className="flex-1 bg-transparent text-sm focus:outline-none min-w-0"
+                style={{ color: 'var(--foreground)', colorScheme: 'dark' }}
+              />
+              {noteDueDate && (
+                <button
+                  onClick={() => setNoteDueDate('')}
+                  className="flex-shrink-0"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Empty state */}
@@ -293,21 +418,28 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
           </div>
         )}
 
-        {/* Pending notes */}
+        {/* ── Pending notes by date groups ── */}
         {pending.length > 0 && (
-          <div className="space-y-2 mb-6">
-            {pending.map((note: QuickNote) => (
-              <NoteRow key={note.id} note={note} onToggle={toggleNote} onDelete={deleteNote} isRTL={isRTL} accentColor={color} />
-            ))}
+          <div className="mb-6 space-y-1">
+            <NotesSection label={isRTL ? '⚠ פג תוקף' : '⚠ Overdue'} labelColor="#ef4444" notes={overdue}    isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'היום'       : 'Today'}     labelColor="#f59e0b" notes={dueToday}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'מחר'        : 'Tomorrow'}  labelColor="#3b82f6" notes={dueTomorrow} isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'השבוע'      : 'This week'} labelColor="#8b5cf6" notes={dueWeek}   isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'מאוחר יותר' : 'Later'}     labelColor="#10b981" notes={dueLater}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'נוסף היום'  : 'Added today'}    labelColor="var(--muted-foreground)" notes={noDueToday}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'השבוע'      : 'This week'}  labelColor="var(--muted-foreground)" notes={noDueWeek}   isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
+            <NotesSection label={isRTL ? 'ישן יותר'   : 'Older'}      labelColor="var(--muted-foreground)" notes={noDueOlder}  isRTL={isRTL} accentColor={color} onToggle={toggleNote} onDelete={deleteNote} />
           </div>
         )}
 
         {/* Done notes */}
         {done.length > 0 && (
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider px-1 mb-2" style={{ color: 'var(--muted-foreground)' }}>
-              {isRTL ? 'הושלמו' : 'Done'} ({done.length})
-            </p>
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'הושלמו' : 'Done'} ({done.length})
+              </span>
+            </div>
             <div className="space-y-2 opacity-60">
               {done.map((note: QuickNote) => (
                 <NoteRow key={note.id} note={note} onToggle={toggleNote} onDelete={deleteNote} isRTL={isRTL} accentColor={color} />
@@ -320,11 +452,55 @@ export function ListsClient({ initialLists, initialNotes }: ListsClientProps) {
   )
 }
 
+// ─── Notes section with label ─────────────────────────────────────────────
+function NotesSection({
+  label,
+  labelColor,
+  notes,
+  isRTL,
+  accentColor,
+  onToggle,
+  onDelete,
+}: {
+  label: string
+  labelColor: string
+  notes: QuickNote[]
+  isRTL: boolean
+  accentColor: string
+  onToggle: (note: QuickNote) => void | Promise<void>
+  onDelete: (id: string) => void | Promise<void>
+}) {
+  if (notes.length === 0) return null
+  return (
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: labelColor }}>
+          {label}
+        </span>
+        <div className="flex-1 h-px" style={{ background: `${labelColor}30` }} />
+        <span
+          className="text-[10px] rounded-full px-1.5 py-0.5 font-semibold"
+          style={{ background: `${labelColor}20`, color: labelColor }}
+        >
+          {notes.length}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {notes.map(note => (
+          <NoteRow key={note.id} note={note} onToggle={onToggle} onDelete={onDelete} isRTL={isRTL} accentColor={accentColor} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Folder card ──────────────────────────────────────────────────────────
 function FolderCard({
   list,
   total,
   done,
+  overdueCount,
+  lastActivity,
   color,
   isRTL,
   onClick,
@@ -333,6 +509,8 @@ function FolderCard({
   list: NoteList
   total: number
   done: number
+  overdueCount: number
+  lastActivity: string
   color: string
   isRTL: boolean
   onClick: () => void
@@ -356,19 +534,37 @@ function FolderCard({
         <Folder size={22} style={{ color }} />
       </div>
 
-      {/* Name + count */}
+      {/* Name + count + last activity */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate" style={{ color: 'var(--foreground)' }}>
-          {list.name}
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-          {total === 0
-            ? (isRTL ? 'ריק' : 'Empty')
-            : isRTL
-              ? `${done}/${total} הושלמו`
-              : `${done}/${total} done`
-          }
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-sm truncate" style={{ color: 'var(--foreground)' }}>
+            {list.name}
+          </p>
+          {overdueCount > 0 && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0"
+              style={{ background: '#ef444420', color: '#ef4444' }}
+            >
+              {overdueCount} {isRTL ? 'פגו' : 'overdue'}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            {total === 0
+              ? (isRTL ? 'ריק' : 'Empty')
+              : isRTL ? `${done}/${total} הושלמו` : `${done}/${total} done`
+            }
+          </p>
+          {total > 0 && (
+            <>
+              <span style={{ color: 'var(--muted-foreground)', fontSize: 10 }}>·</span>
+              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                {relativeTime(lastActivity, isRTL)}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Progress bar (if has items) */}
@@ -420,17 +616,18 @@ function NoteRow({
   accentColor: string
 }) {
   const [showDelete, setShowDelete] = useState(false)
+  const dColor = dueDateColor(note.due_date)
 
   return (
     <div
-      className="group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all"
+      className="group flex items-start gap-3 rounded-2xl px-4 py-3 transition-all"
       style={{ background: 'var(--c-surface-2)', border: '1px solid var(--c-border)' }}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
     >
       <button
         onClick={() => onToggle(note)}
-        className="flex-shrink-0 transition-transform active:scale-90"
+        className="flex-shrink-0 mt-0.5 transition-transform active:scale-90"
         aria-label={note.is_done ? (isRTL ? 'בטל סימון' : 'Mark undone') : (isRTL ? 'סמן כבוצע' : 'Mark done')}
       >
         {note.is_done
@@ -439,20 +636,36 @@ function NoteRow({
         }
       </button>
 
-      <span
-        className="flex-1 text-sm leading-snug"
-        style={{
-          color: note.is_done ? 'var(--muted-foreground)' : 'var(--foreground)',
-          textDecoration: note.is_done ? 'line-through' : 'none',
-        }}
-        dir={isRTL ? 'rtl' : 'ltr'}
-      >
-        {note.content}
-      </span>
+      <div className="flex-1 min-w-0">
+        <span
+          className="text-sm leading-snug block"
+          style={{
+            color: note.is_done ? 'var(--muted-foreground)' : 'var(--foreground)',
+            textDecoration: note.is_done ? 'line-through' : 'none',
+          }}
+          dir={isRTL ? 'rtl' : 'ltr'}
+        >
+          {note.content}
+        </span>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {note.due_date && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium flex items-center gap-1"
+              style={{ background: `${dColor}20`, color: dColor }}
+            >
+              <CalendarDays size={9} />
+              {formatShortDate(note.due_date, isRTL)}
+            </span>
+          )}
+          <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+            {relativeTime(note.created_at, isRTL)}
+          </span>
+        </div>
+      </div>
 
       <button
         onClick={() => onDelete(note.id)}
-        className={`flex-shrink-0 transition-all active:scale-90 md:opacity-0 md:group-hover:opacity-100 ${showDelete ? 'opacity-100' : 'opacity-0'}`}
+        className={`flex-shrink-0 mt-0.5 transition-all active:scale-90 md:opacity-0 md:group-hover:opacity-100 ${showDelete ? 'opacity-100' : 'opacity-0'}`}
         aria-label={isRTL ? 'מחק' : 'Delete'}
         style={{ color: 'var(--muted-foreground)' }}
       >
