@@ -51,17 +51,21 @@ export default async function DomainPage({ params }: Props) {
   }
 
   if (slug === 'torah') {
-    const today = new Date().toISOString().split('T')[0]
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+
     const [habitsRes, logsRes, sessionsRes, summariesRes, tracksRes] = await Promise.all([
       supabase.from('habits').select('*').eq('user_id', user.id).eq('domain_slug', 'torah').eq('is_active', true).order('created_at', { ascending: true }),
-      supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
-      supabase.from('learning_sessions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).gte('completed_at', monthStart),
+      supabase.from('learning_sessions').select('*').eq('user_id', user.id).gte('created_at', monthStart).order('created_at', { ascending: false }),
       supabase.from('learning_summaries').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(20),
       supabase.from('torah_daily_tracks').select('*').eq('user_id', user.id).order('sort_order', { ascending: true }),
     ])
 
     const habits = (habitsRes.data as Habit[]) ?? []
-    const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
+    const allLogs = (logsRes.data as HabitLog[]) ?? []
+    const completedIds = allLogs.filter((l) => l.completed_at === today).map((l) => l.habit_id)
     const sessions = (sessionsRes.data as LearningSession[]) ?? []
     const summaries = (summariesRes.data as LearningSummary[]) ?? []
     const todaySessions = sessions.filter((s) => s.created_at.startsWith(today))
@@ -73,6 +77,7 @@ export default async function DomainPage({ params }: Props) {
         userId={user.id}
         habits={habits}
         completedIds={completedIds}
+        allLogs={allLogs}
         sessions={sessions}
         summaries={summaries}
         todaySeconds={todaySeconds}
