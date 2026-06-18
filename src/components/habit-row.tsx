@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Bell, BellOff, X, Trash2 } from 'lucide-react'
+import { Check, Bell, Pencil, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getDomainBySlug } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
@@ -15,7 +15,7 @@ import {
 } from '@/hooks/use-notifications'
 import type { ReminderType, ReminderData } from '@/hooks/use-notifications'
 import { scheduleSwReminder, clearSwReminder } from '@/lib/sw-register'
-import { Input } from '@/components/ui/input'
+import { EditHabitSheet } from '@/components/edit-habit-sheet'
 import type { Habit } from '@/types'
 
 interface HabitRowProps {
@@ -33,11 +33,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const [reminder, setReminder] = useState<ReminderData | null>(() => getReminderForHabit(habit.id))
   const [pendingTime, setPendingTime] = useState('')
   const [pendingType, setPendingType] = useState<ReminderType>('notification')
-  const [editing, setEditing] = useState(false)
-  const [editName, setEditName] = useState(habit.name)
-  const [saving, setSaving] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const startX = useRef(0)
   const startY = useRef(0)
@@ -85,48 +81,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       setDone(prevDone)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const saveEdit = async () => {
-    if (!editName.trim() || saving) return
-    setSaving(true)
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('habits')
-        .update({ name: editName.trim() })
-        .eq('id', habit.id)
-      if (error) throw error
-      setEditing(false)
-      router.refresh()
-    } catch {
-      // keep editing open on error
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const cancelEdit = () => {
-    setEditing(false)
-    setEditName(habit.name)
-    setConfirmDelete(false)
-  }
-
-  const deleteHabit = async () => {
-    if (deleting) return
-    setDeleting(true)
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('habits')
-        .update({ is_active: false })
-        .eq('id', habit.id)
-      if (error) throw error
-      router.refresh()
-    } catch {
-      setDeleting(false)
-      setConfirmDelete(false)
     }
   }
 
@@ -182,7 +136,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       if (!moved.current) {
         longFired.current = true
         navigator.vibrate?.(80)
-        setEditing(true)
+        setEditOpen(true)
       }
     }, 550)
   }
@@ -216,75 +170,6 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
       return
     }
     toggle()
-  }
-
-  // ── Edit form ─────────────────────────────────────────────────────────────
-
-  if (editing) {
-    return (
-      <div
-        className="flex gap-2 items-center rounded-xl"
-        style={{
-          background: 'var(--c-card)',
-          border: `1px solid ${accentColor}55`,
-          padding: '0.5rem 0.75rem',
-        }}
-      >
-        <Input
-          autoFocus
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') saveEdit()
-            if (e.key === 'Escape') cancelEdit()
-          }}
-          className="rounded-lg flex-1 h-8 text-sm"
-          style={{
-            background: 'var(--c-input)',
-            border: '1px solid var(--c-input-border)',
-            color: 'var(--foreground)',
-          }}
-        />
-        <button
-          onClick={saveEdit}
-          disabled={saving || !editName.trim()}
-          className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0 disabled:opacity-50 transition-opacity"
-          style={{ background: accentColor, color: '#fff' }}
-        >
-          {t('save')}
-        </button>
-        {confirmDelete ? (
-          <button
-            onClick={deleteHabit}
-            disabled={deleting}
-            className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0 disabled:opacity-50 transition-opacity font-medium"
-            style={{ background: '#ef4444', color: '#fff' }}
-          >
-            {t('deleteConfirm')}
-          </button>
-        ) : (
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="p-1.5 rounded-lg flex-shrink-0 transition-all"
-            style={{ background: 'var(--secondary)', color: '#ef4444', border: '1px solid #ef444433' }}
-            aria-label={t('deleteHabit')}
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
-        <button
-          onClick={cancelEdit}
-          className="p-1.5 rounded-lg flex-shrink-0"
-          style={{
-            background: 'var(--secondary)',
-            color: 'var(--muted-foreground)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <X size={14} />
-        </button>
-      </div>
-    )
   }
 
   // ── Compact row ───────────────────────────────────────────────────────────
@@ -368,7 +253,28 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
             {reminder ? reminder.time.slice(0, 5) : (isRTL ? 'תזכורת' : 'remind')}
           </span>
         </button>
+
+        {/* Edit button */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setEditOpen(true) }}
+          className="flex-shrink-0 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all active:scale-90"
+          style={{
+            color: 'var(--muted-foreground)',
+            background: 'var(--c-surface-2)',
+            border: '1px solid var(--c-border)',
+          }}
+          aria-label={t('editHabit')}
+        >
+          <Pencil size={14} strokeWidth={1.5} />
+          <span className="text-[9px] leading-none font-medium" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL ? 'עריכה' : 'edit'}
+          </span>
+        </button>
       </div>
+
+      {/* Edit sheet */}
+      <EditHabitSheet habit={habit} open={editOpen} onClose={() => setEditOpen(false)} />
 
       {/* Reminder picker — expands below the row */}
       {showReminderPicker && (

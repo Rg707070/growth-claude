@@ -54,6 +54,8 @@ const translations = {
     cancel: 'ביטול',
     deleteHabit: 'מחק הרגל',
     deleteConfirm: 'בטוח?',
+    editHabit: 'עריכת הרגל',
+    saving: 'שומר...',
     todayHabits: 'הרגלי היום',
     allDomains: 'כל התחומים',
     // Torah workspace
@@ -259,6 +261,8 @@ const translations = {
     cancel: 'Cancel',
     deleteHabit: 'Delete habit',
     deleteConfirm: 'Sure?',
+    editHabit: 'Edit habit',
+    saving: 'Saving...',
     todayHabits: "Today's Habits",
     allDomains: 'All Domains',
     // Torah workspace
