@@ -250,7 +250,7 @@ export function FriendsCalendarTab({
                       className="text-xs"
                       style={{ color: done ? 'var(--foreground)' : 'var(--muted-foreground)' }}
                     >
-                      {isRTL ? h.name_he || h.name : h.name}
+                      {h.name}
                     </span>
                   </div>
                 )
