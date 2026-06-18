@@ -11,7 +11,7 @@ import { MusicClient } from './music-client'
 import type { Habit, HabitLog, LearningSession, LearningSummary, DailyTrack } from '@/types'
 import type { DomainTask, DomainGoal } from '@/types/ecosystem'
 import type { FinanceTransaction, FinanceWishlistItem } from '@/types/finance'
-import type { FriendContact, FriendInteraction, FriendReminder } from '@/types/friends'
+import type { FriendContact, FriendInteraction, FriendReminder, FriendEvent } from '@/types/friends'
 import type { SportWorkoutLog, SportFoodRestriction, SportChallenge } from '@/types/sports'
 import type { SecularBook, SecularProject } from '@/types/secular'
 import type { MusicPracticeLog, MusicSong } from '@/types/music'
@@ -112,28 +112,36 @@ export default async function DomainPage({ params }: Props) {
   }
 
   if (slug === 'friends') {
-    const today = new Date().toISOString().split('T')[0]
-    const [habitsRes, logsRes, contactsRes, interactionsRes, remindersRes] = await Promise.all([
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString().split('T')[0]
+    const [habitsRes, logsRes, contactsRes, interactionsRes, remindersRes, eventsRes] = await Promise.all([
       supabase.from('habits').select('*').eq('user_id', user.id).eq('domain_slug', 'friends').eq('is_active', true).order('created_at', { ascending: true }),
-      supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('completed_at', today),
-      supabase.from('friend_contacts').select('*').eq('user_id', user.id).order('name', { ascending: true }),
-      supabase.from('friend_interactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).gte('completed_at', monthStart),
+      supabase.from('friend_contacts').select('*').eq('user_id', user.id).eq('archived', false).order('pinned', { ascending: false }).order('name', { ascending: true }),
+      supabase.from('friend_interactions').select('*').eq('user_id', user.id).gte('date', sixMonthsAgo).order('date', { ascending: false }),
       supabase.from('friend_reminders').select('*').eq('user_id', user.id).eq('done', false).order('remind_on', { ascending: true }),
+      supabase.from('friend_events').select('*').eq('user_id', user.id).gte('event_date', sixMonthsAgo).order('event_date', { ascending: true }),
     ])
     const habits = (habitsRes.data as Habit[]) ?? []
-    const completedIds = ((logsRes.data as HabitLog[]) ?? []).map((l) => l.habit_id)
+    const allLogs = (logsRes.data as HabitLog[]) ?? []
+    const completedIds = allLogs.filter((l) => l.completed_at === today).map((l) => l.habit_id)
     const contacts = (contactsRes.data as FriendContact[]) ?? []
     const interactions = (interactionsRes.data as FriendInteraction[]) ?? []
     const reminders = (remindersRes.data as FriendReminder[]) ?? []
+    const events = (eventsRes.data as FriendEvent[]) ?? []
     return (
       <FriendsClient
         domain={domain!}
         habits={habits}
         completedIds={completedIds}
+        allLogs={allLogs}
         userId={user.id}
         contacts={contacts}
         interactions={interactions}
         reminders={reminders}
+        events={events}
       />
     )
   }
