@@ -4,27 +4,31 @@ import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight, Plus, X, Trash2, MessageCircle, Users,
-  Bell, BellRing, Calendar, MessageSquare, Phone, History, Search,
+  Bell, BellRing, Phone, MessageSquare, History, Search,
+  ChevronDown, ChevronUp, Pin, Archive, Pencil, Check, Tag,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useHabitReminders } from '@/hooks/use-notifications'
 import { DomainHabitsTab } from '@/components/domain-habits-tab'
+import { FriendsCalendarTab } from '@/components/friends/friends-calendar-tab'
+import { FriendsEventsTab } from '@/components/friends/friends-events-tab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import {
-  createContact, deleteContact,
+  createContact, deleteContact, updateContact,
   logInteraction, deleteLastInteraction,
   logInteractionOn, deleteInteraction,
   createReminder, deleteReminder, completeReminder,
 } from './friends-actions'
-import type { Domain, Habit } from '@/types'
+import type { Domain, Habit, HabitLog } from '@/types'
 import type {
-  FriendContact, FriendInteraction, FriendReminder, InteractionKind,
+  FriendContact, FriendInteraction, FriendReminder, FriendEvent,
+  InteractionKind, RelationshipType,
 } from '@/types/friends'
 
-type Tab = 'contacts' | 'habits'
+type Tab = 'people' | 'events' | 'habits'
+type HabitsView = 'list' | 'calendar'
 
 const todayStr = () => new Date().toISOString().split('T')[0]
 
@@ -35,28 +39,60 @@ function formatDate(dateStr: string, isRTL: boolean): string {
   })
 }
 
+function relativeDays(dateStr: string, isRTL: boolean): string {
+  const today = new Date(todayStr() + 'T00:00:00')
+  const d = new Date(dateStr + 'T00:00:00')
+  const diff = Math.round((today.getTime() - d.getTime()) / 86400000)
+  if (diff === 0) return isRTL ? 'היום' : 'Today'
+  if (diff === 1) return isRTL ? 'אתמול' : 'Yesterday'
+  if (diff < 7) return isRTL ? `לפני ${diff} ימים` : `${diff} days ago`
+  if (diff < 30) return isRTL ? `לפני ${Math.floor(diff / 7)} שבועות` : `${Math.floor(diff / 7)}w ago`
+  return isRTL ? `לפני ${Math.floor(diff / 30)} חודשים` : `${Math.floor(diff / 30)}mo ago`
+}
+
+const RELATIONSHIP_LABELS_HE: Record<RelationshipType, string> = {
+  close_friend: 'קרוב',
+  friend: 'חבר',
+  acquaintance: 'מכר',
+  family: 'משפחה',
+  mentor: 'מנטור',
+  colleague: 'עמית',
+}
+const RELATIONSHIP_LABELS_EN: Record<RelationshipType, string> = {
+  close_friend: 'Close',
+  friend: 'Friend',
+  acquaintance: 'Acquaint.',
+  family: 'Family',
+  mentor: 'Mentor',
+  colleague: 'Colleague',
+}
+
 interface Props {
   domain: Domain
   habits: Habit[]
   completedIds: string[]
+  allLogs: HabitLog[]
   userId: string
   contacts: FriendContact[]
   interactions: FriendInteraction[]
   reminders: FriendReminder[]
+  events: FriendEvent[]
 }
 
 export function FriendsClient({
-  domain, habits: initialHabits, completedIds, userId,
+  domain, habits: initialHabits, completedIds, allLogs, userId,
   contacts: initialContacts, interactions: initialInteractions,
-  reminders: initialReminders,
+  reminders: initialReminders, events: initialEvents,
 }: Props) {
   const router = useRouter()
   const { isRTL } = useLang()
-  const [tab, setTab] = useState<Tab>('contacts')
+  const [tab, setTab] = useState<Tab>('people')
+  const [habitsView, setHabitsView] = useState<HabitsView>('list')
   const [habits, setHabits] = useState(initialHabits)
   const [contacts, setContacts] = useState(initialContacts)
   const [interactions, setInteractions] = useState(initialInteractions)
   const [reminders, setReminders] = useState(initialReminders)
+  const [events, setEvents] = useState(initialEvents)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useHabitReminders(habits)
@@ -95,14 +131,10 @@ export function FriendsClient({
     return open.length ? open[0] : null
   }
 
-  const addInteraction = (i: FriendInteraction) =>
-    setInteractions((prev) => [...prev, i])
-  const removeInteraction = (id: string) =>
-    setInteractions((prev) => prev.filter((i) => i.id !== id))
-  const addReminder = (r: FriendReminder) =>
-    setReminders((prev) => [...prev, r])
-  const removeReminder = (id: string) =>
-    setReminders((prev) => prev.filter((r) => r.id !== id))
+  const addInteraction = (i: FriendInteraction) => setInteractions((prev) => [...prev, i])
+  const removeInteraction = (id: string) => setInteractions((prev) => prev.filter((i) => i.id !== id))
+  const addReminder = (r: FriendReminder) => setReminders((prev) => [...prev, r])
+  const removeReminder = (id: string) => setReminders((prev) => prev.filter((r) => r.id !== id))
 
   const selectedContact = contacts.find((c) => c.id === selectedId) ?? null
 
@@ -133,8 +165,8 @@ export function FriendsClient({
             </h1>
             <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
               {selectedContact
-                ? (isRTL ? 'היסטוריה ותזכורות' : 'History & reminders')
-                : (isRTL ? `${contacts.length} אנשי קשר` : `${contacts.length} contacts`)}
+                ? (isRTL ? 'פרופיל' : 'Profile')
+                : (isRTL ? `${contacts.length} אנשים` : `${contacts.length} people`)}
             </p>
           </div>
         </div>
@@ -142,22 +174,38 @@ export function FriendsClient({
         {/* Tab bar — hidden inside contact detail */}
         {!selectedContact && (
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
-            <TabButton active={tab === 'contacts'} onClick={() => setTab('contacts')} color={color}>
-              {isRTL ? 'אנשי קשר' : 'Contacts'}
-            </TabButton>
-            <TabButton active={tab === 'habits'} onClick={() => setTab('habits')} color={color}>
-              {isRTL ? 'הרגלים' : 'Habits'}
-            </TabButton>
+            {([
+              ['people', isRTL ? 'אנשים' : 'People'],
+              ['events', isRTL ? 'מפגשים' : 'Events'],
+              ['habits', isRTL ? 'הרגלים' : 'Habits'],
+            ] as [Tab, string][]).map(([t, label]) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all"
+                style={{
+                  background: tab === t ? color : 'transparent',
+                  color: tab === t ? 'white' : 'var(--muted-foreground)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
 
-        {tab === 'contacts' && selectedContact && (
+        {/* Contact detail */}
+        {selectedContact && (
           <ContactDetail
             contact={selectedContact}
             interactions={interactions.filter((i) => i.contact_id === selectedContact.id)}
             reminders={reminders.filter((r) => r.contact_id === selectedContact.id && !r.done)}
+            events={events.filter((e) => e.contact_ids.includes(selectedContact.id))}
             color={color}
             isRTL={isRTL}
+            onContactUpdated={(updated) =>
+              setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+            }
             onInteractionAdded={addInteraction}
             onInteractionDeleted={removeInteraction}
             onReminderAdded={addReminder}
@@ -165,8 +213,9 @@ export function FriendsClient({
           />
         )}
 
-        {tab === 'contacts' && !selectedContact && (
-          <ContactsTab
+        {/* People tab */}
+        {tab === 'people' && !selectedContact && (
+          <PeopleTab
             contacts={contacts}
             countsFor={countsFor}
             lastTalkFor={lastTalkFor}
@@ -176,6 +225,9 @@ export function FriendsClient({
             onOpen={(id) => setSelectedId(id)}
             onContactAdded={(c) => setContacts((prev) => [...prev, c])}
             onContactDeleted={(id) => setContacts((prev) => prev.filter((c) => c.id !== id))}
+            onContactUpdated={(updated) =>
+              setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+            }
             onInteractionLogged={addInteraction}
             onLastInteractionDeleted={(contactId) =>
               setInteractions((prev) => {
@@ -191,15 +243,63 @@ export function FriendsClient({
           />
         )}
 
-        {tab === 'habits' && (
-          <DomainHabitsTab
-            habits={habits}
-            completedSet={completedSet}
-            domain={domain}
-            userId={userId}
-            onAdded={(h) => setHabits((prev) => [...prev, h])}
+        {/* Events tab */}
+        {tab === 'events' && !selectedContact && (
+          <FriendsEventsTab
+            events={events}
+            contacts={contacts}
+            color={color}
             isRTL={isRTL}
+            onEventAdded={(e) => setEvents((prev) => [...prev, e])}
+            onEventUpdated={(e) => setEvents((prev) => prev.map((x) => (x.id === e.id ? e : x)))}
+            onEventDeleted={(id) => setEvents((prev) => prev.filter((e) => e.id !== id))}
           />
+        )}
+
+        {/* Habits tab */}
+        {tab === 'habits' && !selectedContact && (
+          <div className="space-y-4">
+            {/* View toggle */}
+            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+              {([
+                ['list', isRTL ? 'הרגלים' : 'Habits'],
+                ['calendar', isRTL ? 'לוח שנה' : 'Calendar'],
+              ] as [HabitsView, string][]).map(([v, label]) => (
+                <button
+                  key={v}
+                  onClick={() => setHabitsView(v)}
+                  className="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    background: habitsView === v ? color : 'transparent',
+                    color: habitsView === v ? 'white' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {habitsView === 'list' ? (
+              <DomainHabitsTab
+                habits={habits}
+                completedSet={completedSet}
+                domain={domain}
+                userId={userId}
+                onAdded={(h) => setHabits((prev) => [...prev, h])}
+                isRTL={isRTL}
+              />
+            ) : (
+              <FriendsCalendarTab
+                habits={habits}
+                allLogs={allLogs}
+                interactions={interactions}
+                events={events}
+                contacts={contacts}
+                color={color}
+                isRTL={isRTL}
+              />
+            )}
+          </div>
         )}
 
       </div>
@@ -207,28 +307,11 @@ export function FriendsClient({
   )
 }
 
-// ── Shared primitives ──────────────────────────────────────────
+// ── People Tab ─────────────────────────────────────────────────
 
-
-function TabButton({ active, onClick, color, children }: {
-  active: boolean; onClick: () => void; color: string; children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all"
-      style={{ background: active ? color : 'transparent', color: active ? 'white' : 'var(--muted-foreground)' }}
-    >
-      {children}
-    </button>
-  )
-}
-
-// ── Contacts Tab ───────────────────────────────────────────────
-
-function ContactsTab({
+function PeopleTab({
   contacts, countsFor, lastTalkFor, openReminderFor, color, isRTL, onOpen,
-  onContactAdded, onContactDeleted, onInteractionLogged, onLastInteractionDeleted,
+  onContactAdded, onContactDeleted, onContactUpdated, onInteractionLogged, onLastInteractionDeleted,
 }: {
   contacts: FriendContact[]
   countsFor: (id: string) => { today: number; week: number; month: number }
@@ -239,17 +322,36 @@ function ContactsTab({
   onOpen: (id: string) => void
   onContactAdded: (c: FriendContact) => void
   onContactDeleted: (id: string) => void
+  onContactUpdated: (c: FriendContact) => void
   onInteractionLogged: (i: FriendInteraction) => void
   onLastInteractionDeleted: (contactId: string) => void
 }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState<RelationshipType | 'all'>('all')
   const [pending, startTransition] = useTransition()
 
-  const filteredContacts = search.trim()
-    ? contacts.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
-    : contacts
+  const FILTER_CHIPS: { value: RelationshipType | 'all'; labelHe: string; labelEn: string }[] = [
+    { value: 'all', labelHe: 'כולם', labelEn: 'All' },
+    { value: 'close_friend', labelHe: 'קרובים', labelEn: 'Close' },
+    { value: 'friend', labelHe: 'חברים', labelEn: 'Friends' },
+    { value: 'acquaintance', labelHe: 'מכרים', labelEn: 'Acquaint.' },
+    { value: 'mentor', labelHe: 'מנטורים', labelEn: 'Mentors' },
+    { value: 'family', labelHe: 'משפחה', labelEn: 'Family' },
+  ]
+
+  const filtered = useMemo(() => {
+    let result = contacts
+    if (filterType !== 'all') result = result.filter((c) => c.relationship_type === filterType)
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter(
+        (c) => c.name.toLowerCase().includes(q) || c.tags.some((t) => t.toLowerCase().includes(q))
+      )
+    }
+    return result
+  }, [contacts, filterType, search])
 
   const submit = () => {
     if (!name.trim()) return
@@ -261,55 +363,72 @@ function ContactsTab({
   }
 
   return (
-    <div className="space-y-2">
-      {contacts.length > 0 && (
-        <div className="relative">
-          <Search
-            size={15}
-            className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: 'var(--muted-foreground)', insetInlineStart: '12px' }}
-          />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={isRTL ? 'חפש איש קשר...' : 'Search contact...'}
-            className="rounded-xl"
+    <div className="space-y-3">
+      {/* Search */}
+      <div className="relative">
+        <Search
+          size={15}
+          className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: 'var(--muted-foreground)', insetInlineStart: '12px' }}
+        />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={isRTL ? 'חפש לפי שם או תגית...' : 'Search by name or tag...'}
+          className="rounded-xl"
+          style={{
+            background: 'var(--c-input)',
+            border: '1px solid var(--c-input-border)',
+            color: 'var(--foreground)',
+            paddingInlineStart: '34px',
+          }}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute top-1/2 -translate-y-1/2"
+            style={{ color: 'var(--muted-foreground)', insetInlineEnd: '10px' }}
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex gap-1.5 flex-wrap">
+        {FILTER_CHIPS.map((chip) => (
+          <button
+            key={chip.value}
+            onClick={() => setFilterType(chip.value)}
+            className="px-3 py-1 rounded-full text-xs font-medium transition-all"
             style={{
-              background: 'var(--c-input)',
-              border: '1px solid var(--c-input-border)',
-              color: 'var(--foreground)',
-              paddingInlineStart: '34px',
+              background: filterType === chip.value ? color : 'var(--secondary)',
+              color: filterType === chip.value ? 'white' : 'var(--muted-foreground)',
+              border: `1px solid ${filterType === chip.value ? color : 'transparent'}`,
             }}
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute top-1/2 -translate-y-1/2"
-              style={{ color: 'var(--muted-foreground)', insetInlineEnd: '10px' }}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      )}
+          >
+            {isRTL ? chip.labelHe : chip.labelEn}
+          </button>
+        ))}
+      </div>
 
       {contacts.length === 0 && !adding && (
         <div className="text-center py-10">
           <Users size={32} className="mx-auto mb-3" style={{ color: 'var(--muted-foreground)' }} />
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {isRTL ? 'הוסף אנשי קשר כדי לעקוב אחרי השיחות' : 'Add contacts to track your conversations'}
+            {isRTL ? 'הוסף אנשים לרשימה' : 'Add people to your list'}
           </p>
         </div>
       )}
 
-      {search.trim() && filteredContacts.length === 0 && (
+      {search.trim() && filtered.length === 0 && (
         <p className="text-center text-sm py-6" style={{ color: 'var(--muted-foreground)' }}>
           {isRTL ? 'לא נמצאו תוצאות' : 'No results found'}
         </p>
       )}
 
-      {filteredContacts.map((contact) => (
-        <ContactRow
+      {filtered.map((contact) => (
+        <PersonCard
           key={contact.id}
           contact={contact}
           counts={countsFor(contact.id)}
@@ -336,12 +455,18 @@ function ContactsTab({
               onContactDeleted(contact.id)
             })
           }}
+          onPin={() => {
+            startTransition(async () => {
+              const updated = await updateContact(contact.id, { pinned: !contact.pinned })
+              onContactUpdated(updated)
+            })
+          }}
           pendingAction={pending}
         />
       ))}
 
       {adding ? (
-        <Card className="p-4 mt-3">
+        <Card className="p-4 mt-2">
           <div className="flex gap-2">
             <Input
               autoFocus
@@ -350,11 +475,7 @@ function ContactsTab({
               onKeyDown={(e) => e.key === 'Enter' && submit()}
               placeholder={isRTL ? 'שם' : 'Name'}
               className="rounded-xl flex-1"
-              style={{
-                background: 'var(--c-input)',
-                border: '1px solid var(--c-input-border)',
-                color: 'var(--foreground)',
-              }}
+              style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
             />
             <Button
               onClick={submit}
@@ -376,20 +497,22 @@ function ContactsTab({
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed mt-2"
+          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed mt-1"
           style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
         >
           <Plus size={18} />
-          <span className="text-sm">{isRTL ? 'הוסף איש קשר' : 'Add Contact'}</span>
+          <span className="text-sm">{isRTL ? 'הוסף אדם' : 'Add Person'}</span>
         </button>
       )}
     </div>
   )
 }
 
-function ContactRow({
+// ── Person Card ───────────────────────────────────────────────
+
+function PersonCard({
   contact, counts, lastTalk, reminder, color, isRTL,
-  onOpen, onLog, onUndo, onDelete, pendingAction,
+  onOpen, onLog, onUndo, onDelete, onPin, pendingAction,
 }: {
   contact: FriendContact
   counts: { today: number; week: number; month: number }
@@ -401,22 +524,27 @@ function ContactRow({
   onLog: () => void
   onUndo: () => void
   onDelete: () => void
+  onPin: () => void
   pendingAction: boolean
 }) {
   const talkedToday = counts.today > 0
   const reminderDue = reminder ? reminder.remind_on <= todayStr() : false
+  const cardColor = contact.color_override ?? color
 
   return (
     <div
       className="flex items-center gap-3 px-3 py-3 rounded-xl"
-      style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+      style={{
+        background: 'var(--card)',
+        border: `1px solid ${contact.pinned ? `${cardColor}44` : 'var(--c-border)'}`,
+      }}
     >
-      {/* Clickable area → opens history detail */}
+      {/* Clickable area → opens profile */}
       <button onClick={onOpen} className="flex items-center gap-3 flex-1 min-w-0 text-start">
         {/* Avatar */}
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 relative"
-          style={{ background: `${color}22`, color }}
+          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 relative"
+          style={{ background: `${cardColor}22`, color: cardColor }}
         >
           {contact.name.charAt(0).toUpperCase()}
           {reminder && (
@@ -429,22 +557,52 @@ function ContactRow({
                 : <Bell size={9} style={{ color: 'var(--muted-foreground)' }} />}
             </span>
           )}
+          {contact.pinned && (
+            <span
+              className="absolute -bottom-1 -end-1 w-4 h-4 rounded-full flex items-center justify-center"
+              style={{ background: cardColor }}
+            >
+              <Pin size={8} style={{ color: 'white' }} />
+            </span>
+          )}
         </div>
 
-        {/* Name + counts */}
+        {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-            {contact.name}
-          </p>
-          <div className="flex gap-2 mt-0.5 items-center">
-            <CountBadge label={isRTL ? 'היום' : 'Today'} value={counts.today} color={color} active={talkedToday} />
-            <CountBadge label={isRTL ? 'שבוע' : 'Week'} value={counts.week} color={color} active={false} />
-            <CountBadge label={isRTL ? 'חודש' : 'Month'} value={counts.month} color={color} active={false} />
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+              {contact.name}
+            </p>
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: `${cardColor}18`, color: cardColor }}
+            >
+              {isRTL
+                ? RELATIONSHIP_LABELS_HE[contact.relationship_type]
+                : RELATIONSHIP_LABELS_EN[contact.relationship_type]}
+            </span>
           </div>
-          <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: 'var(--muted-foreground)' }}>
-            <History size={10} />
+          {contact.tags.length > 0 && (
+            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+              {contact.tags.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}
+                >
+                  {tag}
+                </span>
+              ))}
+              {contact.tags.length > 3 && (
+                <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                  +{contact.tags.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+          <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
             {lastTalk
-              ? (isRTL ? `לאחרונה: ${formatDate(lastTalk, true)}` : `Last: ${formatDate(lastTalk, false)}`)
+              ? relativeDays(lastTalk, isRTL)
               : (isRTL ? 'עדיין לא דיברתם' : 'Not talked yet')}
           </p>
         </div>
@@ -456,19 +614,29 @@ function ContactRow({
         disabled={pendingAction}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0"
         style={{
-          background: talkedToday ? `${color}22` : color,
-          color: talkedToday ? color : 'white',
-          border: talkedToday ? `1px solid ${color}55` : 'none',
+          background: talkedToday ? `${cardColor}22` : cardColor,
+          color: talkedToday ? cardColor : 'white',
+          border: talkedToday ? `1px solid ${cardColor}55` : 'none',
         }}
-        title={talkedToday
-          ? (isRTL ? 'בטל' : 'Undo')
-          : (isRTL ? 'דיברנו היום' : 'Talked today')}
       >
         <MessageCircle size={13} />
         <span>{talkedToday
           ? (counts.today > 1 ? `×${counts.today}` : '✓')
           : (isRTL ? 'דיברנו' : 'Talked')
         }</span>
+      </button>
+
+      {/* Pin */}
+      <button
+        onClick={onPin}
+        disabled={pendingAction}
+        className="p-1.5 flex-shrink-0 rounded-lg"
+        style={{
+          color: contact.pinned ? cardColor : 'var(--muted-foreground)',
+          background: contact.pinned ? `${cardColor}18` : 'transparent',
+        }}
+      >
+        <Pin size={13} />
       </button>
 
       {/* Delete */}
@@ -484,96 +652,329 @@ function ContactRow({
   )
 }
 
-function CountBadge({ label, value, color, active }: {
-  label: string; value: number; color: string; active: boolean
-}) {
-  return (
-    <span
-      className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-      style={{
-        background: active && value > 0 ? `${color}22` : 'var(--secondary)',
-        color: active && value > 0 ? color : 'var(--muted-foreground)',
-      }}
-    >
-      {label} {value}
-    </span>
-  )
-}
-
-// ── Contact Detail (history, past dates, reminders, messages) ──
+// ── Contact Detail (profile view) ─────────────────────────────
 
 function ContactDetail({
-  contact, interactions, reminders, color, isRTL,
-  onInteractionAdded, onInteractionDeleted, onReminderAdded, onReminderDeleted,
+  contact, interactions, reminders, events, color, isRTL,
+  onContactUpdated, onInteractionAdded, onInteractionDeleted, onReminderAdded, onReminderDeleted,
 }: {
   contact: FriendContact
   interactions: FriendInteraction[]
   reminders: FriendReminder[]
+  events: FriendEvent[]
   color: string
   isRTL: boolean
+  onContactUpdated: (c: FriendContact) => void
   onInteractionAdded: (i: FriendInteraction) => void
   onInteractionDeleted: (id: string) => void
   onReminderAdded: (r: FriendReminder) => void
   onReminderDeleted: (id: string) => void
 }) {
   const [kind, setKind] = useState<InteractionKind>('talk')
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [editingHowMet, setEditingHowMet] = useState(false)
+  const [notesVal, setNotesVal] = useState(contact.notes ?? '')
+  const [howMetVal, setHowMetVal] = useState(contact.how_we_met ?? '')
+  const [newTag, setNewTag] = useState('')
+  const [addingTag, setAddingTag] = useState(false)
+  const [pending, startTransition] = useTransition()
+  const [showHistory, setShowHistory] = useState(false)
 
-  const items = useMemo(
+  const RELATIONSHIP_OPTIONS: RelationshipType[] = ['close_friend', 'friend', 'acquaintance', 'family', 'mentor', 'colleague']
+
+  const saveNotes = () => {
+    startTransition(async () => {
+      const updated = await updateContact(contact.id, { notes: notesVal.trim() || null })
+      onContactUpdated(updated)
+      setEditingNotes(false)
+    })
+  }
+
+  const saveHowMet = () => {
+    startTransition(async () => {
+      const updated = await updateContact(contact.id, { how_we_met: howMetVal.trim() || null })
+      onContactUpdated(updated)
+      setEditingHowMet(false)
+    })
+  }
+
+  const setRelationshipType = (rt: RelationshipType) => {
+    startTransition(async () => {
+      const updated = await updateContact(contact.id, { relationship_type: rt })
+      onContactUpdated(updated)
+    })
+  }
+
+  const addTag = () => {
+    const tag = newTag.trim()
+    if (!tag || contact.tags.includes(tag)) return
+    startTransition(async () => {
+      const updated = await updateContact(contact.id, { tags: [...contact.tags, tag] })
+      onContactUpdated(updated)
+      setNewTag(''); setAddingTag(false)
+    })
+  }
+
+  const removeTag = (tag: string) => {
+    startTransition(async () => {
+      const updated = await updateContact(contact.id, { tags: contact.tags.filter((t) => t !== tag) })
+      onContactUpdated(updated)
+    })
+  }
+
+  const sortedInteractions = useMemo(
     () => interactions
       .filter((i) => i.kind === kind)
       .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)),
     [interactions, kind],
   )
 
+  const cardColor = contact.color_override ?? color
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+
+      {/* Relationship type selector */}
+      <div>
+        <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted-foreground)' }}>
+          {isRTL ? 'סוג קשר' : 'Relationship'}
+        </p>
+        <div className="flex gap-1.5 flex-wrap">
+          {RELATIONSHIP_OPTIONS.map((rt) => (
+            <button
+              key={rt}
+              onClick={() => setRelationshipType(rt)}
+              disabled={pending}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={{
+                background: contact.relationship_type === rt ? cardColor : 'var(--secondary)',
+                color: contact.relationship_type === rt ? 'white' : 'var(--muted-foreground)',
+              }}
+            >
+              {isRTL ? RELATIONSHIP_LABELS_HE[rt] : RELATIONSHIP_LABELS_EN[rt]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* How we met */}
+      <div
+        className="rounded-xl p-4"
+        style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? 'איך הכרנו' : 'How we met'}
+          </p>
+          <button onClick={() => { setEditingHowMet(!editingHowMet); setHowMetVal(contact.how_we_met ?? '') }} style={{ color: 'var(--muted-foreground)' }}>
+            <Pencil size={13} />
+          </button>
+        </div>
+        {editingHowMet ? (
+          <div className="space-y-2">
+            <Input
+              autoFocus
+              value={howMetVal}
+              onChange={(e) => setHowMetVal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && saveHowMet()}
+              placeholder={isRTL ? 'תאר איך הכרתם...' : 'Describe how you met...'}
+              className="rounded-xl text-sm"
+              style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
+            />
+            <div className="flex gap-2">
+              <Button onClick={saveHowMet} disabled={pending} className="rounded-xl text-xs h-8" style={{ background: cardColor, color: 'white' }}>
+                {isRTL ? 'שמור' : 'Save'}
+              </Button>
+              <button onClick={() => setEditingHowMet(false)} className="text-xs px-3 rounded-xl" style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'ביטול' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm" style={{ color: contact.how_we_met ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+            {contact.how_we_met || (isRTL ? 'לא מצוין עדיין...' : 'Not set yet...')}
+          </p>
+        )}
+      </div>
+
+      {/* Tags */}
+      <div
+        className="rounded-xl p-4"
+        style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <Tag size={14} style={{ color: cardColor }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? 'תגיות' : 'Tags'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {contact.tags.map((tag) => (
+            <span
+              key={tag}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+              style={{ background: `${cardColor}18`, color: cardColor }}
+            >
+              {tag}
+              <button onClick={() => removeTag(tag)} disabled={pending}><X size={10} /></button>
+            </span>
+          ))}
+          {addingTag ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') addTag(); if (e.key === 'Escape') setAddingTag(false) }}
+                placeholder={isRTL ? 'תגית...' : 'Tag...'}
+                className="rounded-full h-7 text-xs w-24"
+                style={{ background: 'var(--c-input)', border: `1px solid ${cardColor}55`, color: 'var(--foreground)' }}
+              />
+              <button onClick={addTag} disabled={pending} style={{ color: cardColor }}><Check size={14} /></button>
+              <button onClick={() => setAddingTag(false)} style={{ color: 'var(--muted-foreground)' }}><X size={14} /></button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingTag(true)}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-dashed"
+              style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
+            >
+              <Plus size={11} /> {isRTL ? 'תגית' : 'Tag'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div
+        className="rounded-xl p-4"
+        style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? 'הערות' : 'Notes'}
+          </p>
+          <button onClick={() => { setEditingNotes(!editingNotes); setNotesVal(contact.notes ?? '') }} style={{ color: 'var(--muted-foreground)' }}>
+            <Pencil size={13} />
+          </button>
+        </div>
+        {editingNotes ? (
+          <div className="space-y-2">
+            <textarea
+              autoFocus
+              value={notesVal}
+              onChange={(e) => setNotesVal(e.target.value)}
+              placeholder={isRTL ? 'הערות חופשיות...' : 'Free notes...'}
+              rows={3}
+              className="w-full rounded-xl px-3 py-2 text-sm resize-none"
+              style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)', outline: 'none' }}
+            />
+            <div className="flex gap-2">
+              <Button onClick={saveNotes} disabled={pending} className="rounded-xl text-xs h-8" style={{ background: cardColor, color: 'white' }}>
+                {isRTL ? 'שמור' : 'Save'}
+              </Button>
+              <button onClick={() => setEditingNotes(false)} className="text-xs px-3 rounded-xl" style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'ביטול' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm whitespace-pre-wrap" style={{ color: contact.notes ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+            {contact.notes || (isRTL ? 'אין הערות עדיין...' : 'No notes yet...')}
+          </p>
+        )}
+      </div>
+
+      {/* Events linked to this person */}
+      {events.length > 0 && (
+        <div
+          className="rounded-xl p-4"
+          style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+        >
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? `מפגשים (${events.length})` : `Events (${events.length})`}
+          </p>
+          <div className="space-y-2">
+            {events.slice(0, 3).map((ev) => (
+              <div
+                key={ev.id}
+                className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
+                style={{ background: 'var(--secondary)', border: '1px solid var(--border)' }}
+              >
+                <span>{ev.event_date}</span>
+                <span className="flex-1 truncate font-medium" style={{ color: 'var(--foreground)' }}>{ev.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reminders */}
       <ReminderSection
         contactId={contact.id}
         reminders={reminders}
-        color={color}
+        color={cardColor}
         isRTL={isRTL}
         onReminderAdded={onReminderAdded}
         onReminderDeleted={onReminderDeleted}
       />
 
-      {/* Kind selector: talks vs messages */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
-        <KindButton active={kind === 'talk'} onClick={() => setKind('talk')} color={color}>
-          <Phone size={14} />
-          {isRTL ? 'שיחות' : 'Talks'}
-        </KindButton>
-        <KindButton active={kind === 'message'} onClick={() => setKind('message')} color={color}>
-          <MessageSquare size={14} />
-          {isRTL ? 'הודעות' : 'Messages'}
-        </KindButton>
+      {/* Interaction history */}
+      <div>
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-xl"
+          style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <History size={15} style={{ color: cardColor }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+              {isRTL ? `היסטוריה (${interactions.length})` : `History (${interactions.length})`}
+            </span>
+          </div>
+          {showHistory ? <ChevronUp size={16} style={{ color: 'var(--muted-foreground)' }} /> : <ChevronDown size={16} style={{ color: 'var(--muted-foreground)' }} />}
+        </button>
+
+        {showHistory && (
+          <div className="mt-2 space-y-3">
+            {/* Kind selector */}
+            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+              {([
+                ['talk', isRTL ? 'שיחות' : 'Talks', <Phone size={14} key="ph" />],
+                ['message', isRTL ? 'הודעות' : 'Messages', <MessageSquare size={14} key="ms" />],
+              ] as [InteractionKind, string, React.ReactNode][]).map(([k, label, icon]) => (
+                <button
+                  key={k}
+                  onClick={() => setKind(k)}
+                  className="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5"
+                  style={{
+                    background: kind === k ? cardColor : 'transparent',
+                    color: kind === k ? 'white' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {icon}{label}
+                </button>
+              ))}
+            </div>
+
+            <HistoryList
+              contactId={contact.id}
+              kind={kind}
+              items={sortedInteractions}
+              color={cardColor}
+              isRTL={isRTL}
+              onInteractionAdded={onInteractionAdded}
+              onInteractionDeleted={onInteractionDeleted}
+            />
+          </div>
+        )}
       </div>
 
-      <HistoryList
-        contactId={contact.id}
-        kind={kind}
-        items={items}
-        color={color}
-        isRTL={isRTL}
-        onInteractionAdded={onInteractionAdded}
-        onInteractionDeleted={onInteractionDeleted}
-      />
     </div>
   )
 }
 
-function KindButton({ active, onClick, color, children }: {
-  active: boolean; onClick: () => void; color: string; children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 py-2 px-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5"
-      style={{ background: active ? color : 'transparent', color: active ? 'white' : 'var(--muted-foreground)' }}
-    >
-      {children}
-    </button>
-  )
-}
+// ── Reminder Section ───────────────────────────────────────────
 
 function ReminderSection({
   contactId, reminders, color, isRTL, onReminderAdded, onReminderDeleted,
@@ -620,7 +1021,7 @@ function ReminderSection({
       <div className="flex items-center gap-2">
         <Bell size={15} style={{ color }} />
         <p className="text-sm font-semibold flex-1" style={{ color: 'var(--foreground)' }}>
-          {isRTL ? 'תזכורות לדבר' : 'Reminders to reach out'}
+          {isRTL ? 'תזכורות' : 'Reminders'}
         </p>
       </div>
 
@@ -652,12 +1053,7 @@ function ReminderSection({
                 <p className="text-[11px] truncate" style={{ color: 'var(--muted-foreground)' }}>{r.note}</p>
               )}
             </div>
-            <button
-              onClick={() => dismiss(r.id)}
-              disabled={pending}
-              className="text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0"
-              style={{ background: `${color}22`, color }}
-            >
+            <button onClick={() => dismiss(r.id)} disabled={pending} className="text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0" style={{ background: `${color}22`, color }}>
               {isRTL ? 'בוצע' : 'Done'}
             </button>
             <button onClick={() => remove(r.id)} disabled={pending} className="p-1 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>
@@ -677,11 +1073,7 @@ function ReminderSection({
               className="rounded-xl px-3 text-sm flex-1 h-9"
               style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
             />
-            <button
-              onClick={() => { setAdding(false); setNote('') }}
-              className="p-2 rounded-xl flex-shrink-0"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
-            >
+            <button onClick={() => { setAdding(false); setNote('') }} className="p-2 rounded-xl flex-shrink-0" style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
               <X size={18} />
             </button>
           </div>
@@ -693,21 +1085,12 @@ function ReminderSection({
             className="rounded-xl"
             style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
           />
-          <Button
-            onClick={submit}
-            disabled={pending || !date}
-            className="rounded-xl w-full"
-            style={{ background: color, color: 'white' }}
-          >
+          <Button onClick={submit} disabled={pending || !date} className="rounded-xl w-full" style={{ background: color, color: 'white' }}>
             {isRTL ? 'הוסף תזכורת' : 'Add reminder'}
           </Button>
         </div>
       ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-dashed"
-          style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
-        >
+        <button onClick={() => setAdding(true)} className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
           <Plus size={16} />
           <span className="text-xs">{isRTL ? 'הוסף תזכורת' : 'Add reminder'}</span>
         </button>
@@ -715,6 +1098,8 @@ function ReminderSection({
     </Card>
   )
 }
+
+// ── History List ───────────────────────────────────────────────
 
 function HistoryList({
   contactId, kind, items, color, isRTL, onInteractionAdded, onInteractionDeleted,
@@ -748,27 +1133,18 @@ function HistoryList({
     })
   }
 
-  const addLabel = kind === 'talk'
-    ? (isRTL ? 'הוסף תאריך שיחה' : 'Add talk date')
-    : (isRTL ? 'הוסף תאריך הודעות' : 'Add message date')
-
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-          {isRTL ? `היסטוריה לפי תאריך · ${items.length}` : `History by date · ${items.length}`}
-        </p>
-      </div>
+      <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+        {isRTL ? `${items.length} רשומות` : `${items.length} entries`}
+      </p>
 
       {items.length === 0 && !adding && (
-        <div className="text-center py-8">
-          <Calendar size={28} className="mx-auto mb-2" style={{ color: 'var(--muted-foreground)' }} />
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {kind === 'talk'
-              ? (isRTL ? 'אין שיחות מתועדות' : 'No talks logged')
-              : (isRTL ? 'אין הודעות מתועדות' : 'No messages logged')}
-          </p>
-        </div>
+        <p className="text-center text-sm py-6" style={{ color: 'var(--muted-foreground)' }}>
+          {kind === 'talk'
+            ? (isRTL ? 'אין שיחות מתועדות' : 'No talks logged')
+            : (isRTL ? 'אין הודעות מתועדות' : 'No messages logged')}
+        </p>
       )}
 
       {items.map((i) => (
@@ -777,19 +1153,14 @@ function HistoryList({
           className="flex items-start gap-3 px-3 py-2.5 rounded-xl"
           style={{ background: 'var(--card)', border: '1px solid var(--c-border)' }}
         >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: `${color}22`, color }}
-          >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}22`, color }}>
             {kind === 'talk' ? <Phone size={14} /> : <MessageSquare size={14} />}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
               {formatDate(i.date, isRTL)}
             </p>
-            {i.note && (
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{i.note}</p>
-            )}
+            {i.note && <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{i.note}</p>}
           </div>
           <button onClick={() => remove(i.id)} disabled={pending} className="p-1 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }}>
             <Trash2 size={13} />
@@ -808,11 +1179,7 @@ function HistoryList({
               className="rounded-xl px-3 text-sm flex-1 h-9"
               style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
             />
-            <button
-              onClick={() => { setAdding(false); setNote('') }}
-              className="p-2 rounded-xl flex-shrink-0"
-              style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}
-            >
+            <button onClick={() => { setAdding(false); setNote('') }} className="p-2 rounded-xl flex-shrink-0" style={{ background: 'var(--secondary)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
               <X size={18} />
             </button>
           </div>
@@ -824,23 +1191,18 @@ function HistoryList({
             className="rounded-xl"
             style={{ background: 'var(--c-input)', border: '1px solid var(--c-input-border)', color: 'var(--foreground)' }}
           />
-          <Button
-            onClick={submit}
-            disabled={pending || !date}
-            className="rounded-xl w-full"
-            style={{ background: color, color: 'white' }}
-          >
+          <Button onClick={submit} disabled={pending || !date} className="rounded-xl w-full" style={{ background: color, color: 'white' }}>
             {isRTL ? 'הוסף' : 'Add'}
           </Button>
         </Card>
       ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed"
-          style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
-        >
+        <button onClick={() => setAdding(true)} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
           <Plus size={18} />
-          <span className="text-sm">{addLabel}</span>
+          <span className="text-sm">
+            {kind === 'talk'
+              ? (isRTL ? 'הוסף תאריך שיחה' : 'Add talk date')
+              : (isRTL ? 'הוסף תאריך הודעות' : 'Add message date')}
+          </span>
         </button>
       )}
     </div>

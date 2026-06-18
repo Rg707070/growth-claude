@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type {
-  FriendContact, FriendInteraction, FriendReminder, InteractionKind,
+  FriendContact, FriendInteraction, FriendReminder, FriendEvent,
+  InteractionKind, RelationshipType, EventCategory, EventStatus,
 } from '@/types/friends'
 
 async function getUser() {
@@ -36,6 +37,34 @@ export async function deleteContact(id: string): Promise<void> {
     .eq('user_id', user.id)
   if (error) throw error
   revalidatePath(PATH)
+}
+
+export async function updateContact(
+  id: string,
+  fields: Partial<{
+    name: string
+    nickname: string | null
+    phone: string | null
+    relationship_type: RelationshipType
+    tags: string[]
+    notes: string | null
+    how_we_met: string | null
+    location: string | null
+    pinned: boolean
+    archived: boolean
+  }>,
+): Promise<FriendContact> {
+  const { supabase, user } = await getUser()
+  const { data, error } = await supabase
+    .from('friend_contacts')
+    .update(fields)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single()
+  if (error) throw error
+  revalidatePath(PATH)
+  return data as FriendContact
 }
 
 export async function logInteraction(
@@ -147,6 +176,78 @@ export async function completeReminder(id: string): Promise<void> {
   const { error } = await supabase
     .from('friend_reminders')
     .update({ done: true })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  if (error) throw error
+  revalidatePath(PATH)
+}
+
+export async function createFriendEvent(input: {
+  title: string
+  eventDate: string
+  eventTime?: string | null
+  category: EventCategory
+  contactIds?: string[]
+  location?: string | null
+  notes?: string | null
+  isRecurring?: boolean
+  recurrence?: 'yearly' | null
+}): Promise<FriendEvent> {
+  const { supabase, user } = await getUser()
+  const { data, error } = await supabase
+    .from('friend_events')
+    .insert({
+      user_id: user.id,
+      title: input.title.trim(),
+      event_date: input.eventDate,
+      event_time: input.eventTime ?? null,
+      category: input.category,
+      contact_ids: input.contactIds ?? [],
+      location: input.location?.trim() || null,
+      notes: input.notes?.trim() || null,
+      is_recurring: input.isRecurring ?? false,
+      recurrence: input.recurrence ?? null,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  revalidatePath(PATH)
+  return data as FriendEvent
+}
+
+export async function updateFriendEvent(
+  id: string,
+  fields: Partial<{
+    title: string
+    event_date: string
+    event_time: string | null
+    category: EventCategory
+    contact_ids: string[]
+    location: string | null
+    notes: string | null
+    status: EventStatus
+    is_recurring: boolean
+    recurrence: 'yearly' | null
+  }>,
+): Promise<FriendEvent> {
+  const { supabase, user } = await getUser()
+  const { data, error } = await supabase
+    .from('friend_events')
+    .update(fields)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single()
+  if (error) throw error
+  revalidatePath(PATH)
+  return data as FriendEvent
+}
+
+export async function deleteFriendEvent(id: string): Promise<void> {
+  const { supabase, user } = await getUser()
+  const { error } = await supabase
+    .from('friend_events')
+    .delete()
     .eq('id', id)
     .eq('user_id', user.id)
   if (error) throw error
