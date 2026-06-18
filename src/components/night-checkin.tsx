@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import type { KeyboardEvent, ChangeEvent, RefObject, CSSProperties } from 'react'
+import { Moon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/lang'
 import { useToast } from '@/components/ui/toast'
@@ -110,10 +111,14 @@ export function NightCheckIn() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center p-4 animate-fade-in"
-      style={{ background: 'rgba(11,36,71,0.55)', backdropFilter: 'blur(10px)' }}
+      style={{
+        background: 'linear-gradient(180deg, rgba(11,36,71,0.4) 0%, rgba(11,36,71,0.65) 100%)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}
     >
       <div
-        className="w-full max-w-sm rounded-3xl p-6 animate-fade-up"
+        className="w-full max-w-sm rounded-3xl p-6 animate-night-enter"
         style={{
           background: 'var(--c-fab-sheet)',
           border: '1px solid var(--c-border)',
@@ -122,7 +127,12 @@ export function NightCheckIn() {
       >
         {submitted ? (
           <div className="text-center py-6">
-            <p className="text-5xl mb-3">🌙</p>
+            <div
+              className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center"
+              style={{ background: 'oklch(0.20 0.07 240)', boxShadow: '0 0 24px 8px oklch(0.55 0.15 200 / 25%)' }}
+            >
+              <p className="text-3xl animate-flame">🌙</p>
+            </div>
             <p className="font-bold text-base mb-1" style={{ color: 'var(--foreground)' }}>
               {isRTL ? 'שמור! לילה טוב 💙' : 'Saved! Good night 💙'}
             </p>
@@ -136,7 +146,7 @@ export function NightCheckIn() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xl leading-none">📋</span>
+                  <Moon size={18} style={{ color: 'oklch(0.72 0.13 200)', flexShrink: 0 }} />
                   <span className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>
                     {isRTL ? 'סיכום יומי' : 'Daily Wrap-Up'}
                   </span>
@@ -170,8 +180,12 @@ export function NightCheckIn() {
                   </div>
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--c-border)' }}>
                     <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${habitPct}%`, background: 'var(--primary)' }}
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${habitPct}%`,
+                        background: 'linear-gradient(90deg, oklch(0.72 0.13 200) 0%, oklch(0.74 0.14 165) 100%)',
+                        transition: 'width 1s cubic-bezier(0.22, 1, 0.36, 1)',
+                      }}
                     />
                   </div>
                 </div>
@@ -281,8 +295,8 @@ function SummarySection({
           {items.map((item, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-              style={chipStyle}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium animate-scale-in"
+              style={{ ...chipStyle, animationDelay: `${i * 40}ms` }}
             >
               {item}
               <button

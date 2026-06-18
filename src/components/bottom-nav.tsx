@@ -103,16 +103,23 @@ function SortableNavButton({
       aria-label={isRTL ? item.labelHe : item.labelEn}
       {...(isEditMode ? { ...attributes, ...listeners } : {})}
     >
-      <item.icon
-        size={22}
-        strokeWidth={isActive && !isEditMode ? 2.4 : 1.7}
-        style={{ color: isActive && !isEditMode ? 'var(--primary)' : isEditMode ? 'var(--muted-foreground)' : 'var(--muted-foreground)' }}
-      />
+      <div style={{ filter: isActive && !isEditMode ? 'drop-shadow(0 0 5px var(--c-primary-glow))' : 'none', transition: 'filter 0.2s' }}>
+        <item.icon
+          size={22}
+          strokeWidth={isActive && !isEditMode ? 2.4 : 1.7}
+          style={{ color: isActive && !isEditMode ? 'var(--primary)' : isEditMode ? 'var(--muted-foreground)' : 'var(--muted-foreground)' }}
+        />
+      </div>
       {isActive && !isEditMode && (
         <span
           aria-hidden
-          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-          style={{ background: 'var(--primary)' }}
+          className="absolute bottom-1 left-1/2 h-[3px] rounded-full animate-nav-indicator"
+          style={{
+            width: '18px',
+            background: 'var(--primary)',
+            boxShadow: '0 0 6px 1px var(--c-primary-glow)',
+            transform: 'translateX(-50%)',
+          }}
         />
       )}
       {isEditMode && (
@@ -370,7 +377,7 @@ export function BottomNav() {
               borderRadius: '999px',
               boxShadow: `0 8px 32px var(--c-shadow-lg), 0 2px 8px var(--c-shadow-md)${isEditMode ? ', 0 0 0 2px var(--c-primary-glow)' : ''}`,
               padding: '8px 12px',
-              transition: 'border-color 0.2s, box-shadow 0.2s',
+              transition: 'border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
             }}
             onPointerDown={handleLongPressStart}
             onPointerUp={handleLongPressEnd}
@@ -389,31 +396,26 @@ export function BottomNav() {
               ))}
 
               {/* Center: add habit or done button */}
-              {isEditMode ? (
-                <button
-                  onClick={exitEditMode}
-                  className="flex items-center justify-center w-11 h-11 rounded-full mx-1 transition-all duration-200 active:scale-90"
+              <button
+                onClick={isEditMode ? exitEditMode : () => setOpen(true)}
+                className="flex items-center justify-center w-11 h-11 rounded-full mx-1 active:scale-90 hover:scale-105"
+                style={{
+                  background: 'var(--brand-gradient)',
+                  boxShadow: '0 4px 14px var(--c-shadow-md)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+                aria-label={isEditMode ? (isRTL ? 'סיום עריכה' : 'Done') : (isRTL ? 'הוסף הרגל' : 'Add habit')}
+              >
+                <Plus
+                  size={20}
+                  strokeWidth={2.6}
+                  color="white"
                   style={{
-                    background: 'var(--brand-gradient)',
-                    boxShadow: '0 4px 14px var(--c-shadow-md)',
+                    transform: isEditMode ? 'rotate(45deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
-                  aria-label={isRTL ? 'סיום עריכה' : 'Done'}
-                >
-                  <X size={18} strokeWidth={2.6} color="white" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => setOpen(true)}
-                  className="flex items-center justify-center w-11 h-11 rounded-full mx-1 transition-all duration-200 active:scale-90 hover:scale-105"
-                  style={{
-                    background: 'var(--brand-gradient)',
-                    boxShadow: '0 4px 14px var(--c-shadow-md)',
-                  }}
-                  aria-label={isRTL ? 'הוסף הרגל' : 'Add habit'}
-                >
-                  <Plus size={20} strokeWidth={2.6} color="white" />
-                </button>
-              )}
+                />
+              </button>
 
               {rightItems.map((item) => (
                 <SortableNavButton
