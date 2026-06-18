@@ -93,25 +93,27 @@ export function DashboardClient({
                 boxShadow: '0 10px 40px var(--c-hero-shadow)',
               }}
             >
-              <div aria-hidden className="absolute -top-20 -end-20 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none" style={{ background: '#A3E635' }} />
-              <div aria-hidden className="absolute -bottom-24 -start-24 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ background: '#0EA5E9' }} />
+              <div aria-hidden className="absolute -top-20 -end-20 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none" style={{ background: 'var(--brand-lime)' }} />
+              <div aria-hidden className="absolute -bottom-24 -start-24 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ background: 'var(--brand-teal)' }} />
+              {/* Top-edge shimmer */}
+              <span aria-hidden className="absolute inset-x-0 top-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)' }} />
 
               {/* Top row */}
               <div className="relative flex items-start justify-between mb-5">
                 <div>
-                  <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  <p className="font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.65)', fontSize: '11px' }}>
                     {new Date().toLocaleDateString(isRTL ? 'he-IL' : 'en-US', {
                       weekday: 'long', day: 'numeric', month: 'long',
                     })}
                   </p>
-                  <h1 className="text-lg md:text-xl font-bold leading-tight mt-0.5" style={{ color: '#fff' }}>
+                  <h1 className="text-lg md:text-xl font-bold leading-tight mt-0.5" style={{ color: '#fff', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
                     {greeting} 👋
                   </h1>
                 </div>
                 <div className="flex items-center gap-2">
                   {overallStreak > 0 && (
                     <div
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold animate-streak-enter"
                       style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}
                     >
                       🔥 {overallStreak} {isRTL ? 'ימים' : 'days'}
@@ -123,6 +125,7 @@ export function DashboardClient({
 
               {/* Ring + stats */}
               <div className="relative flex items-center justify-center gap-6 md:justify-start md:gap-10">
+                <div style={{ filter: 'drop-shadow(0 0 14px rgba(163,230,53,0.35))' }}>
                 <ProgressRing percentage={pct} color="#A3E635" gradientTo="#0EA5E9" size={130} strokeWidth={8}>
                   <div className="flex flex-col items-center">
                     <span className="text-2xl font-black" style={{ color: '#fff' }}>{pct}%</span>
@@ -131,6 +134,7 @@ export function DashboardClient({
                     </span>
                   </div>
                 </ProgressRing>
+                </div>
 
                 <div className="flex flex-col gap-3">
                   <div>
@@ -229,7 +233,7 @@ export function DashboardClient({
             {failingDomains.length > 0 && (
               <div>
                 <h2
-                  className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+                  className="label-micro mb-3 flex items-center gap-1.5"
                   style={{ color: '#F97316' }}
                 >
                   ⚠️ {isRTL ? 'טעונים תשומת לב' : 'Needs Attention'}
@@ -275,10 +279,7 @@ export function DashboardClient({
             <div className="space-y-4">
               {pendingHabits.length > 0 && (
                 <div>
-                  <h2
-                    className="text-xs font-semibold uppercase tracking-wider mb-3"
-                    style={{ color: 'var(--muted-foreground)' }}
-                  >
+                  <h2 className="label-micro mb-3">
                     {isRTL ? 'לסיום היום' : 'To Complete'}
                   </h2>
                   <div className="space-y-2">
@@ -293,8 +294,7 @@ export function DashboardClient({
                 <div>
                   <button
                     onClick={() => setShowDone((v) => !v)}
-                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3 transition-opacity hover:opacity-80"
-                    style={{ color: 'var(--muted-foreground)' }}
+                    className="flex items-center gap-2 label-micro mb-3 transition-opacity hover:opacity-80"
                   >
                     <span>{isRTL ? `הושלם ✓  (${doneHabits.length})` : `Done ✓  (${doneHabits.length})`}</span>
                     <span style={{ fontSize: 10 }}>{showDone ? '▲' : '▼'}</span>

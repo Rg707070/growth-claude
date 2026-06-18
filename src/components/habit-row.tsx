@@ -34,6 +34,8 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
   const [pendingTime, setPendingTime] = useState('')
   const [pendingType, setPendingType] = useState<ReminderType>('notification')
   const [editOpen, setEditOpen] = useState(false)
+  const [justToggled, setJustToggled] = useState(false)
+  const [justCompleted, setJustCompleted] = useState(false)
 
   const startX = useRef(0)
   const startY = useRef(0)
@@ -56,7 +58,14 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     if (loading) return
     setLoading(true)
     const prevDone = done
-    setDone(!done)
+    const nextDone = !done
+    setDone(nextDone)
+    setJustToggled(true)
+    setTimeout(() => setJustToggled(false), 400)
+    if (nextDone) {
+      setJustCompleted(true)
+      setTimeout(() => setJustCompleted(false), 1400)
+    }
     navigator.vibrate?.(50)
     try {
       const supabase = createClient()
@@ -178,14 +187,20 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
     <div
       className="rounded-xl relative overflow-hidden"
       style={{
-        background: done ? '#10b98106' : 'var(--c-card)',
+        background: done
+          ? 'linear-gradient(90deg, #10b98108 0%, #10b98104 100%)'
+          : 'var(--c-card)',
         border: `1px solid ${done ? '#10b98125' : `${accentColor}25`}`,
       }}
     >
       {/* Thin left accent bar */}
       <div
-        className="absolute start-0 top-0 bottom-0 w-0.5"
-        style={{ background: done ? '#10b981' : accentColor }}
+        className={`absolute start-0 top-0 bottom-0 w-0.5 transition-all duration-300${justCompleted ? ' animate-glow-pulse' : ''}`}
+        style={{
+          background: done ? '#10b981' : accentColor,
+          boxShadow: justCompleted ? `0 0 6px 2px #10b98155` : undefined,
+          '--c-streak-glow': '#10b98140',
+        } as React.CSSProperties}
       />
 
       {/* Main row */}
@@ -205,29 +220,37 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
           style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
         >
           {/* Checkbox circle */}
-          <div
-            className="flex-shrink-0 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center transition-all duration-200"
-            style={{
-              borderColor: done ? '#10b981' : `${accentColor}70`,
-              background: done ? '#10b981' : 'transparent',
-            }}
-          >
-            {done && <Check size={11} strokeWidth={3} color="#fff" />}
+          <div className="relative flex-shrink-0">
+            {justToggled && (
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full animate-ping pointer-events-none"
+                style={{ background: done ? '#10b98130' : `${accentColor}25` }}
+              />
+            )}
+            <div
+              className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center transition-colors duration-200${done && !loading ? ' animate-check-pop' : ''}`}
+              style={{
+                borderColor: done ? '#10b981' : `${accentColor}70`,
+                background: done ? '#10b981' : 'transparent',
+              }}
+            >
+              {done && <Check size={11} strokeWidth={3} color="#fff" />}
+            </div>
           </div>
 
           {/* Text */}
           <div className="flex-1 min-w-0">
             <p
-              className="text-sm font-medium leading-snug truncate"
+              className={`text-sm font-medium leading-snug truncate transition-colors duration-200${done ? ' animate-strike' : ''}`}
               style={{
                 color: done ? 'var(--muted-foreground)' : 'var(--foreground)',
-                textDecoration: done ? 'line-through' : 'none',
-                textDecorationColor: '#10b98155',
+                letterSpacing: '-0.01em',
               }}
             >
               {habit.name}
             </p>
-            <p className="text-[10px] leading-none mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-[10px] font-medium leading-none mt-0.5" style={{ color: 'var(--c-text-muted)' }}>
               {domain?.icon} {isRTL ? domain?.nameHe : domain?.nameEn}
               {habit.schedule_time && (
                 <span style={{ color: accentColor }}> · 🕐 {habit.schedule_time.slice(0, 5)}</span>
@@ -240,7 +263,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         <button
           type="button"
           onClick={openReminderPicker}
-          className="flex-shrink-0 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all active:scale-90"
+          className="flex-shrink-0 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all duration-150 active:scale-90 active:brightness-125"
           style={{
             color: reminder ? accentColor : 'var(--muted-foreground)',
             background: reminder ? `${accentColor}18` : 'var(--c-surface-2)',
@@ -258,7 +281,7 @@ export function HabitRow({ habit, isCompleted, onToggle }: HabitRowProps) {
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); setEditOpen(true) }}
-          className="flex-shrink-0 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all active:scale-90"
+          className="flex-shrink-0 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all duration-150 active:scale-90 active:brightness-125"
           style={{
             color: 'var(--muted-foreground)',
             background: 'var(--c-surface-2)',

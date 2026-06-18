@@ -497,6 +497,59 @@ html.light .brand-hero-text {
 }
 .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
 
+/* ── New micro-interaction animations ── */
+
+@keyframes check-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  65%  { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+.animate-check-pop { animation: check-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up-fade { animation: slide-up-fade 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@keyframes nav-indicator {
+  from { transform: translateX(-50%) scaleX(0.4); opacity: 0; }
+  to   { transform: translateX(-50%) scaleX(1);   opacity: 1; }
+}
+.animate-nav-indicator { animation: nav-indicator 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes streak-enter {
+  0%   { transform: scale(0.7) rotate(-8deg); opacity: 0; }
+  70%  { transform: scale(1.08) rotate(2deg);  opacity: 1; }
+  100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+}
+.animate-streak-enter { animation: streak-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@keyframes night-modal-enter {
+  from { opacity: 0; transform: translateY(32px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.animate-night-enter { animation: night-modal-enter 0.44s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@keyframes strike-through {
+  from { text-decoration-color: transparent; }
+  to   { text-decoration-color: currentColor; }
+}
+.animate-strike {
+  text-decoration: line-through;
+  animation: strike-through 0.3s ease forwards;
+}
+
+/* Micro-label utility */
+.label-micro {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
 /* Confetti canvas */
 #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
 
