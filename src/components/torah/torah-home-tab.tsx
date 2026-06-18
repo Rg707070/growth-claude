@@ -18,7 +18,7 @@ interface Props {
   recentSummaries: LearningSummary[]
   todaySeconds: number
   todaySessionCount: number
-  onNavigate: (tab: 'home' | 'learn' | 'summaries') => void
+  onNavigate: (tab: 'home' | 'learn' | 'summaries' | 'habits' | 'calendar') => void
 }
 
 function formatMinutes(seconds: number) {

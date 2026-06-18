@@ -1,18 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowRight, BookOpen, FileText, Home } from 'lucide-react'
+import { ArrowRight, BookOpen, FileText, Home, Repeat2, CalendarDays } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLang } from '@/lib/lang'
 import { TorahHomeTab } from './torah-home-tab'
 import { TorahLearnTab } from './torah-learn-tab'
 import { TorahSummariesTab } from './torah-summaries-tab'
-import type { Habit, LearningSession, LearningSummary, DailyTrack } from '@/types'
+import { TorahHabitsTab } from './torah-habits-tab'
+import { TorahCalendarTab } from './torah-calendar-tab'
+import type { Habit, HabitLog, LearningSession, LearningSummary, DailyTrack } from '@/types'
 
 interface Props {
   userId: string
   habits: Habit[]
   completedIds: string[]
+  allLogs: HabitLog[]
   sessions: LearningSession[]
   summaries: LearningSummary[]
   todaySeconds: number
@@ -20,7 +23,7 @@ interface Props {
   dailyTracks: DailyTrack[]
 }
 
-type Tab = 'home' | 'learn' | 'summaries'
+type Tab = 'home' | 'learn' | 'habits' | 'summaries' | 'calendar'
 
 const COLOR = '#0F766E'
 
@@ -28,6 +31,7 @@ export function TorahWorkspaceClient({
   userId,
   habits,
   completedIds,
+  allLogs,
   sessions,
   summaries,
   todaySeconds,
@@ -39,16 +43,23 @@ export function TorahWorkspaceClient({
   const { t, isRTL } = useLang()
   const paramTab = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState<Tab>(
-    paramTab === 'summaries' || paramTab === 'learn' ? paramTab : 'home',
+    paramTab === 'summaries' || paramTab === 'learn' || paramTab === 'habits' || paramTab === 'calendar'
+      ? (paramTab as Tab)
+      : 'home',
   )
   const initialSummaryId = searchParams.get('summary')
+  const [localHabits, setLocalHabits] = useState<Habit[]>(habits)
   const [localSummaries, setLocalSummaries] = useState<LearningSummary[]>(summaries)
   const [localSessions, setLocalSessions] = useState<LearningSession[]>(sessions)
   const [localTodaySeconds, setLocalTodaySeconds] = useState(todaySeconds)
   const [localTodayCount, setLocalTodayCount] = useState(todaySessionCount)
 
+  function onHabitAdded(h: Habit) {
+    setLocalHabits((prev) => [...prev, h])
+  }
+
   function onSessionSaved(session: LearningSession, addedSeconds: number) {
-    setLocalSessions((prev) => [session, ...prev.slice(0, 9)])
+    setLocalSessions((prev) => [session, ...prev])
     setLocalTodaySeconds((prev) => prev + addedSeconds)
     setLocalTodayCount((prev) => prev + 1)
   }
@@ -70,16 +81,18 @@ export function TorahWorkspaceClient({
   }
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'home',      label: t('torahHome'),      icon: <Home size={16} /> },
-    { id: 'learn',     label: t('torahLearn'),     icon: <BookOpen size={16} /> },
-    { id: 'summaries', label: t('torahSummaries'), icon: <FileText size={16} /> },
+    { id: 'home',      label: t('torahHome'),      icon: <Home size={14} /> },
+    { id: 'learn',     label: t('torahLearn'),     icon: <BookOpen size={14} /> },
+    { id: 'habits',    label: t('torahHabits'),    icon: <Repeat2 size={14} /> },
+    { id: 'summaries', label: t('torahSummaries'), icon: <FileText size={14} /> },
+    { id: 'calendar',  label: t('torahCalendar'),  icon: <CalendarDays size={14} /> },
   ]
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-8">
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-4 space-y-5 md:max-w-none md:px-0 md:pt-8">
 
-        {/* Header — same style as all other domain clients */}
+        {/* Header */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -104,13 +117,16 @@ export function TorahWorkspaceClient({
           </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ background: 'var(--secondary)' }}>
+        {/* Scrollable tab bar */}
+        <div
+          className="flex gap-1 p-1 rounded-xl overflow-x-auto"
+          style={{ background: 'var(--secondary)', scrollbarWidth: 'none' }}
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all"
+              className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg text-xs font-medium transition-all flex-shrink-0"
               style={{
                 background: activeTab === tab.id ? COLOR : 'transparent',
                 color: activeTab === tab.id ? 'white' : 'var(--muted-foreground)',
@@ -125,7 +141,7 @@ export function TorahWorkspaceClient({
         {/* Tab content */}
         {activeTab === 'home' && (
           <TorahHomeTab
-            habits={habits}
+            habits={localHabits}
             completedIds={completedIds}
             userId={userId}
             recentSessions={localSessions.slice(0, 3)}
@@ -144,6 +160,14 @@ export function TorahWorkspaceClient({
             initialTracks={dailyTracks}
           />
         )}
+        {activeTab === 'habits' && (
+          <TorahHabitsTab
+            habits={localHabits}
+            completedIds={completedIds}
+            userId={userId}
+            onAdded={onHabitAdded}
+          />
+        )}
         {activeTab === 'summaries' && (
           <TorahSummariesTab
             userId={userId}
@@ -152,6 +176,14 @@ export function TorahWorkspaceClient({
             onCreated={onSummaryCreated}
             onUpdated={onSummaryUpdated}
             onDeleted={onSummaryDeleted}
+          />
+        )}
+        {activeTab === 'calendar' && (
+          <TorahCalendarTab
+            habits={localHabits}
+            allLogs={allLogs}
+            sessions={localSessions}
+            dailyTracks={dailyTracks}
           />
         )}
 
