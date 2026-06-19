@@ -294,6 +294,7 @@ export function FriendsClient({
                 allLogs={allLogs}
                 interactions={interactions}
                 events={events}
+                reminders={reminders}
                 contacts={contacts}
                 color={color}
                 isRTL={isRTL}

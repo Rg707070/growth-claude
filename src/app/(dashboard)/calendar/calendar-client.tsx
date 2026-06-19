@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, CalendarDays, X, Check, Clock, Star, Dumbbell, Music, Wallet, Users, BookOpen, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarDays, X, Check, Clock, Star, Dumbbell, Music, Wallet, Users, BookOpen, Plus, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DOMAINS } from '@/lib/domains'
 import { useLang } from '@/lib/lang'
@@ -28,7 +28,10 @@ interface DayData {
   workouts: { id: string; workout_type: string; duration_minutes: number | null; notes: string | null }[]
   musicLogs: { id: string; song_name: string | null; duration_minutes: number | null }[]
   transactions: { id: string; description: string; amount: number; type: string }[]
-  friendInteractions: { id: string; notes: string | null }[]
+  friendInteractions: { id: string; note: string | null }[]
+  friendEvents: { id: string; title: string; event_time: string | null; notes: string | null }[]
+  friendReminders: { id: string; note: string | null }[]
+  torahSessions: { id: string; text_title: string; duration_seconds: number }[]
   hasJournal: boolean
   hasNightCheckin: boolean
 }
@@ -216,10 +219,14 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
       if (!user || cancelled) { setLoadingDay(false); return }
 
       const dow = new Date(selectedDay + 'T12:00:00').getDay()
+      const nextDay = new Date(selectedDay + 'T12:00:00')
+      nextDay.setDate(nextDay.getDate() + 1)
+      const nextDayStr = nextDay.toISOString().split('T')[0]
 
       const [
         schedRes, checkRes, eventsRes, calEventsRes, famTasksRes, domTasksRes,
         workRes, musicRes, txRes, friendRes, journalRes, nightRes,
+        friendEventsRes, friendRemindersRes, torahSessionsRes,
       ] = await Promise.all([
         supabase.from('user_schedule')
           .select('id, time, label, type')
@@ -260,7 +267,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
           .eq('user_id', user.id)
           .eq('date', selectedDay),
         supabase.from('friend_interactions')
-          .select('id, notes')
+          .select('id, note')
           .eq('user_id', user.id)
           .eq('date', selectedDay),
         supabase.from('journal_entries')
@@ -273,6 +280,21 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
           .eq('user_id', user.id)
           .eq('date', selectedDay)
           .maybeSingle(),
+        supabase.from('friend_events')
+          .select('id, title, event_time, notes')
+          .eq('user_id', user.id)
+          .eq('event_date', selectedDay)
+          .order('event_time'),
+        supabase.from('friend_reminders')
+          .select('id, note')
+          .eq('user_id', user.id)
+          .eq('done', false)
+          .eq('remind_on', selectedDay),
+        supabase.from('learning_sessions')
+          .select('id, text_title, duration_seconds')
+          .eq('user_id', user.id)
+          .gte('created_at', selectedDay)
+          .lt('created_at', nextDayStr),
       ])
 
       if (cancelled) return
@@ -288,6 +310,9 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
         musicLogs: (musicRes.data ?? []) as DayData['musicLogs'],
         transactions: (txRes.data ?? []) as DayData['transactions'],
         friendInteractions: (friendRes.data ?? []) as DayData['friendInteractions'],
+        friendEvents: (friendEventsRes.data ?? []) as DayData['friendEvents'],
+        friendReminders: (friendRemindersRes.data ?? []) as DayData['friendReminders'],
+        torahSessions: (torahSessionsRes.data ?? []) as DayData['torahSessions'],
         hasJournal: !!journalRes.data,
         hasNightCheckin: !!nightRes.data,
       })
@@ -319,6 +344,8 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
     dayData.domainTasks.length > 0 || dayData.familyTasks.length > 0 ||
     dayData.workouts.length > 0 || dayData.musicLogs.length > 0 ||
     dayData.transactions.length > 0 || dayData.friendInteractions.length > 0 ||
+    dayData.friendEvents.length > 0 || dayData.friendReminders.length > 0 ||
+    dayData.torahSessions.length > 0 ||
     dayData.hasJournal || dayData.hasNightCheckin
   )
 
@@ -662,14 +689,55 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
                     </DaySection>
                   )}
 
+                  {/* Torah learning */}
+                  {dayData && dayData.torahSessions.length > 0 && (
+                    <DaySection title={isRTL ? 'לימוד תורה' : 'Torah'} color="#0F766E">
+                      {dayData.torahSessions.map((s: DayData['torahSessions'][number]) => (
+                        <DayRow key={s.id}
+                          icon={<BookOpen size={13} />}
+                          text={s.text_title}
+                          sub={`${Math.round(s.duration_seconds / 60)} ${isRTL ? "דק'" : 'min'}`}
+                          done accent="#0F766E"
+                        />
+                      ))}
+                    </DaySection>
+                  )}
+
                   {/* Friends */}
                   {dayData && dayData.friendInteractions.length > 0 && (
                     <DaySection title={isRTL ? 'חברים' : 'Friends'} color="#06b6d4">
                       {dayData.friendInteractions.map((fi: DayData['friendInteractions'][number]) => (
                         <DayRow key={fi.id}
                           icon={<Users size={13} />}
-                          text={fi.notes ?? (isRTL ? 'אינטראקציה' : 'Interaction')}
+                          text={fi.note ?? (isRTL ? 'אינטראקציה' : 'Interaction')}
                           done accent="#06b6d4"
+                        />
+                      ))}
+                    </DaySection>
+                  )}
+
+                  {/* Friend events */}
+                  {dayData && dayData.friendEvents.length > 0 && (
+                    <DaySection title={isRTL ? 'מפגשי חברים' : 'Friend Events'} color="#06b6d4">
+                      {dayData.friendEvents.map((ev: DayData['friendEvents'][number]) => (
+                        <DayRow key={ev.id}
+                          icon={<Star size={13} />}
+                          text={ev.title}
+                          sub={[ev.event_time ? ev.event_time.slice(0, 5) : null, ev.notes].filter(Boolean).join(' · ') || undefined}
+                          done accent="#06b6d4"
+                        />
+                      ))}
+                    </DaySection>
+                  )}
+
+                  {/* Friend reminders */}
+                  {dayData && dayData.friendReminders.length > 0 && (
+                    <DaySection title={isRTL ? 'תזכורות חברים' : 'Friend Reminders'} color="#f59e0b">
+                      {dayData.friendReminders.map((r: DayData['friendReminders'][number]) => (
+                        <DayRow key={r.id}
+                          icon={<Bell size={13} />}
+                          text={r.note ?? (isRTL ? 'תזכורת ליצירת קשר' : 'Reach out')}
+                          accent="#f59e0b"
                         />
                       ))}
                     </DaySection>

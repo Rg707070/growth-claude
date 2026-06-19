@@ -1,17 +1,19 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Users, Bell } from 'lucide-react'
 import type { Habit, HabitLog } from '@/types'
-import type { FriendContact, FriendEvent, FriendInteraction } from '@/types/friends'
+import type { FriendContact, FriendEvent, FriendInteraction, FriendReminder } from '@/types/friends'
 
 const DAY_HEADERS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
+const REMINDER_COLOR = '#f59e0b'
 
 interface DayData {
   date: string
   completedHabitIds: string[]
   interactionCount: number
   eventIds: string[]
+  reminderIds: string[]
 }
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
   allLogs: HabitLog[]
   interactions: FriendInteraction[]
   events: FriendEvent[]
+  reminders: FriendReminder[]
   contacts: FriendContact[]
   color: string
   isRTL: boolean
@@ -37,7 +40,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
 }
 
 export function FriendsCalendarTab({
-  habits, allLogs, interactions, events, contacts, color, isRTL,
+  habits, allLogs, interactions, events, reminders, contacts, color, isRTL,
 }: Props) {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
@@ -64,7 +67,7 @@ export function FriendsCalendarTab({
   const dayDataMap = useMemo(() => {
     const map: Record<string, DayData> = {}
     const ensure = (d: string) => {
-      if (!map[d]) map[d] = { date: d, completedHabitIds: [], interactionCount: 0, eventIds: [] }
+      if (!map[d]) map[d] = { date: d, completedHabitIds: [], interactionCount: 0, eventIds: [], reminderIds: [] }
     }
     for (const log of allLogs) {
       const [ly, lm] = log.completed_at.split('-').map(Number)
@@ -85,8 +88,14 @@ export function FriendsCalendarTab({
       ensure(e.event_date)
       map[e.event_date].eventIds.push(e.id)
     }
+    for (const r of reminders) {
+      const [ry, rm] = r.remind_on.split('-').map(Number)
+      if (ry !== viewYear || rm - 1 !== viewMonth) continue
+      ensure(r.remind_on)
+      map[r.remind_on].reminderIds.push(r.id)
+    }
     return map
-  }, [allLogs, interactions, events, viewYear, viewMonth])
+  }, [allLogs, interactions, events, reminders, viewYear, viewMonth])
 
   // Month summary stats
   const monthDays = Object.values(dayDataMap)
@@ -169,6 +178,7 @@ export function FriendsCalendarTab({
             const isSelected = dateStr === selectedDay
             const habitRatio = data ? (habits.length > 0 ? data.completedHabitIds.length / habits.length : 0) : 0
             const hasEvent = data && data.eventIds.length > 0
+            const hasReminder = data && data.reminderIds.length > 0
 
             return (
               <button
@@ -212,6 +222,12 @@ export function FriendsCalendarTab({
                     style={{ background: isSelected ? 'white' : '#f59e0b' }}
                   />
                 )}
+                {hasReminder && (
+                  <div
+                    className="absolute bottom-0.5 end-0.5 w-1.5 h-1.5 rounded-full"
+                    style={{ background: isSelected ? 'rgba(255,255,255,0.8)' : REMINDER_COLOR, border: isSelected ? 'none' : '1px solid var(--card)' }}
+                  />
+                )}
               </button>
             )
           })}
@@ -250,7 +266,7 @@ export function FriendsCalendarTab({
                       className="text-xs"
                       style={{ color: done ? 'var(--foreground)' : 'var(--muted-foreground)' }}
                     >
-                      {isRTL ? h.name_he || h.name : h.name}
+                      {h.name}
                     </span>
                   </div>
                 )
@@ -311,6 +327,37 @@ export function FriendsCalendarTab({
                     )
                   })}
               </div>
+            </div>
+          )}
+
+          {/* Reminders on this day */}
+          {selectedData && selectedData.reminderIds.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                {isRTL ? 'תזכורות' : 'Reminders'}
+              </p>
+              {selectedData.reminderIds.map((rid) => {
+                const r = reminders.find((x) => x.id === rid)
+                if (!r) return null
+                const c = contactMap[r.contact_id]
+                return (
+                  <div
+                    key={rid}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                    style={{ background: `${REMINDER_COLOR}12`, border: `1px solid ${REMINDER_COLOR}33` }}
+                  >
+                    <Bell size={14} style={{ color: REMINDER_COLOR, flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>
+                        {c?.name ?? (isRTL ? 'תזכורת' : 'Reminder')}
+                      </p>
+                      {r.note && (
+                        <p className="text-[10px] truncate" style={{ color: 'var(--muted-foreground)' }}>{r.note}</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
 
