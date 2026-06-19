@@ -6,6 +6,7 @@ import type { Habit, HabitLog, LearningSession, DailyTrack } from '@/types'
 
 const COLOR = '#0F766E'
 const GREEN = '#16a34a'
+const AMBER = '#f59e0b'
 
 const DAY_HEADERS_HE = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
 
@@ -14,6 +15,7 @@ interface DayData {
   sessionMinutes: number
   sessionCount: number
   completedHabitIds: string[]
+  trackIds: string[]
 }
 
 interface Props {
@@ -33,7 +35,7 @@ function formatDateHe(dateStr: string) {
   return date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dailyTracks }: Props) {
+export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks }: Props) {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
@@ -60,27 +62,39 @@ export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dail
   const dayDataMap = useMemo(() => {
     const map: Record<string, DayData> = {}
 
+    const ensure = (date: string) => {
+      if (!map[date]) map[date] = { date, sessionMinutes: 0, sessionCount: 0, completedHabitIds: [], trackIds: [] }
+      return map[date]
+    }
+
     for (const s of sessions) {
       const date = s.created_at.split('T')[0]
       const [sy, sm] = date.split('-').map(Number)
       if (sy !== viewYear || sm - 1 !== viewMonth) continue
-      if (!map[date]) map[date] = { date, sessionMinutes: 0, sessionCount: 0, completedHabitIds: [] }
-      map[date].sessionMinutes += Math.round(s.duration_seconds / 60)
-      map[date].sessionCount++
+      const d = ensure(date)
+      d.sessionMinutes += Math.round(s.duration_seconds / 60)
+      d.sessionCount++
     }
 
     for (const log of allLogs) {
       const date = log.completed_at
       const [ly, lm] = date.split('-').map(Number)
       if (ly !== viewYear || lm - 1 !== viewMonth) continue
-      if (!map[date]) map[date] = { date, sessionMinutes: 0, sessionCount: 0, completedHabitIds: [] }
-      if (!map[date].completedHabitIds.includes(log.habit_id)) {
-        map[date].completedHabitIds.push(log.habit_id)
+      const d = ensure(date)
+      if (!d.completedHabitIds.includes(log.habit_id)) {
+        d.completedHabitIds.push(log.habit_id)
       }
     }
 
+    for (const track of dailyTracks) {
+      if (!track.last_done) continue
+      const [ty, tm] = track.last_done.split('-').map(Number)
+      if (ty !== viewYear || tm - 1 !== viewMonth) continue
+      ensure(track.last_done).trackIds.push(track.id)
+    }
+
     return map
-  }, [sessions, allLogs, viewYear, viewMonth])
+  }, [sessions, allLogs, dailyTracks, viewYear, viewMonth])
 
   // Calendar grid cells
   const cells: (number | null)[] = []
@@ -91,6 +105,9 @@ export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dail
   const selectedData = selectedDay ? dayDataMap[selectedDay] : undefined
   const selectedSessions = selectedDay
     ? sessions.filter(s => s.created_at.startsWith(selectedDay))
+    : []
+  const selectedTracks = selectedDay
+    ? dailyTracks.filter(t => t.last_done === selectedDay)
     : []
   const selectedHabits = selectedData
     ? habits.map(h => ({ ...h, done: selectedData.completedHabitIds.includes(h.id) }))
@@ -163,6 +180,7 @@ export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dail
             const isSelected = dateStr === selectedDay
             const hasSessions = (data?.sessionCount ?? 0) > 0
             const hasHabits = (data?.completedHabitIds.length ?? 0) > 0
+            const hasTracks = (data?.trackIds.length ?? 0) > 0
             const habitRatio = habits.length > 0 ? (data?.completedHabitIds.length ?? 0) / habits.length : 0
             const allHabitsDone = habits.length > 0 && habitRatio === 1
 
@@ -210,6 +228,15 @@ export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dail
                       }}
                     />
                   )}
+                  {hasTracks && (
+                    <div
+                      className="rounded-full"
+                      style={{
+                        width: '5px', height: '5px',
+                        background: isSelected ? 'rgba(255,255,255,0.5)' : AMBER,
+                      }}
+                    />
+                  )}
                 </div>
               </button>
             )
@@ -226,6 +253,10 @@ export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dail
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: GREEN }} />
           <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>הרגלים</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: AMBER }} />
+          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>לימוד קבוע</span>
         </div>
       </div>
 
@@ -305,6 +336,30 @@ export function TorahCalendarTab({ habits, allLogs, sessions, dailyTracks: _dail
                     >
                       {h.name}
                     </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Daily tracks completed */}
+          {selectedTracks.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                לימודים קבועים
+              </p>
+              <div className="space-y-1.5">
+                {selectedTracks.map(t => (
+                  <div
+                    key={t.id}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                    style={{ background: `${AMBER}12` }}
+                  >
+                    <CheckCircle2 size={15} className="shrink-0" style={{ color: AMBER }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium" style={{ color: AMBER }}>{t.name}</p>
+                      <p className="text-sm truncate" style={{ color: 'var(--foreground)' }}>{t.content}</p>
+                    </div>
                   </div>
                 ))}
               </div>
