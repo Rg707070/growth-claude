@@ -639,3 +639,24 @@ create policy "Users manage own domains"
   with check ((select auth.uid()) = user_id);
 
 create index if not exists user_domains_user_id_idx on public.user_domains(user_id);
+
+-- ============================================================
+-- GOOGLE CALENDAR INTEGRATION (OAuth tokens per user)
+-- ============================================================
+
+create table if not exists public.google_calendar_tokens (
+  user_id uuid references auth.users on delete cascade primary key,
+  access_token text not null,
+  refresh_token text not null,
+  expires_at timestamptz not null,
+  calendar_id text default 'primary' not null,
+  created_at timestamptz default timezone('utc'::text, now()) not null,
+  updated_at timestamptz default timezone('utc'::text, now()) not null
+);
+
+alter table public.google_calendar_tokens enable row level security;
+
+create policy "Users manage own google tokens"
+  on public.google_calendar_tokens for all
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);

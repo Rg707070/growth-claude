@@ -32,8 +32,18 @@ interface DayData {
   friendEvents: { id: string; title: string; event_time: string | null; notes: string | null }[]
   friendReminders: { id: string; note: string | null }[]
   torahSessions: { id: string; text_title: string; duration_seconds: number }[]
+  googleEvents: GoogleEvent[]
   hasJournal: boolean
   hasNightCheckin: boolean
+}
+
+interface GoogleEvent {
+  id: string
+  title: string
+  start: string | null
+  end: string | null
+  allDay: boolean
+  color: string | null
 }
 
 interface CalendarClientProps {
@@ -299,6 +309,16 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
 
       if (cancelled) return
 
+      let googleEvents: GoogleEvent[] = []
+      try {
+        const from = new Date(selectedDay + 'T00:00:00').toISOString()
+        const to = new Date(selectedDay + 'T23:59:59').toISOString()
+        const gres = await fetch(`/api/google-calendar/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+        if (gres.ok) googleEvents = (await gres.json()).events ?? []
+      } catch { /* ignore — Google Calendar optional */ }
+
+      if (cancelled) return
+
       setDayData({
         schedule: (schedRes.data ?? []) as DayData['schedule'],
         checkedTimes: ((checkRes.data ?? []) as { time: string }[]).map((r) => r.time),
@@ -313,6 +333,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
         friendEvents: (friendEventsRes.data ?? []) as DayData['friendEvents'],
         friendReminders: (friendRemindersRes.data ?? []) as DayData['friendReminders'],
         torahSessions: (torahSessionsRes.data ?? []) as DayData['torahSessions'],
+        googleEvents,
         hasJournal: !!journalRes.data,
         hasNightCheckin: !!nightRes.data,
       })
@@ -346,6 +367,7 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
     dayData.transactions.length > 0 || dayData.friendInteractions.length > 0 ||
     dayData.friendEvents.length > 0 || dayData.friendReminders.length > 0 ||
     dayData.torahSessions.length > 0 ||
+    dayData.googleEvents.length > 0 ||
     dayData.hasJournal || dayData.hasNightCheckin
   )
 
@@ -600,6 +622,23 @@ export function CalendarClient({ habits, logs, embedded = false }: CalendarClien
                           text={ev.title}
                           sub={[ev.event_time ? ev.event_time.slice(0, 5) : null, ev.notes].filter(Boolean).join(' · ') || undefined}
                           accent={ev.color ?? '#f59e0b'}
+                          done
+                        />
+                      ))}
+                    </DaySection>
+                  )}
+
+                  {/* Google Calendar events */}
+                  {dayData && dayData.googleEvents.length > 0 && (
+                    <DaySection title={isRTL ? 'גוגל קלנדר' : 'Google Calendar'} color="#4285f4">
+                      {dayData.googleEvents.map((ev: GoogleEvent) => (
+                        <DayRow key={ev.id}
+                          icon={<CalendarDays size={13} />}
+                          text={ev.title}
+                          sub={ev.allDay
+                            ? (isRTL ? 'כל היום' : 'All day')
+                            : (ev.start ? new Date(ev.start).toLocaleTimeString(isRTL ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : undefined)}
+                          accent={ev.color ?? '#4285f4'}
                           done
                         />
                       ))}

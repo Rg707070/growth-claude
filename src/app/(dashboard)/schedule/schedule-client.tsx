@@ -1095,31 +1095,73 @@ function buildGoogleEmbedSrc(raw: string): string {
 
 function GoogleCalendarView({ isDark, isRTL }: { isDark: boolean; isRTL: boolean }) {
   const raw = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_SRC
+  const [status, setStatus] = useState<{ connected: boolean; configured: boolean } | null>(null)
 
-  if (!raw) {
-    return (
-      <div className="px-4 py-10 flex flex-col items-center text-center gap-3" dir={isRTL ? 'rtl' : 'ltr'}>
-        <CalendarDays size={40} style={{ color: w(0.3, isDark) }} />
-        <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-          {isRTL ? 'גוגל קלנדר לא מחובר' : 'Google Calendar not connected'}
-        </p>
-        <p className="text-xs max-w-xs leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-          {isRTL
-            ? 'הגדר את משתנה הסביבה NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_SRC עם כתובת ה-Embed או מזהה הקלנדר שלך (מהגדרות הקלנדר ← שילוב קלנדר). הקלנדר חייב להיות ציבורי או בכתובת סודית.'
-            : 'Set the NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_SRC environment variable with your calendar embed URL or calendar ID (from Calendar Settings → Integrate calendar). The calendar must be public or use a secret address.'}
-        </p>
-      </div>
-    )
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/google-calendar/status')
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setStatus(d) })
+      .catch(() => { if (!cancelled) setStatus({ connected: false, configured: false }) })
+    return () => { cancelled = true }
+  }, [])
+
+  async function disconnect() {
+    await fetch('/api/google-calendar/disconnect', { method: 'POST' })
+    setStatus({ connected: false, configured: true })
   }
 
   return (
-    <div className="px-2">
-      <iframe
-        title="Google Calendar"
-        src={buildGoogleEmbedSrc(raw)}
-        style={{ border: 0, width: '100%', height: '600px', borderRadius: '16px', background: '#fff' }}
-        loading="lazy"
-      />
+    <div className="px-2 flex flex-col gap-3" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* OAuth connection bar (for day-detail event sync) */}
+      {status?.configured && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl mx-2"
+          style={{ background: w(0.05, isDark), border: `1px solid ${w(0.08, isDark)}` }}>
+          <div className="flex items-center gap-2 min-w-0">
+            <CalendarDays size={16} style={{ color: '#4285f4' }} />
+            <span className="text-xs font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+              {status.connected
+                ? (isRTL ? 'מחובר לגוגל קלנדר' : 'Connected to Google Calendar')
+                : (isRTL ? 'חבר את גוגל קלנדר' : 'Connect Google Calendar')}
+            </span>
+          </div>
+          {status.connected ? (
+            <button onClick={disconnect}
+              className="text-[11px] font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>
+              {isRTL ? 'נתק' : 'Disconnect'}
+            </button>
+          ) : (
+            <a href="/api/google-calendar/auth"
+              className="text-[11px] font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+              style={{ background: 'rgba(66,133,244,0.15)', color: '#4285f4' }}>
+              {isRTL ? 'התחבר' : 'Connect'}
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Embedded calendar */}
+      {raw ? (
+        <iframe
+          title="Google Calendar"
+          src={buildGoogleEmbedSrc(raw)}
+          style={{ border: 0, width: '100%', height: '600px', borderRadius: '16px', background: '#fff' }}
+          loading="lazy"
+        />
+      ) : (
+        <div className="px-4 py-10 flex flex-col items-center text-center gap-3">
+          <CalendarDays size={40} style={{ color: w(0.3, isDark) }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+            {isRTL ? 'תצוגת קלנדר משובצת לא מוגדרת' : 'Embedded calendar not set'}
+          </p>
+          <p className="text-xs max-w-xs leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+            {isRTL
+              ? 'הגדר את NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_SRC לתצוגה משובצת, או התחבר למעלה כדי לסנכרן אירועים לתוך פירוט היום בלוח השנה.'
+              : 'Set NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_SRC for an embedded view, or connect above to sync events into the calendar day detail.'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

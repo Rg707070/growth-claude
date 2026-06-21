@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { width: 280px; margin: 0; font-family: -apple-system, system-ui, sans-serif;
+      background: #0a1420; color: #e5f0f5; padding: 16px; }
+    h1 { font-size: 15px; margin: 0 0 4px; }
+    p { font-size: 11px; color: #7d97a5; margin: 0 0 12px; }
+    input { width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 9px 10px;
+      border-radius: 10px; border: 1px solid #1d3343; background: #0f1f2c; color: #e5f0f5;
+      font-size: 13px; }
+    button { width: 100%; padding: 9px; border-radius: 10px; border: none; cursor: pointer;
+      background: #22c3d6; color: #04121a; font-weight: 700; font-size: 13px; }
+    .status { font-size: 11px; margin-top: 10px; min-height: 14px; }
+    .ok { color: #34d399; }
+    .err { color: #f87171; }
+    .signout { background: transparent; color: #f87171; border: 1px solid #3a2030; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>GROWTH</h1>
+  <p>Sign in to show your habits inside Google Calendar.</p>
+  <div id="login">
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="signin">Sign in</button>
+  </div>
+  <div id="loggedin" style="display:none">
+    <p id="who"></p>
+    <button id="signout" class="signout">Sign out</button>
+  </div>
+  <div class="status" id="status"></div>
+  <script src="config.js"></script>
+  <script src="supabase-rest.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

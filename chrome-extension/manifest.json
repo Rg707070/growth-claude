@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "GROWTH for Google Calendar",
+  "version": "1.0.0",
+  "description": "Adds a GROWTH sidebar (habits, streaks, urgent tasks, night check-in) inside Google Calendar.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://calendar.google.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "GROWTH"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://calendar.google.com/*"],
+      "js": ["config.js", "supabase-rest.js", "content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
