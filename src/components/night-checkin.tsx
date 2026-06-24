@@ -110,19 +110,21 @@ export function NightCheckIn() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center px-4 pt-4 animate-fade-in"
       style={{
         background: 'linear-gradient(180deg, rgba(11,36,71,0.4) 0%, rgba(11,36,71,0.65) 100%)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
+        paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
       <div
-        className="w-full max-w-sm rounded-3xl p-6 animate-night-enter"
+        className="w-full max-w-sm rounded-3xl p-6 animate-night-enter overflow-y-auto"
         style={{
           background: 'var(--c-fab-sheet)',
           border: '1px solid var(--c-border)',
           boxShadow: '0 20px 60px var(--c-shadow-lg)',
+          maxHeight: 'calc(90vh - env(safe-area-inset-bottom, 0px))',
         }}
       >
         {submitted ? (

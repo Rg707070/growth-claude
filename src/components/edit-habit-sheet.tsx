@@ -85,16 +85,17 @@ export function EditHabitSheet({ habit, open, onClose }: EditHabitSheetProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-4 animate-fade-in"
-      style={{ background: 'rgba(11,36,71,0.55)', backdropFilter: 'blur(10px)' }}
+      className="fixed inset-0 z-50 flex items-end justify-center px-4 pt-4 animate-fade-in"
+      style={{ background: 'rgba(11,36,71,0.55)', backdropFilter: 'blur(10px)', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-3xl p-6 animate-fade-up"
+        className="w-full max-w-sm rounded-3xl p-6 animate-fade-up overflow-y-auto"
         style={{
           background: 'var(--c-fab-sheet)',
           border: '1px solid var(--c-border)',
           boxShadow: '0 20px 60px var(--c-shadow-lg)',
+          maxHeight: 'calc(90vh - env(safe-area-inset-bottom, 0px))',
         }}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
